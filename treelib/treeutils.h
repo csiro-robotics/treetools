@@ -7,25 +7,17 @@
 #define TREELIB_TREEUTILS_H
 
 #include "treelib/treelibconfig.h"
-
 #include <Eigen/Dense>
 
 namespace tree
 {
-struct Trunk2
+struct Cylinder
 {
-  Trunk2();
-  Eigen::Vector3d centre; // height is midway up trunk
+  Cylinder(const Eigen::Vector3d &v1, const Eigen::Vector3d &v2, double radius) : v1(v1), v2(v2), radius(radius) {}
+  Eigen::Vector3d v1, v2;
   double radius;
-  double score;
-  double combined_score;
-  double weight;
-  double thickness;
-  double length; 
-  struct Trunk2 *next_down;
-  Eigen::Vector2d lean;
 };
-
+double intersectionVolume(Cylinder cyl1, Cylinder cyl2);
 }  // namespace ray
 
 #endif  // TREELIB_TREEUTILS_H
