@@ -19,19 +19,19 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
-double treeOverlapVolume(const ray::TreeGen &tree1, const ray::TreeGen &tree2, double tree1_scale)
+double treeOverlapVolume(const ray::TreeStructure &tree1, const ray::TreeStructure &tree2, double tree1_scale)
 {
   double volume = 0.0;
   const double eps = 1e-7;
-  for (auto &branch: tree1.branches())
+  for (auto &branch: tree1.segments())
   {
-    Eigen::Vector3d base = branch.parent_index==-1 ? tree1.root() : tree1.branches()[branch.parent_index].tip;
+    Eigen::Vector3d base = branch.parent_id==-1 ? tree1.root() : tree1.segments()[branch.parent_id].tip;
     if ((base - branch.tip).squaredNorm() < eps)
       continue;
     tree::Cylinder cyl1(tree1_scale * (branch.tip - tree1.root()), tree1_scale * (base - tree1.root()), tree1_scale*branch.radius);
-    for (auto &other: tree2.branches())
+    for (auto &other: tree2.segments())
     {
-      Eigen::Vector3d base2 = other.parent_index==-1 ? tree2.root() : tree2.branches()[other.parent_index].tip;
+      Eigen::Vector3d base2 = other.parent_id==-1 ? tree2.root() : tree2.segments()[other.parent_id].tip;
       tree::Cylinder cyl2(other.tip - tree2.root(), base2 - tree2.root(), other.radius);
       if ((cyl2.v2 - cyl2.v1).squaredNorm() < eps)
         continue;
@@ -53,14 +53,13 @@ int main(int argc, char *argv[])
     usage();
   }
 
-  ray::ForestGen forest1, forest2;
-  ray::ForestParams params;
-  if (!forest1.makeFromFile(forest_file1.name(), params) || !forest2.makeFromFile(forest_file2.name(), params))
+  ray::ForestStructure forest1, forest2;
+  if (!forest1.load(forest_file1.name()) || !forest2.load(forest_file2.name()))
   {
     usage();
   }  
-  std::vector<ray::TreeGen> &trees1 = forest1.trees();
-  std::vector<ray::TreeGen> &trees2 = forest2.trees();
+  std::vector<ray::TreeStructure> &trees1 = forest1.trees;
+  std::vector<ray::TreeStructure> &trees2 = forest2.trees;
 
   // first, find the amount of overlap in the tree trunks based on radius. This is the same code for trunks only and full tree text files
   std::vector<int> trunk_matches(trees1.size(), -1);
@@ -77,22 +76,22 @@ int main(int argc, char *argv[])
       if (std::find(trunk_matches.begin(), trunk_matches.end(), j) != trunk_matches.end())
         continue; // don't look at matches we have already made
       auto &tree2 = trees2[j];
-      double total_radius = tree1.branches()[0].radius+tree2.branches()[0].radius;
-      Eigen::Vector3d dif = tree1.root() - tree2.root();
+      double total_radius = tree1.segments()[0].radius+tree2.segments()[0].radius;
+      Eigen::Vector3d dif = tree1.segments()[0].tip - tree2.segments()[0].tip;
       dif[2] = 0.0;
       double overlap = dif.norm() / total_radius;
       if (overlap < min_overlap && overlap < 1.0)
       {
         min_overlap = overlap;
         trunk_matches[i] = j;
-        min_overlap_rad = tree2.branches()[0].radius;
+        min_overlap_rad = tree2.segments()[0].radius;
       }
     }
     if (trunk_matches[i] != -1)
     {
       num_matches++;
       mean_overlap += min_overlap;
-      mean_radius1 += tree1.branches()[0].radius;
+      mean_radius1 += tree1.segments()[0].radius;
       mean_radius2 += min_overlap_rad;
     }
   }
@@ -102,7 +101,7 @@ int main(int argc, char *argv[])
   std::cout << "mean trunk overlap: " << 1.0 - mean_overlap << ", mean growth in trunk radius: " << 100.0*(mean_radius2/mean_radius1 - 1.0) << "\%" << std::endl;
 
   // if we only have trunk information then this is as far as we get
-  if (forest1.generatedFromTrunks() || forest2.generatedFromTrunks())
+  if (forest1.trees[0].segments().size()==1 || forest2.trees[0].segments().size() == 1)
   {
     return 1;
   }
