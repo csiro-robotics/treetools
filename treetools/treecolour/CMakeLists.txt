@@ -1,8 +1,8 @@
 set(SOURCES
-  treeadd.cpp
+  treecolour.cpp
 )
 
-ras_add_executable(treeadd
+ras_add_executable(treecolour
   LIBS treelib
   SOURCES ${SOURCES}
   PROJECT_FOLDER "treetools"

@@ -17,10 +17,10 @@
 
 void usage(int exit_code = 1)
 {
-  std::cout << "Add information to a tree file" << std::endl;
+  std::cout << "Colour a tree file from an image" << std::endl;
   std::cout << "usage:" << std::endl;
-  std::cout << "treeadd forest.txt LAI_image.hdr 10.3,-12.4,0.2 - applies image colour to the tree file" << std::endl;
-  std::cout << "                                                  at min coordinate 10.3,-12.4 and pixel width 0.2m" << std::endl;
+  std::cout << "treecolour forest.txt LAI_image.hdr 10.3,-12.4,0.2 - applies image colour to the tree file" << std::endl;
+  std::cout << "                                                     at min coordinate 10.3,-12.4 and pixel width 0.2m" << std::endl;
   exit(exit_code);
 }
 
