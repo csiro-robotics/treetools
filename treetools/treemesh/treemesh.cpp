@@ -19,7 +19,7 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
-void addCylinder(ray::Mesh &mesh, const Eigen::Vector3d &pos1, const Eigen::Vector3d &pos2, double radius)
+void addCylinder(ray::Mesh &mesh, const Eigen::Vector3d &pos1, const Eigen::Vector3d &pos2, double radius, ray::RGBA rgba)
 {
   int n = (int)mesh.vertices().size();
   Eigen::Vector3i N(n,n,n);
@@ -46,6 +46,8 @@ void addCylinder(ray::Mesh &mesh, const Eigen::Vector3d &pos1, const Eigen::Vect
     indices.push_back(N+Eigen::Vector3i((i+1)%6 + 6, (i+1)%6, i+6));
   }
   mesh.vertices().insert(mesh.vertices().end(), vertices.begin(), vertices.end());
+  for (int i = 0; i<vertices.size(); i++)
+    mesh.colours().push_back(rgba);
 }
 
 // Read in a ray cloud and convert it into an array for topological optimisation
@@ -73,10 +75,26 @@ int main(int argc, char *argv[])
   ray::Mesh mesh;
   for (auto &tree: forest.trees)
   {
+    // if colouring the mesh:
+    int red_id = -1;
+    const auto &it = std::find(tree.attributes().begin(), tree.attributes().end(), "red");
+    if (it != tree.attributes().end())
+    {
+      red_id = (int)(it - tree.attributes().begin());
+    }
+
     for (size_t i = 1; i<tree.segments().size(); i++)
     {
       auto &segment = tree.segments()[i];
-      addCylinder(mesh, segment.tip, tree.segments()[segment.parent_id].tip, segment.radius);
+      ray::RGBA rgba;
+      rgba.red = 127; rgba.green = 127; rgba.blue = 127; rgba.alpha = 255;
+      if (red_id != -1)
+      {
+        rgba.red = segment.attributes[red_id];
+        rgba.green = segment.attributes[red_id+1];
+        rgba.blue = segment.attributes[red_id+2];
+      }
+      addCylinder(mesh, segment.tip, tree.segments()[segment.parent_id].tip, segment.radius, rgba);
     }
   }
   ray::writePlyMesh(forest_file.nameStub() + "_mesh.ply", mesh, true);  

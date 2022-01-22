@@ -63,6 +63,7 @@ int main(int argc, char *argv[])
   if (tree_radius_id == -1)
     std::cout << "Warning: tree file does not contain tree radii, so they are estimated as " << trunk_to_tree_radius_scale << " times the trunk radius." << std::endl;
 
+  int cnt = 0;
   for (auto &tree: forest.trees)
   {
     tree.attributes().push_back("red");
@@ -77,27 +78,36 @@ int main(int argc, char *argv[])
     Eigen::Vector2i boxmax = ((maxpos - coords) / coord.value()[2]).cast<int>();
     Eigen::Vector3d colour(0,0,0);
     int count = 0;
-    for (int i = boxmin[0]; i<=boxmax[0]; i++)
+    for (int i = std::max(0, boxmin[0]); i<=std::min(boxmax[0], width-1); i++)
     {
-      for (int j = boxmin[1]; j<=boxmax[1]; j++)
+      for (int j = std::max(0, boxmin[1]); j<=std::min(boxmax[1], height-1); j++)
       {
-        Eigen::Vector2d pos = Eigen::Vector2d(i,j)*coord.value()[2] + coords;
+        Eigen::Vector2d pos = Eigen::Vector2d(i + 0.5,j + 0.5)*coord.value()[2] + coords;
         if ((pos - centre).norm() > rad)
           continue;
         const int index = num_channels*(i + width*j);
         if (is_hdr)
         {
-          colour[0] += (double)image_dataf[index];
-          colour[1] += (double)image_dataf[index+1];
-          colour[2] += (double)image_dataf[index+2];      
+          if (image_dataf[index] > 0.f || image_dataf[index+1] > 0.f || image_dataf[index+2] > 0.f)
+          {
+            colour[0] += (double)image_dataf[index];
+            colour[1] += (double)image_dataf[index+1];
+            colour[2] += (double)image_dataf[index+2];      
+            count++;  
+          }
         }
         else
         {
-          colour[0] += (double)image_data[index];
-          colour[1] += (double)image_data[index+1];
-          colour[2] += (double)image_data[index+2];      
+ //         if (image_data[index + 3] == 0) // zero alpha
+ //           continue;
+          if (image_data[index] > 0 || image_data[index+1] > 0 || image_data[index+2] > 0)
+          {
+            colour[0] += (double)image_data[index];
+            colour[1] += (double)image_data[index+1];
+            colour[2] += (double)image_data[index+2];   
+            count++;  
+          }   
         }
-        count++;  
       }
     }
     if (count > 0)
@@ -105,6 +115,7 @@ int main(int argc, char *argv[])
     tree.segments()[0].attributes.push_back(colour[0]);
     tree.segments()[0].attributes.push_back(colour[1]);
     tree.segments()[0].attributes.push_back(colour[2]);
+    cnt++;
   }
   forest.save(forest_file.nameStub() + "_coloured.txt");
 }
