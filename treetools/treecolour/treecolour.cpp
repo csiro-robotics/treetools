@@ -60,10 +60,10 @@ int main(int argc, char *argv[])
     if (forest.trees[0].attributes()[i] == "tree_radius")
       tree_radius_id = i;
   double trunk_to_tree_radius_scale = 10.0;
-  if (tree_radius_id == -1)
+  bool trunks_only = forest.trees[0].segments().size() == 1;
+  if (tree_radius_id == -1 && trunks_only)
     std::cout << "Warning: tree file does not contain tree radii, so they are estimated as " << trunk_to_tree_radius_scale << " times the trunk radius." << std::endl;
 
-  int cnt = 0;
   for (auto &tree: forest.trees)
   {
     tree.attributes().push_back("red");
@@ -71,6 +71,21 @@ int main(int argc, char *argv[])
     tree.attributes().push_back("blue");
     Eigen::Vector2d centre(tree.root()[0], tree.root()[1]);
     double rad = tree_radius_id == -1 ? tree.segments()[0].radius * trunk_to_tree_radius_scale : tree.segments()[0].attributes[tree_radius_id];
+    // get the radius:
+    if (tree_radius_id == -1 && trunks_only==false) // no tree radius specified, so estimate it from the branches
+    {
+      const double big = 1e10;
+      Eigen::Vector3d minbound(big,big,big), maxbound(-big,-big,-big);
+      for (auto &segment: tree.segments())
+      {
+        minbound = ray::minVector(minbound, segment.tip);
+        maxbound = ray::maxVector(maxbound, segment.tip);
+      }
+      Eigen::Vector3d extent = (maxbound - minbound)/2.0;
+      rad = 0.5 * (extent[0] + extent[1]); // the mean diameter of the points
+    }
+
+
     Eigen::Vector2d minpos = centre - Eigen::Vector2d(rad, rad);
     Eigen::Vector2d maxpos = centre + Eigen::Vector2d(rad, rad);
     Eigen::Vector2d coords(coord.value()[0], coord.value()[1]);
@@ -98,8 +113,6 @@ int main(int argc, char *argv[])
         }
         else
         {
- //         if (image_data[index + 3] == 0) // zero alpha
- //           continue;
           if (image_data[index] > 0 || image_data[index+1] > 0 || image_data[index+2] > 0)
           {
             colour[0] += (double)image_data[index];
@@ -112,10 +125,12 @@ int main(int argc, char *argv[])
     }
     if (count > 0)
       colour /= (double)count;
-    tree.segments()[0].attributes.push_back(colour[0]);
-    tree.segments()[0].attributes.push_back(colour[1]);
-    tree.segments()[0].attributes.push_back(colour[2]);
-    cnt++;
+    for (auto &segment: tree.segments())
+    {
+      segment.attributes.push_back(colour[0]);
+      segment.attributes.push_back(colour[1]);
+      segment.attributes.push_back(colour[2]);
+    }
   }
   forest.save(forest_file.nameStub() + "_coloured.txt");
 }
