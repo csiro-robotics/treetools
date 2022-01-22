@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
 
   int tree_radius_id = -1;
   for (size_t i = 0; i<forest.trees[0].attributes().size(); i++)
-    if (forest.trees[0].attributes()[i] == "tree_radius")
+    if (forest.trees[0].attributes()[i] == "subtree_radius")
       tree_radius_id = i;
   double trunk_to_tree_radius_scale = 10.0;
   bool trunks_only = forest.trees[0].segments().size() == 1;
