@@ -87,11 +87,15 @@ int main(int argc, char *argv[])
       if (num_cells > 0.0)
         density /= num_cells;
       Eigen::Vector3d col(density, density, density);  
-      segment.attributes.push_back(col[0]);
-      segment.attributes.push_back(col[1]);
-      segment.attributes.push_back(col[2]);
+      for (int i = 0; i<3; i++)
+      {
+        segment.attributes.push_back(col[i]);
+        if (s==1)
+          tree.segments()[0].attributes.push_back(col[i]);
+      }
     }
   }
+  forest.save(forest_file.nameStub() + "_foliage.txt");
 }
 
 

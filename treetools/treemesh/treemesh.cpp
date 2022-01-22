@@ -72,17 +72,36 @@ int main(int argc, char *argv[])
     usage();
   }
 
+    // if colouring the mesh:
+  int red_id = -1;
+  auto &att = forest.trees[0].attributes();
+  const auto &it = std::find(att.begin(), att.end(), "red");
+  if (it != att.end())
+  {
+    red_id = (int)(it - att.begin());
+  }
+  bool is_int8 = true;
+  auto &segment0 = forest.trees[0].segments()[0];
+  if (std::fmod(segment0.attributes[red_id], 1.0) > 1e-10 || segment0.attributes[red_id]>255.0)
+    is_int8 = false;
+  double col_scale = 1.0;
+  if (!is_int8) // then we ought to scale it
+  {
+    double max_col = 0.0;
+    for (auto &tree: forest.trees)
+    {
+      for (auto &segment: tree.segments())
+      {
+        for (int i = 0; i<3; i++)
+          max_col = std::max(max_col, segment.attributes[red_id+i]);
+      }
+    }
+    col_scale = 255.0 / max_col;
+    std::cout << "tree colour values are not 0-255 integers, so rescaling according to maximum colour, by " << 1.0/max_col << std::endl;
+  }
   ray::Mesh mesh;
   for (auto &tree: forest.trees)
   {
-    // if colouring the mesh:
-    int red_id = -1;
-    const auto &it = std::find(tree.attributes().begin(), tree.attributes().end(), "red");
-    if (it != tree.attributes().end())
-    {
-      red_id = (int)(it - tree.attributes().begin());
-    }
-
     for (size_t i = 1; i<tree.segments().size(); i++)
     {
       auto &segment = tree.segments()[i];
@@ -90,9 +109,9 @@ int main(int argc, char *argv[])
       rgba.red = 127; rgba.green = 127; rgba.blue = 127; rgba.alpha = 255;
       if (red_id != -1)
       {
-        rgba.red = segment.attributes[red_id];
-        rgba.green = segment.attributes[red_id+1];
-        rgba.blue = segment.attributes[red_id+2];
+        rgba.red = uint8_t(col_scale * segment.attributes[red_id]);
+        rgba.green = uint8_t(col_scale * segment.attributes[red_id+1]);
+        rgba.blue = uint8_t(col_scale * segment.attributes[red_id+2]);
       }
       addCylinder(mesh, segment.tip, tree.segments()[segment.parent_id].tip, segment.radius, rgba);
     }
