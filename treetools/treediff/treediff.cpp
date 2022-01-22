@@ -23,15 +23,15 @@ double treeOverlapVolume(const ray::TreeStructure &tree1, const ray::TreeStructu
 {
   double volume = 0.0;
   const double eps = 1e-7;
-  for (auto &branch: tree1.segments())
+  for (size_t i = 1; i<tree1.segments().size(); i++)
   {
-    Eigen::Vector3d base = branch.parent_id==-1 ? tree1.root() : tree1.segments()[branch.parent_id].tip;
-    if ((base - branch.tip).squaredNorm() < eps)
-      continue;
+    auto &branch = tree1.segments()[i];
+    Eigen::Vector3d base = tree1.segments()[branch.parent_id].tip;
     tree::Cylinder cyl1(tree1_scale * (branch.tip - tree1.root()), tree1_scale * (base - tree1.root()), tree1_scale*branch.radius);
-    for (auto &other: tree2.segments())
+    for (size_t j = 1; j<tree2.segments().size(); j++)
     {
-      Eigen::Vector3d base2 = other.parent_id==-1 ? tree2.root() : tree2.segments()[other.parent_id].tip;
+      auto &other = tree2.segments()[j];
+      Eigen::Vector3d base2 = tree2.segments()[other.parent_id].tip;
       tree::Cylinder cyl2(other.tip - tree2.root(), base2 - tree2.root(), other.radius);
       if ((cyl2.v2 - cyl2.v1).squaredNorm() < eps)
         continue;
