@@ -52,6 +52,7 @@ int main(int argc, char *argv[])
   params.dimension = dimension_option.isSet() ? dimension.value() : 2.0;
   params.adult_tree_density = tree_density_option.isSet() ? tree_density.value() : 0.01;
   params.random_factor = random_factor_option.isSet() ? random_factor.value() : 0.25;  
+  params.min_branch_radius = 0.01;
 
   ray::ForestGen forest;
   if (tree_parsed)
@@ -61,7 +62,7 @@ int main(int argc, char *argv[])
     tree.segments().resize(1);
     tree.segments()[0].tip = Eigen::Vector3d(0, 0, 0);
     tree.segments()[0].radius = params.max_tree_radius;
-    tree.make(params.random_factor);
+    tree.make(params);
     forest.save("tree.txt");
   }
   else
