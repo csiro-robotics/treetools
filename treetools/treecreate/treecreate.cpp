@@ -44,6 +44,7 @@ int main(int argc, char *argv[])
     usage();
   }
   ray::srand(seed.value());
+  ray::fillBranchAngleLookup();
 
   ray::ForestParams params;
   params.field_width = width_option.isSet() ? width.value() : 20;

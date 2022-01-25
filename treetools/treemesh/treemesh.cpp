@@ -80,24 +80,27 @@ int main(int argc, char *argv[])
   {
     red_id = (int)(it - att.begin());
   }
-  bool is_int8 = true;
-  auto &segment0 = forest.trees[0].segments()[0];
-  if (std::fmod(segment0.attributes[red_id], 1.0) > 1e-10 || segment0.attributes[red_id]>255.0)
-    is_int8 = false;
   double col_scale = 1.0;
-  if (!is_int8) // then we ought to scale it
+  if (red_id != -1)
   {
-    double max_col = 0.0;
-    for (auto &tree: forest.trees)
+    bool is_int8 = true;
+    auto &segment0 = forest.trees[0].segments()[0];
+    if (std::fmod(segment0.attributes[red_id], 1.0) > 1e-10 || segment0.attributes[red_id]>255.0)
+      is_int8 = false;
+    if (!is_int8) // then we ought to scale it
     {
-      for (auto &segment: tree.segments())
+      double max_col = 0.0;
+      for (auto &tree: forest.trees)
       {
-        for (int i = 0; i<3; i++)
-          max_col = std::max(max_col, segment.attributes[red_id+i]);
+        for (auto &segment: tree.segments())
+        {
+          for (int i = 0; i<3; i++)
+            max_col = std::max(max_col, segment.attributes[red_id+i]);
+        }
       }
+      col_scale = 255.0 / max_col;
+      std::cout << "tree colour values are not 0-255 integers, so rescaling according to maximum colour, by " << 1.0/max_col << std::endl;
     }
-    col_scale = 255.0 / max_col;
-    std::cout << "tree colour values are not 0-255 integers, so rescaling according to maximum colour, by " << 1.0/max_col << std::endl;
   }
   ray::Mesh mesh;
   for (auto &tree: forest.trees)
