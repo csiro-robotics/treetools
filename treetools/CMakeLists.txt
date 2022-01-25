@@ -1,4 +1,5 @@
 add_subdirectory(treecolour)
+add_subdirectory(treecreate)
 add_subdirectory(treediff)
 add_subdirectory(treefoliage)
 add_subdirectory(treemesh)
