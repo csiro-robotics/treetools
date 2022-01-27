@@ -3,7 +3,7 @@ A set of command line tools for processing tree files, together with an associat
 
 Tree files are text files that can either store a tree trunk per tree, or a full Branch Structure Graph (connected cylinders) per tree. One line per tree.
 
-### File Format, trunks only:
+### File Format:
 ```console
 # any initial comments
 # followed by the format:
