@@ -15,8 +15,8 @@ void usage(int exit_code = 1)
 {
   std::cout << "Rotate a tree file about the origin" << std::endl;
   std::cout << "usage:" << std::endl;
-  std::cout << "treerotate treefile.txt 30,0,0  - rotation (rx,ry,rz) is a rotation vector in degrees:" << std::endl;
-  std::cout << "                                  so this example rotates the file by 30 degrees in the x axis." << std::endl;
+  std::cout << "treerotate treefile.txt 0,0,30  - rotation (rx,ry,rz) is a rotation vector in degrees:" << std::endl;
+  std::cout << "                                  so this example rotates the file by 30 degrees in the z axis." << std::endl;
   exit(exit_code);
 }
 
