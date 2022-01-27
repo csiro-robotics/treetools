@@ -1,9 +1,9 @@
-## Tree Tools
+# Tree Tools
 A set of command line tools for processing tree files, together with an associated C++ library.
 
 Tree files are text files that can either store a tree trunk per tree, or a full Branch Structure Graph (connected cylinders) per tree. One line per tree.
 
-## File Format, trunks only:
+### File Format, trunks only:
 ```console
 # any initial comments
 # followed by the format:
@@ -12,7 +12,7 @@ comma-separated data here
 ```
 The x,y,z,radius fields are mandatory, and the parent_id field is mandatory for branch structures. All additional fields can be added at will, and are double values.
 
-## Trunks-only example:
+### Trunks-only example:
 ```console
 # trunks file
 x,y,z,radius
@@ -21,10 +21,9 @@ x,y,z,radius
 ```
 represents two tree trunks at positions (0,0,0) and (1,0,0), and with radii 0.2 and 0.4m respectively. 
 
-## Branch structure example:
+### Branch structure example:
 ```console
-# any initial comments
-# followed by the format:
+# Full branch structure file
 x,y,z,radius,parent_id,red,green,blue
 0,0,0,0.2,-1,255,0,0, 0,0,1,0.1,0,255,0,0
 ```
@@ -47,7 +46,6 @@ mkdir build
 cd build
 cmake ..
 make
-edit ~/.bashrc in a text editor
 ```
 
 To run the treeXXXX tools from anywhere, place in your ~/bashrc:
