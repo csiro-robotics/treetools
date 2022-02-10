@@ -1,0 +1,15 @@
+
+Based on AdTree, this program processes one file or files in a folder to generate a cloud_tree.txt file, which can be used through programs in the treetoold folder.
+
+The format of the cloud_tree.txt file is the following:
+'x,y,z,radius,parent_id,red,green,blue, ' per segment
+
+Below is the usage for this program:
+Usage: AdTree can be run in two modes, which can be selected based on arguments:
+       (the output filename will be from the base and adding '_cloud_tree.txt')
+       (the input file format is the '*.xyz' format)       
+  - Single processing mode (i.e., processing a single point cloud file).
+         Command: ./AdTree <xyz_file_path_name> <output_directory>
+  - Batch processing mode (i.e., all *.xyz files in the input directory will be treated as input 
+    and the cloud_tree txt file will be save in the output directory).
+         Command: ./AdTree <xyz_files_directory> <output_directory>
