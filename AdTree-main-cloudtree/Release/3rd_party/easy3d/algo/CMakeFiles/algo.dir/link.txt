@@ -1,2 +1,0 @@
-/usr/bin/ar qc ../../../lib/libalgo.a  CMakeFiles/algo.dir/remove_duplication.cpp.o
-/usr/bin/ranlib ../../../lib/libalgo.a

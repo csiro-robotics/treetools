@@ -1,2 +1,0 @@
-/usr/bin/ar qc ../../lib/liboptimizer_lm.a  CMakeFiles/optimizer_lm.dir/optimizer_lm.cpp.o
-/usr/bin/ranlib ../../lib/liboptimizer_lm.a
