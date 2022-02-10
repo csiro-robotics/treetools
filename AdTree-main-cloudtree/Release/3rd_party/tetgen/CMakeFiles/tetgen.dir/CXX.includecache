@@ -1,0 +1,42 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/media/sun017/98c26b76-de0f-4a92-98d1-a170710911e93/home/sun017/MyFiles/HazardTrees/codes/AdTree/AdTree-main-cloudtree/3rd_party/tetgen/predicates.cxx
+stdio.h
+-
+stdlib.h
+-
+math.h
+-
+float.h
+-
+fpu_control.h
+-
+tetgen.h
+/media/sun017/98c26b76-de0f-4a92-98d1-a170710911e93/home/sun017/MyFiles/HazardTrees/codes/AdTree/AdTree-main-cloudtree/3rd_party/tetgen/tetgen.h
+CGAL/Exact_predicates_inexact_constructions_kernel.h
+-
+
+/media/sun017/98c26b76-de0f-4a92-98d1-a170710911e93/home/sun017/MyFiles/HazardTrees/codes/AdTree/AdTree-main-cloudtree/3rd_party/tetgen/tetgen.cxx
+tetgen.h
+/media/sun017/98c26b76-de0f-4a92-98d1-a170710911e93/home/sun017/MyFiles/HazardTrees/codes/AdTree/AdTree-main-cloudtree/3rd_party/tetgen/tetgen.h
+
+/media/sun017/98c26b76-de0f-4a92-98d1-a170710911e93/home/sun017/MyFiles/HazardTrees/codes/AdTree/AdTree-main-cloudtree/3rd_party/tetgen/tetgen.h
+stdio.h
+-
+stdlib.h
+-
+string.h
+-
+math.h
+-
+time.h
+-
+stdint.h
+-
+

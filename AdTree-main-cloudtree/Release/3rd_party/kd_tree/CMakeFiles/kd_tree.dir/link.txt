@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../lib/libkd_tree.a  CMakeFiles/kd_tree.dir/KdTree.cpp.o CMakeFiles/kd_tree.dir/PriorityQueue.cpp.o CMakeFiles/kd_tree.dir/Vector2D.cpp.o CMakeFiles/kd_tree.dir/Vector3D.cpp.o
+/usr/bin/ranlib ../../lib/libkd_tree.a

@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../../lib/libutil.a  CMakeFiles/util.dir/dialogs.cpp.o CMakeFiles/util.dir/file_system.cpp.o CMakeFiles/util.dir/chrono_watch.cpp.o CMakeFiles/util.dir/stop_watch.cpp.o CMakeFiles/util.dir/string.cpp.o
+/usr/bin/ranlib ../../../lib/libutil.a
