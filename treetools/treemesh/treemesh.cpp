@@ -46,7 +46,7 @@ void addCylinder(ray::Mesh &mesh, const Eigen::Vector3d &pos1, const Eigen::Vect
     indices.push_back(N+Eigen::Vector3i((i+1)%6 + 6, (i+1)%6, i+6));
   }
   mesh.vertices().insert(mesh.vertices().end(), vertices.begin(), vertices.end());
-  for (int i = 0; i<vertices.size(); i++)
+  for (size_t i = 0; i<vertices.size(); i++)
     mesh.colours().push_back(rgba);
 }
 

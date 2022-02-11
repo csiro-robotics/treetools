@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
       if (overlap < min_overlap && overlap < 1.0)
       {
         min_overlap = overlap;
-        trunk_matches[i] = j;
+        trunk_matches[i] = (int)j;
         min_overlap_rad = tree2.segments()[0].radius;
       }
     }
@@ -96,9 +96,9 @@ int main(int argc, char *argv[])
     }
   }
   mean_overlap /= (double)num_matches;
-  std::cout << 100.0*(double)num_matches/(double)trees2.size() << "\% of " << forest_file2.nameStub() << " trees overlap the " << forest_file1.nameStub() << " trees" << std::endl;
+  std::cout << 100.0*(double)num_matches/(double)trees2.size() << "% of " << forest_file2.nameStub() << " trees overlap the " << forest_file1.nameStub() << " trees" << std::endl;
   std::cout << "#trees 1: " << trees1.size() << ", #trees 2: " << trees2.size() << ", #overlapping: " << num_matches << std::endl;
-  std::cout << "mean trunk overlap: " << 1.0 - mean_overlap << ", mean growth in trunk radius: " << 100.0*(mean_radius2/mean_radius1 - 1.0) << "\%" << std::endl;
+  std::cout << "mean trunk overlap: " << 1.0 - mean_overlap << ", mean growth in trunk radius: " << 100.0*(mean_radius2/mean_radius1 - 1.0) << "%" << std::endl;
 
   // if we only have trunk information then this is as far as we get
   if (forest1.trees[0].segments().size()==1 || forest2.trees[0].segments().size() == 1)
@@ -179,12 +179,12 @@ int main(int argc, char *argv[])
     if (removed_volume > max_removed_volume)
     {
       max_removed_volume = removed_volume;
-      max_removal_i = i;
+      max_removal_i = (int)i;
     }
     if (added_volume > max_added_volume)
     {
       max_added_volume = added_volume;
-      max_add_i = i;
+      max_add_i = (int)i;
     }
   }
 
@@ -193,17 +193,17 @@ int main(int argc, char *argv[])
   mean_added_volume /= (double)num_matches;
   mean_removed_volume /= (double)num_matches;
   mean_overlap_percent /= (double)num_matches;
-  std::cout << "mean tree percentage overlap: " << 100.0*mean_overlap_percent << "\%" << std::endl;
+  std::cout << "mean tree percentage overlap: " << 100.0*mean_overlap_percent << "%" << std::endl;
   if (!disable_growth.isSet())
   {
-    std::cout << "mean scale growth: " << 100.0*(mean_growth-1.0) << "\%, min growth: " << 100.0*(min_growth - 1.0) << "\%, max growth: " << 100.0*(max_growth - 1.0) << "\%" << std::endl;
+    std::cout << "mean scale growth: " << 100.0*(mean_growth-1.0) << "%, min growth: " << 100.0*(min_growth - 1.0) << "%, max growth: " << 100.0*(max_growth - 1.0) << "%" << std::endl;
     std::cout << "after scaling each tree to match new version:" << std::endl;
   }
 
-  std::cout << "added volume: " << 100.0*(mean_added_volume/total_volume) << "\% which averages " << mean_added_volume << " m^3 per tree." << std::endl;
+  std::cout << "added volume: " << 100.0*(mean_added_volume/total_volume) << "% which averages " << mean_added_volume << " m^3 per tree." << std::endl;
   std::cout << "maximum added volume " << max_added_volume << " m^3 for tree at " << trees1[max_add_i].root().transpose() << std::endl;
 
-  std::cout << "removed volume: " << 100.0*(mean_removed_volume/total_volume) << "\% which averages " << mean_removed_volume << " m^3 per tree." << std::endl;
+  std::cout << "removed volume: " << 100.0*(mean_removed_volume/total_volume) << "% which averages " << mean_removed_volume << " m^3 per tree." << std::endl;
   std::cout << "maximum removed volume " << max_removed_volume << " m^3 for tree at " << trees1[max_removal_i].root().transpose() << std::endl;
 }
 
