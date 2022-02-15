@@ -17,8 +17,8 @@ void usage(int exit_code = 1)
 {
   std::cout << "Prune branches less than a diameter, or by a chosen length" << std::endl;
   std::cout << "usage:" << std::endl;
-  std::cout << "treeprune forest.txt diameter 0.02 - cut off branches less than 2 cm wide" << std::endl;
-  std::cout << "                     length 0.5    - cut off last 50 cm of all branches" << std::endl;
+  std::cout << "treeprune forest.txt 2 cm       - cut off branches less than 2 cm wide" << std::endl;
+  std::cout << "                     0.5 m long - cut off branches less than 0.5 m long" << std::endl;
   exit(exit_code);
 }
 
@@ -27,11 +27,13 @@ int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file;
   ray::DoubleArgument diameter(0.0001, 100.0), length(0.001, 1000.0);
+  ray::TextArgument cm("cm"), m("m"), long_text("long");
   ray::KeyValueChoice choice({"diameter", "length"}, 
                              {&diameter, &length});
 
-  bool parsed = ray::parseCommandLine(argc, argv, {&forest_file, &choice});
-  if (!parsed)
+  bool prune_diameter = ray::parseCommandLine(argc, argv, {&forest_file, &diameter, &cm});
+  bool prune_length = ray::parseCommandLine(argc, argv, {&forest_file, &length, &m, &long_text});
+  if (!prune_diameter && !prune_length)
   {
     usage();
   }
@@ -66,7 +68,7 @@ int main(int argc, char *argv[])
         int parent = tree.segments()[i].parent_id;
         int child = (int)i;
         max_diameter[child] = 2.0 * tree.segments()[child].radius;
-        if (choice.selectedID() == 0) // diameter. Here max_diameter ensures a branch diameter that only increases from the leaves
+        if (prune_diameter) // Here max_diameter ensures a branch diameter that only increases from the leaves
         {
           while (parent != -1)
           {
@@ -114,8 +116,8 @@ int main(int argc, char *argv[])
     new_tree.segments().push_back(tree.segments()[0]);
     for (size_t i = 1; i<tree.segments().size(); i++)
     {
-      if ((choice.selectedID() == 0 && max_diameter[i] > diameter.value()) || 
-          (choice.selectedID() == 1 && min_length_from_leaf[i] > length.value())) 
+      if ((prune_diameter && max_diameter[i] > 0.01*diameter.value()) || 
+          (prune_length && min_length_from_leaf[i] > length.value())) 
       {
         new_index[i] = (int)new_tree.segments().size();
         new_tree.segments().push_back(tree.segments()[i]);
