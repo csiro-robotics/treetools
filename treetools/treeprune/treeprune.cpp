@@ -125,7 +125,20 @@ int main(int argc, char *argv[])
       }
       else
       {
-        new_index[i] = new_index[tree.segments()[i].parent_id];
+        int par = tree.segments()[i].parent_id;
+        if (prune_length && par != -1 && min_length_from_leaf[par] > length.value())
+        {
+          double blend = (min_length_from_leaf[par] - length.value()) / std::max(1e-10, min_length_from_leaf[par] - min_length_from_leaf[i]);
+          blend = std::max(1e-10, std::min(blend, 1.0));
+          ray::TreeStructure::Segment seg = tree.segments()[i];
+          seg.tip = tree.segments()[par].tip + (seg.tip - tree.segments()[par].tip) * blend;
+
+          new_index[i] = (int)new_tree.segments().size();
+          new_tree.segments().push_back(seg);
+          new_tree.segments().back().parent_id = new_index[seg.parent_id];          
+        }
+        else 
+          new_index[i] = new_index[tree.segments()[i].parent_id];
       }
     }
     if (new_tree.segments().size()==1) // remove this tree
