@@ -18,6 +18,7 @@ set(PUBLIC_HEADERS
 
 set(SOURCES
   ${PUBLIC_HEADERS}
+  treepruner.cpp
   treeutils.cpp
 )
 
