@@ -12,6 +12,8 @@
 #include <cstdlib>
 #include <iostream>
 
+double sqr(double x){ return x*x; }
+
 void usage(int exit_code = 1)
 {
   std::cout << "Bulk information for the trees, plus per-branch and per-tree information saved out." << std::endl;
@@ -42,25 +44,27 @@ int main(int argc, char *argv[])
     usage();
   }
   // attributes to estimate
-  // 1. number of trees
-  // 2. volume
-  // 3. mass (using gum tree density)
-  // 4. min, mean and max trunk diameters
+  // 1. number of trees.
+  // 2. volume.
+  // 3. mass (using a mean tree density).
+  // 4. min, mean and max trunk diameters.
   // 5. fractal distribution of trunk diameters?
   // 6. branch angles
   // 7. trunk dominance
   // 8. fractal distribution of branch diameters?
-  // 9. min, mean and max tree heights
+  // 9. min, mean and max tree heights.
+  // 10. branch strengths
   std::cout << "Information" << std::endl;
   std::cout << std::endl;
   std::cout << "Number of trees: " << forest.trees.size() << std::endl;
   
   int num_attributes = (int)forest.trees[0].attributes().size();
-  std::vector<std::string> new_attributes = {"volume", "diameter", "length", "strength"};
+  std::vector<std::string> new_attributes = {"volume", "diameter", "length", "strength", "dominance"};
   int volume_id = num_attributes+0;
   int diameter_id = num_attributes+1;
   int length_id = num_attributes+2;
   int strength_id = num_attributes+3;
+  int dominance_id = num_attributes+4;
   auto &att = forest.trees[0].attributes();
   for (auto &new_at: new_attributes)
   {
@@ -93,6 +97,8 @@ int main(int argc, char *argv[])
   double min_height = 1e10, max_height = -1e10;
   double total_strength = 0.0;
   double min_strength = 1e10, max_strength = -1e10;
+  double total_dominance = 0.0;
+  double min_dominance = 1e10, max_dominance = -1e10;
   for (auto &tree: forest.trees)
   {
     // get the children
@@ -100,10 +106,12 @@ int main(int argc, char *argv[])
     for (size_t i = 1; i<tree.segments().size(); i++)
       children[tree.segments()[i].parent_id].push_back((int)i);
 
-    // for each leaf, iterate to trunk updating the maximum length...
-    // TODO: would path length be better?
+    double tree_dominance = 0.0;
+    double total_weight = 0.0;
     for (size_t i = 1; i<tree.segments().size(); i++)
     {
+      // for each leaf, iterate to trunk updating the maximum length...
+      // TODO: would path length be better?
       if (children[i].empty()) // so it is a leaf
       {
         Eigen::Vector3d tip = tree.segments()[i].tip;
@@ -124,7 +132,40 @@ int main(int argc, char *argv[])
           j = tree.segments()[j].parent_id;
         }
       }
+      // if its a branch point then record how dominant the branching is
+      else if (children[i].size() > 1)
+      {
+        double max_rad = -1.0;
+        double second_max = -1.0;
+        for (auto &child: children[i])
+        {
+          double rad = tree.segments()[child].radius;
+          if (children[child].size() == 1) // we go up a segment if we can, as it the radius will have settled better here
+            rad = tree.segments()[children[child][0]].radius; 
+          if (rad > max_rad)
+          {
+            second_max = max_rad;
+            max_rad = rad;
+          }
+          else if (rad > second_max)
+          {
+            second_max = rad;
+          }
+        }
+        double weight = sqr(max_rad) + sqr(second_max);
+        double dominance = -1.0 + 2.0*sqr(max_rad) / weight;
+        tree.segments()[i].attributes[dominance_id] = dominance;
+        // now where do we spread this to?
+        // if we spread to leaves then base will be empty, if we spread to parent then leave will be empty...
+        tree_dominance += weight * dominance;
+        total_weight += weight;
+      }
     }
+    tree_dominance /= total_weight;
+    tree.segments()[0].attributes[dominance_id] = tree_dominance;
+    total_dominance += tree_dominance;
+    min_dominance = std::min(min_dominance, tree_dominance);
+    max_dominance = std::max(max_dominance, tree_dominance);    
 
     double tree_volume = 0.0;
     double tree_diameter = 0.0;
@@ -162,6 +203,7 @@ int main(int argc, char *argv[])
   std::cout << "Mean trunk diameter: " << total_diameter / (double)forest.trees.size() << " m. Min/max: " << min_diameter << ", " << max_diameter << " m" << std::endl;
   std::cout << "Mean tree height: " << total_height / (double)forest.trees.size() << " m. Min/max: " << min_height << ", " << max_height << " m" << std::endl;
   std::cout << "Mean trunk strength (diam^0.75/length): " << total_strength / (double)forest.trees.size() << ". Min/max: " << min_strength << ", " << max_strength << std::endl;
+  std::cout << "Mean branch dominance (0 to 1): " << total_dominance / (double)forest.trees.size() << ". Min/max: " << min_dominance << ", " << max_dominance << std::endl;
 
   forest.save(forest_file.nameStub() + "_info.txt");
   return 1;
