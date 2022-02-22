@@ -17,9 +17,19 @@ double sqr(double x){ return x*x; }
 void usage(int exit_code = 1)
 {
   std::cout << "Bulk information for the trees, plus per-branch and per-tree information saved out." << std::endl;
-  std::cout << "Use treemesh to visualise this per-tree information." << std::endl;
   std::cout << "usage:" << std::endl;
   std::cout << "treeinfo forest.txt - report tree information and save out to _info.txt file." << std::endl;
+  std::cout << std::endl;
+  std::cout << "Output file fields per segment (/ on root segment):" << std::endl;
+  std::cout << "  volume: volume of segment  / total tree volume" << std::endl;
+  std::cout << "  diameter: diameter of segment / max diameter on tree" << std::endl;
+  std::cout << "  length: length of segment base to farthest leaf" << std::endl;
+  std::cout << "  strength: d^0.75/l where d is diameter of segment and l is length from segment base to leaf" << std::endl;
+  std::cout << "  min_strength: minimum strength between this segment and root" << std::endl;
+  std::cout << "  dominance: a1/(a1+a2) for first and second largest child branches / mean for tree" << std::endl;
+  std::cout << "  angle: angle between branches at each branch point / mean branch angle" << std::endl;
+  std::cout << "Use treecolour 'field' to colour per-segment or treecolour trunk 'field' to colour per tree from root segment." << std::endl;
+  std::cout << "Then use treemesh to render based on this colour output." << std::endl;
   exit(exit_code);
 }
 
@@ -103,6 +113,7 @@ int main(int argc, char *argv[])
   double min_dominance = 1e10, max_dominance = -1e10;
   double total_angle = 0.0;
   double min_angle = 1e10, max_angle = -1e10;
+  int num_branched_trees = 0;
   for (auto &tree: forest.trees)
   {
     // get the children
@@ -120,11 +131,12 @@ int main(int argc, char *argv[])
       if (children[i].empty()) // so it is a leaf
       {
         Eigen::Vector3d tip = tree.segments()[i].tip;
-        int j = tree.segments()[i].parent_id;
+        int I = (int)i;
+        int j = tree.segments()[I].parent_id;
         while (j != -1)
         {
           double dist = (tip - tree.segments()[j].tip).norm();
-          double &length = tree.segments()[j].attributes[length_id];
+          double &length = tree.segments()[I].attributes[length_id];
           if (dist > length)
           {
             length = dist;
@@ -134,7 +146,8 @@ int main(int argc, char *argv[])
             // TODO: this is a shortcut that won't work all the time, making the length a little approximate
             break; // remove to make it slower but exact
           }
-          j = tree.segments()[j].parent_id;
+          I = j;
+          j = tree.segments()[I].parent_id;
         }
       }
       // if its a branch point then record how dominant the branching is
@@ -177,16 +190,23 @@ int main(int argc, char *argv[])
         tree_angle += weight * branch_angle;
       }
     }
-    tree_dominance /= total_weight;
-    tree_angle /= total_weight;
+    for (auto &child: children[0])
+      tree.segments()[0].attributes[length_id] = std::max(tree.segments()[0].attributes[length_id], tree.segments()[child].attributes[length_id]);
+    
+    if (total_weight > 0.0)
+    {
+      tree_dominance /= total_weight;
+      tree_angle /= total_weight;
+      num_branched_trees++;
+      total_dominance += tree_dominance;
+      min_dominance = std::min(min_dominance, tree_dominance);
+      max_dominance = std::max(max_dominance, tree_dominance);    
+      total_angle += tree_angle;
+      min_angle = std::min(min_angle, tree_angle);
+      max_angle = std::max(max_angle, tree_angle);    
+    }
     tree.segments()[0].attributes[dominance_id] = tree_dominance;
     tree.segments()[0].attributes[angle_id] = tree_angle;
-    total_dominance += tree_dominance;
-    min_dominance = std::min(min_dominance, tree_dominance);
-    max_dominance = std::max(max_dominance, tree_dominance);    
-    total_angle += tree_angle;
-    min_angle = std::min(min_angle, tree_angle);
-    max_angle = std::max(max_angle, tree_angle);    
 
     double tree_volume = 0.0;
     double tree_diameter = 0.0;
@@ -223,7 +243,7 @@ int main(int argc, char *argv[])
     // alright, now how do we get the minimum strength from tip to root?
     for (auto &segment: tree.segments())
       segment.attributes[min_strength_id] = 1e10;
-    std::vector<int> inds = {1};
+    std::vector<int> inds = children[0];
     for (size_t i = 0; i<inds.size(); i++)
     {
       int j = inds[i];
@@ -242,8 +262,8 @@ int main(int argc, char *argv[])
   std::cout << "Mean trunk diameter: " << total_diameter / (double)forest.trees.size() << " m. Min/max: " << min_diameter << ", " << max_diameter << " m" << std::endl;
   std::cout << "Mean tree height: " << total_height / (double)forest.trees.size() << " m. Min/max: " << min_height << ", " << max_height << " m" << std::endl;
   std::cout << "Mean trunk strength (diam^0.75/length): " << total_strength / (double)forest.trees.size() << ". Min/max: " << min_strength << ", " << max_strength << std::endl;
-  std::cout << "Mean branch dominance (0 to 1): " << total_dominance / (double)forest.trees.size() << ". Min/max: " << min_dominance << ", " << max_dominance << std::endl;
-  std::cout << "Mean branch angle: " << total_angle / (double)forest.trees.size() << " degrees. Min/max: " << min_angle << ", " << max_angle << " degrees" << std::endl;
+  std::cout << "Mean branch dominance (0 to 1): " << total_dominance / (double)num_branched_trees << ". Min/max: " << min_dominance << ", " << max_dominance << std::endl;
+  std::cout << "Mean branch angle: " << total_angle / (double)num_branched_trees << " degrees. Min/max: " << min_angle << ", " << max_angle << " degrees" << std::endl;
   std::cout << std::endl;
   std::cout << "saving per-tree and per-segment data to file" << std::endl;
   forest.save(forest_file.nameStub() + "_info.txt");
