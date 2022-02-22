@@ -19,8 +19,10 @@ void usage(int exit_code = 1)
 {
   std::cout << "Colour a tree file from an image" << std::endl;
   std::cout << "usage:" << std::endl;
-  std::cout << "treecolour forest.txt radius - greyscale by branch radius, or any other attribute" << std::endl;
-  std::cout << "                      trunk radius - greyscale by radius (or any other attribute) for the trunk" << std::endl;
+  std::cout << "treecolour forest.txt diameter - greyscale by branch diameter, or any other attribute" << std::endl;
+  std::cout << "                      trunk diameter - greyscale by diameter (or any other attribute) for the trunk" << std::endl;
+  std::cout << "                      1,length,diameter - rgb values or per-segment attributes" << std::endl;
+  std::cout << "                      trunk 1,length,diameter - rgb values or per-tree attributes" << std::endl;
   std::cout << "                      LAI_image.hdr 10.3,-12.4,0.2 - applies image colour to the tree file" << std::endl;
   std::cout << "                                                     at min coordinate 10.3,-12.4 and pixel width 0.2m" << std::endl;
   exit(exit_code);
@@ -69,18 +71,46 @@ int main(int argc, char *argv[])
       }
     }
   }
-  int attribute_id = -1;
+  int attribute_ids[3] = {-1,-1,-1};
+  Eigen::Vector3d colour(0,0,0);
   if (attribute_format || trunk_attribute_format)
   {
-    const auto &it = std::find(att.begin(), att.end(), attribute.name());
-    if (it != att.end())
+    std::stringstream ss(attribute.name());
+    std::string field;
+    int i = 0;
+    while (std::getline(ss, field, ','))
     {
-      attribute_id = (int)(it - att.begin()); // we always assume that red is followed immediately by attributes green and blue
-      std::cout << "found attribute " << attribute.name() << " at index " << attribute_id << std::endl;
+      if (i==3)
+      {
+        std::cerr << "error: bad format for r,g,b: " << attribute.name() << std::endl;
+        usage();
+      }
+      char *endptr;
+      const char *str = field.c_str();
+      colour[i] = std::strtod(str, &endptr);
+      if (endptr != str+std::strlen(str)) // if conversion to a double fails then it must be an attribute
+      {
+        const auto &it = std::find(att.begin(), att.end(), field);
+        if (it != att.end())
+        {
+          attribute_ids[i] = (int)(it - att.begin()); 
+          std::cout << "found attribute " << field << " at index " << attribute_ids[i] << std::endl;
+        }
+        else
+        {
+          std::cerr << "Error: cannot find attribute " << field << " in the format of file " << forest_file.name() << std::endl;
+          usage();
+        }
+      }
+      i++;
     }
-    else
+    if (i == 1)
     {
-      std::cerr << "Error: cannot find attribute " << attribute.name() << " in the format of file " << forest_file.name() << std::endl;
+      attribute_ids[2] = attribute_ids[1] = attribute_ids[0];
+    }
+    else if (i != 3)
+    {
+      std::cerr << "error: bad format for r,g,b: " << attribute.name() << std::endl;
       usage();
     }
   }
@@ -91,10 +121,10 @@ int main(int argc, char *argv[])
     {
       for (auto &segment: tree.segments())
       {
-        double value = segment.attributes[attribute_id];
-        segment.attributes[red_id+0] = value; // we don't normalise to max value here, only when generating the mesh
-        segment.attributes[red_id+1] = value;
-        segment.attributes[red_id+2] = value;
+        for (int i = 0; i<3; i++)
+        {
+          segment.attributes[red_id+i] = attribute_ids[i] == -1 ? colour[i] : segment.attributes[attribute_ids[i]];
+        }
       }
     }
   }
@@ -102,12 +132,14 @@ int main(int argc, char *argv[])
   {
     for (auto &tree: forest.trees)
     {
-      double value = tree.segments()[0].attributes[attribute_id];
+      Eigen::Vector3d col;
+      for (int i = 0; i<3; i++)
+        col[i] = attribute_ids[i] == -1 ? colour[i] : tree.segments()[0].attributes[attribute_ids[i]];
       for (auto &segment: tree.segments())
       {
-        segment.attributes[red_id+0] = value; // we don't normalise to max value here, only when generating the mesh
-        segment.attributes[red_id+1] = value;
-        segment.attributes[red_id+2] = value;
+        segment.attributes[red_id+0] = col[0]; 
+        segment.attributes[red_id+1] = col[1];
+        segment.attributes[red_id+2] = col[2];
       }
     }    
   }
@@ -130,7 +162,7 @@ int main(int argc, char *argv[])
     int tree_radius_id = -1;
     for (size_t i = 0; i<forest.trees[0].attributes().size(); i++)
       if (forest.trees[0].attributes()[i] == "subtree_radius")
-        tree_radius_id = i;
+        tree_radius_id = (int)i;
     double trunk_to_tree_radius_scale = 10.0;
     bool trunks_only = forest.trees[0].segments().size() == 1;
     if (tree_radius_id == -1 && trunks_only)

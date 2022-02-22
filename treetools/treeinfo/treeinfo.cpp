@@ -86,21 +86,25 @@ int main(int argc, char *argv[])
     }
   }
   // Fill in blank attributes across the whole structure
+  double min_branch_radius = 1e10;
   for (auto &tree: forest.trees)
   {
     for (auto &new_at: new_attributes)
        tree.attributes().push_back(new_at);
     for (auto &segment: tree.segments())
     {
+      min_branch_radius = std::min(min_branch_radius, segment.radius);
       for (size_t i = 0; i<new_attributes.size(); i++)
       {
         segment.attributes.push_back(0);
       }
     }
   }
+  const double taper_ratio = 100.0;
+  double extension = taper_ratio * min_branch_radius;
+  std::cout << "minimum branch diameter: " << 200.0 * min_branch_radius << " cm, so adding " << extension << " m to branch lengths" << std::endl; 
 
 
-  double min_branch_radius = 1e10;
   double total_volume = 0.0;
   double min_volume = 1e10, max_volume = -1e10;
   double total_diameter = 0.0;
@@ -135,7 +139,7 @@ int main(int argc, char *argv[])
         int j = tree.segments()[I].parent_id;
         while (j != -1)
         {
-          double dist = (tip - tree.segments()[j].tip).norm();
+          double dist = extension + (tip - tree.segments()[j].tip).norm();
           double &length = tree.segments()[I].attributes[length_id];
           if (dist > length)
           {
@@ -213,7 +217,6 @@ int main(int argc, char *argv[])
     for (size_t i = 1; i<tree.segments().size(); i++)
     {
       auto &branch = tree.segments()[i];
-      min_branch_radius = std::min(min_branch_radius, branch.radius);
       double volume = ray::kPi * (branch.tip - tree.segments()[branch.parent_id].tip).norm() * branch.radius*branch.radius;
       branch.attributes[volume_id] = volume;
       branch.attributes[diameter_id] = 2.0 * branch.radius;
@@ -256,7 +259,7 @@ int main(int argc, char *argv[])
   }
   
 
-  std::cout << "Number of trees: " << forest.trees.size() << ", minimum branch diameter: " << 200.0 * min_branch_radius << " cm" << std::endl;
+  std::cout << "Number of trees: " << forest.trees.size() << std::endl;
   std::cout << "Total volume of wood: " << total_volume << " m^3. Min/mean/max: " << min_volume << ", " << total_volume/(double)forest.trees.size() << ", " << max_volume << " m^3" << std::endl;
   std::cout << "Using example wood density of 0.5 Tonnes/m^3: Total mass of wood: " << 0.5 * total_volume << " Tonnes. Min/mean/max: " << 500.0*min_volume << ", " << 500.0*total_volume/(double)forest.trees.size() << ", " << 500.0*max_volume << " kg" << std::endl;
   std::cout << "Mean trunk diameter: " << total_diameter / (double)forest.trees.size() << " m. Min/max: " << min_diameter << ", " << max_diameter << " m" << std::endl;
