@@ -17,7 +17,7 @@ void usage(int exit_code = 1)
 {
   std::cout << "Split a tree file around a criterion" << std::endl;
   std::cout << "usage:" << std::endl;
-  std::cout << "treesplit forest.txt radius 0.1   - split around tree radius" << std::endl;
+  std::cout << "treesplit forest.txt radius 0.1   - split around tree radius (or any other attribute)" << std::endl;
   std::cout << "                     plane 0,0,1  - split around horizontal plane at height 1" << std::endl;
   std::cout << "                     colour 0,0,1 - split around colour green value 1" << std::endl;
   std::cout << "                     box rx,ry,rz - split around a centred box of the given radii" << std::endl;
@@ -27,16 +27,19 @@ void usage(int exit_code = 1)
 // Read in a ray cloud and convert it into an array for topological optimisation
 int main(int argc, char *argv[])
 {
-  ray::FileArgument forest_file;
+  ray::FileArgument forest_file, attribute(false);
   ray::Vector3dArgument coord;
 
-  ray::DoubleArgument radius(0.001,1000.0);
+  ray::DoubleArgument value(0.0,10000.0), radius(0.0,10000.0);
   ray::Vector3dArgument plane, colour, box;
   ray::KeyValueChoice choice({"plane", "colour", "radius", "box"}, 
-                             {&plane, &colour,  &radius, &box});
+                             {&plane, &colour, &radius, &box});
 
   bool parsed = ray::parseCommandLine(argc, argv, {&forest_file, &choice});
+  bool attribute_format = false;
   if (!parsed)
+    attribute_format = ray::parseCommandLine(argc, argv, {&forest_file, &attribute, &value});
+  if (!parsed && !attribute_format)
   {
     usage();
   }
@@ -48,7 +51,30 @@ int main(int argc, char *argv[])
   }  
 
   ray::ForestStructure forest_in, forest_out;
-  if (choice.selectedKey() == "radius")
+  if (attribute_format)
+  {
+    auto &att = forest.trees[0].attributes();
+    int attribute_id = -1;
+    const auto &it = std::find(att.begin(), att.end(), attribute.name());
+    if (it != att.end())
+    {
+      attribute_id = (int)(it - att.begin()); // we always assume that red is followed immediately by attributes green and blue
+    }
+    else
+    {
+      std::cerr << "Error: attribute " << attribute.name() << " was not found in " << forest_file.name() << std::endl;
+      usage();
+    }
+
+    for (auto &tree: forest.trees)
+    {
+      if (tree.segments()[0].attributes[attribute_id] < value.value())
+        forest_in.trees.push_back(tree);
+      else
+        forest_out.trees.push_back(tree);
+    }
+  }
+  else if (choice.selectedKey() == "radius")
   {
     for (auto &tree: forest.trees)
     {
