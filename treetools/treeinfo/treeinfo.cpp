@@ -58,13 +58,14 @@ int main(int argc, char *argv[])
   std::cout << std::endl;
   
   int num_attributes = (int)forest.trees[0].attributes().size();
-  std::vector<std::string> new_attributes = {"volume", "diameter", "length", "strength", "dominance", "angle"};
+  std::vector<std::string> new_attributes = {"volume", "diameter", "length", "strength", "min_strength", "dominance", "angle"};
   int volume_id = num_attributes+0;
   int diameter_id = num_attributes+1;
   int length_id = num_attributes+2;
   int strength_id = num_attributes+3;
-  int dominance_id = num_attributes+4;
-  int angle_id = num_attributes+5;
+  int min_strength_id = num_attributes+4;
+  int dominance_id = num_attributes+5;
+  int angle_id = num_attributes+6;
   auto &att = forest.trees[0].attributes();
   for (auto &new_at: new_attributes)
   {
@@ -218,7 +219,23 @@ int main(int argc, char *argv[])
     total_strength += tree_strength;
     min_strength = std::min(min_strength, tree_strength);
     max_strength = std::max(max_strength, tree_strength);
+  
+    // alright, now how do we get the minimum strength from tip to root?
+    for (auto &segment: tree.segments())
+      segment.attributes[min_strength_id] = 1e10;
+    std::vector<int> inds = {1};
+    for (size_t i = 0; i<inds.size(); i++)
+    {
+      int j = inds[i];
+      auto &seg = tree.segments()[j];
+      seg.attributes[min_strength_id] = std::min(seg.attributes[strength_id], tree.segments()[seg.parent_id].attributes[min_strength_id]);
+      for (auto &child: children[j])
+        inds.push_back(child);
+    }
+    tree.segments()[0].attributes[min_strength_id] = tree.segments()[0].attributes[strength_id]; // no different
   }
+  
+
   std::cout << "Number of trees: " << forest.trees.size() << ", minimum branch diameter: " << 200.0 * min_branch_radius << " cm" << std::endl;
   std::cout << "Total volume of wood: " << total_volume << " m^3. Min/mean/max: " << min_volume << ", " << total_volume/(double)forest.trees.size() << ", " << max_volume << " m^3" << std::endl;
   std::cout << "Using example wood density of 0.5 Tonnes/m^3: Total mass of wood: " << 0.5 * total_volume << " Tonnes. Min/mean/max: " << 500.0*min_volume << ", " << 500.0*total_volume/(double)forest.trees.size() << ", " << 500.0*max_volume << " kg" << std::endl;
