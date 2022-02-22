@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
     // temporarily get the children list, it helps
     std::vector< std::vector<int> > children(tree.segments().size());
     for (size_t i = 1; i<tree.segments().size(); i++)
-      children[tree.segments()[i].parent_id].push_back(i);
+      children[tree.segments()[i].parent_id].push_back((int)i);
     std::vector<int> new_index(tree.segments().size());
     std::vector<int> counts(tree.segments().size()); // count up from each branch point
     new_index[0] = 0;
