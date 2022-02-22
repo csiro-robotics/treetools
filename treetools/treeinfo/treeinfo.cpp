@@ -59,12 +59,13 @@ int main(int argc, char *argv[])
   std::cout << "Number of trees: " << forest.trees.size() << std::endl;
   
   int num_attributes = (int)forest.trees[0].attributes().size();
-  std::vector<std::string> new_attributes = {"volume", "diameter", "length", "strength", "dominance"};
+  std::vector<std::string> new_attributes = {"volume", "diameter", "length", "strength", "dominance", "angle"};
   int volume_id = num_attributes+0;
   int diameter_id = num_attributes+1;
   int length_id = num_attributes+2;
   int strength_id = num_attributes+3;
   int dominance_id = num_attributes+4;
+  int angle_id = num_attributes+5;
   auto &att = forest.trees[0].attributes();
   for (auto &new_at: new_attributes)
   {
@@ -99,6 +100,8 @@ int main(int argc, char *argv[])
   double min_strength = 1e10, max_strength = -1e10;
   double total_dominance = 0.0;
   double min_dominance = 1e10, max_dominance = -1e10;
+  double total_angle = 0.0;
+  double min_angle = 1e10, max_angle = -1e10;
   for (auto &tree: forest.trees)
   {
     // get the children
@@ -107,6 +110,7 @@ int main(int argc, char *argv[])
       children[tree.segments()[i].parent_id].push_back((int)i);
 
     double tree_dominance = 0.0;
+    double tree_angle = 0.0;
     double total_weight = 0.0;
     for (size_t i = 1; i<tree.segments().size(); i++)
     {
@@ -137,19 +141,27 @@ int main(int argc, char *argv[])
       {
         double max_rad = -1.0;
         double second_max = -1.0;
+        Eigen::Vector3d dir1(0,0,0), dir2(0,0,0);
         for (auto &child: children[i])
         {
           double rad = tree.segments()[child].radius;
-          if (children[child].size() == 1) // we go up a segment if we can, as it the radius will have settled better here
+          Eigen::Vector3d dir = tree.segments()[child].tip - tree.segments()[i].tip;
+          if (children[child].size() == 1) // we go up a segment if we can, as the radius and angle will have settled better here
+          {
             rad = tree.segments()[children[child][0]].radius; 
+            dir = tree.segments()[children[child][0]].tip - tree.segments()[child].tip;
+          }
           if (rad > max_rad)
           {
             second_max = max_rad;
             max_rad = rad;
+            dir2 = dir1;
+            dir1 = dir;
           }
           else if (rad > second_max)
           {
             second_max = rad;
+            dir2 = dir;
           }
         }
         double weight = sqr(max_rad) + sqr(second_max);
@@ -159,13 +171,21 @@ int main(int argc, char *argv[])
         // if we spread to leaves then base will be empty, if we spread to parent then leave will be empty...
         tree_dominance += weight * dominance;
         total_weight += weight;
+        double branch_angle = (180.0/ray::kPi) * std::atan2(dir1.cross(dir2).norm(), dir1.dot(dir2));
+        tree.segments()[i].attributes[angle_id] = branch_angle;
+        tree_angle += weight * branch_angle;
       }
     }
     tree_dominance /= total_weight;
+    tree_angle /= total_weight;
     tree.segments()[0].attributes[dominance_id] = tree_dominance;
+    tree.segments()[0].attributes[angle_id] = tree_angle;
     total_dominance += tree_dominance;
     min_dominance = std::min(min_dominance, tree_dominance);
     max_dominance = std::max(max_dominance, tree_dominance);    
+    total_angle += tree_angle;
+    min_angle = std::min(min_angle, tree_angle);
+    max_angle = std::max(max_angle, tree_angle);    
 
     double tree_volume = 0.0;
     double tree_diameter = 0.0;
@@ -204,7 +224,9 @@ int main(int argc, char *argv[])
   std::cout << "Mean tree height: " << total_height / (double)forest.trees.size() << " m. Min/max: " << min_height << ", " << max_height << " m" << std::endl;
   std::cout << "Mean trunk strength (diam^0.75/length): " << total_strength / (double)forest.trees.size() << ". Min/max: " << min_strength << ", " << max_strength << std::endl;
   std::cout << "Mean branch dominance (0 to 1): " << total_dominance / (double)forest.trees.size() << ". Min/max: " << min_dominance << ", " << max_dominance << std::endl;
-
+  std::cout << "Mean branch angle: " << total_angle / (double)forest.trees.size() << " degrees. Min/max: " << min_angle << ", " << max_angle << " degrees" << std::endl;
+  std::cout << std::endl;
+  std::cout << "saving per-tree and per-segment data to file" << std::endl;
   forest.save(forest_file.nameStub() + "_info.txt");
   return 1;
 }
