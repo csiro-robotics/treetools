@@ -84,9 +84,15 @@ int main(int argc, char *argv[])
   if (red_id != -1)
   {
     bool is_int8 = true;
-    auto &segment0 = forest.trees[0].segments()[0];
-    if (std::fmod(segment0.attributes[red_id], 1.0) > 1e-10 || segment0.attributes[red_id]>255.0)
-      is_int8 = false;
+    for (auto &tree: forest.trees)
+    {
+      for (auto &seg: tree.segments())
+      {
+        double mod = std::fmod(seg.attributes[red_id], 1.0);
+        if ((mod > 1e-10 & mod < 0.9999) || seg.attributes[red_id] <= -1.0 || seg.attributes[red_id]>=256.0)
+          is_int8 = false;
+      }
+    }
     if (!is_int8) // then we ought to scale it
     {
       double max_col = 0.0;
