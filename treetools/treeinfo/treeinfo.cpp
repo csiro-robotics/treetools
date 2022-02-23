@@ -36,19 +36,21 @@ void usage(int exit_code = 1)
 
 // TODO: this relies on segment 0's radius being accurate. If we allow linear interpolation of radii then this should always be tree
 // rather than it being zero or undefined, or total radius or something
-void setTrunkBend(ray::TreeStructure &tree, const std::vector< std::vector<int> > &children, int bend_id)
+void setTrunkBend(ray::TreeStructure &tree, const std::vector< std::vector<int> > &children, int bend_id, int length_id)
 {
   // get the trunk
   std::vector<int> ids = {0};
   for (size_t i = 0; i<ids.size(); i++)
   {
-    double max_rad = -1;
+    double max_score = -1;
     int largest_child = -1;
     for (const auto &child: children[ids[i]])
     {
-      if (tree.segments()[child].radius > max_rad)
+      // we pick the route which has the longer and wider branch
+      double score = tree.segments()[child].radius * tree.segments()[child].attributes[length_id];
+      if (score > max_score)
       {
-        max_rad = tree.segments()[child].radius;
+        max_score = score;
         largest_child = child;
       }
     }
@@ -228,8 +230,6 @@ int main(int argc, char *argv[])
     for (size_t i = 1; i<tree.segments().size(); i++)
       children[tree.segments()[i].parent_id].push_back((int)i);
 
-    setTrunkBend(tree, children, bend_id);
-
     double tree_dominance = 0.0;
     double tree_angle = 0.0;
     double total_weight = 0.0;
@@ -301,6 +301,7 @@ int main(int argc, char *argv[])
     }
     for (auto &child: children[0])
       tree.segments()[0].attributes[length_id] = std::max(tree.segments()[0].attributes[length_id], tree.segments()[child].attributes[length_id]);
+    setTrunkBend(tree, children, bend_id, length_id);
     
     if (total_weight > 0.0)
     {
