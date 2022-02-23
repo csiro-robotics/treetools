@@ -28,9 +28,109 @@ void usage(int exit_code = 1)
   std::cout << "  min_strength: minimum strength between this segment and root" << std::endl;
   std::cout << "  dominance: a1/(a1+a2) for first and second largest child branches / mean for tree" << std::endl;
   std::cout << "  angle: angle between branches at each branch point / mean branch angle" << std::endl;
+  std::cout << "  bend: bend of main trunk (standard deviation from straight line / length)" << std::endl;
   std::cout << "Use treecolour 'field' to colour per-segment or treecolour trunk 'field' to colour per tree from root segment." << std::endl;
   std::cout << "Then use treemesh to render based on this colour output." << std::endl;
   exit(exit_code);
+}
+
+// TODO: this relies on segment 0's radius being accurate. If we allow linear interpolation of radii then this should always be tree
+// rather than it being zero or undefined, or total radius or something
+void setTrunkBend(ray::TreeStructure &tree, const std::vector< std::vector<int> > &children, int bend_id)
+{
+  // get the trunk
+  std::vector<int> ids = {0};
+  for (size_t i = 0; i<ids.size(); i++)
+  {
+    double max_rad = -1;
+    int largest_child = -1;
+    for (const auto &child: children[ids[i]])
+    {
+      if (tree.segments()[child].radius > max_rad)
+      {
+        max_rad = tree.segments()[child].radius;
+        largest_child = child;
+      }
+    }
+    if (largest_child != -1)
+    {
+      ids.push_back(largest_child);
+    }
+  }
+  if (ids.size() <= 2) // zero bend in these edge cases
+    return;
+
+  double length = (tree.segments()[0].tip - tree.segments()[ids.back()].tip).norm();
+  struct Accumulator
+  {
+    Accumulator(): x(0), y(0,0), xy(0,0), x2(0) {}
+    double x;
+    Eigen::Vector2d y;
+    Eigen::Vector2d xy;
+    double x2;
+  };
+  Accumulator sum;
+  Eigen::Vector3d mean(0,0,0);
+  double total_weight = 1e-10;
+  for (auto &id: ids)
+  {
+    auto &seg = tree.segments()[id];
+    double weight = sqr(seg.radius);
+    total_weight += weight;
+    mean += weight*seg.tip;
+  }
+  mean /= total_weight;
+
+  for (auto &id: ids)
+  {
+    auto &seg = tree.segments()[id];
+    Eigen::Vector3d to_point = seg.tip - mean;
+    Eigen::Vector2d offset(to_point[0], to_point[1]);
+    double w = sqr(seg.radius); 
+    double h = to_point[2];
+    sum.x += h*w;
+    sum.y += offset*w;
+    sum.xy += h*offset*w;
+    sum.x2 += h*h*w;
+  }
+
+  // based on http://mathworld.wolfram.com/LeastSquaresFitting.html
+  Eigen::Vector2d sXY = sum.xy - sum.x*sum.y/total_weight;
+  double sXX = sum.x2 - sum.x*sum.x/total_weight;
+  if (std::abs(sXX) > 1e-10)
+    sXY /= sXX;
+
+  Eigen::Vector3d grad(sXY[0], sXY[1], 1.0);
+
+  // now get sigma relative to the line
+  double variance = 0.0;
+  for (auto &id: ids)
+  {
+    auto &seg = tree.segments()[id];
+    double h = seg.tip[2] - mean[2];
+    Eigen::Vector3d pos = mean + grad * h;
+    Eigen::Vector3d dif = (pos - seg.tip);
+    dif[2] = 0.0;
+    variance += dif.squaredNorm() * sqr(seg.radius);
+  }
+  variance /= total_weight;
+  double sigma = std::sqrt(variance);
+  double bend = sigma / length;
+ /* if (ids.size() == 2)
+  {
+    std::cout << "points: " << tree.segments()[ids[0]].tip.transpose() << ", " << tree.segments()[ids[1]].tip.transpose() << std::endl;
+    std::cout << "mean: " << mean.transpose() << ", grad: " << grad.transpose() << ", sigma: " << sigma << ", length: " << length << ", bend: " << bend << std::endl;   
+  }
+  if (ids.size() == 3)
+  {
+    std::cout << "points: " << tree.segments()[ids[0]].tip.transpose() << ", " << tree.segments()[ids[1]].tip.transpose() << ", " << tree.segments()[ids[2]].tip.transpose() << std::endl;
+    std::cout << "mean: " << mean.transpose() << ", grad: " << grad.transpose() << ", sigma: " << sigma << ", length: " << length << ", bend: " << bend << std::endl;   
+  }*/
+
+  for (auto &id: ids)
+  {
+    tree.segments()[id].attributes[bend_id] = bend;
+  }
 }
 
 // Read in a ray cloud and convert it into an array for topological optimisation
@@ -68,7 +168,7 @@ int main(int argc, char *argv[])
   std::cout << std::endl;
   
   int num_attributes = (int)forest.trees[0].attributes().size();
-  std::vector<std::string> new_attributes = {"volume", "diameter", "length", "strength", "min_strength", "dominance", "angle"};
+  std::vector<std::string> new_attributes = {"volume", "diameter", "length", "strength", "min_strength", "dominance", "angle", "bend"};
   int volume_id = num_attributes+0;
   int diameter_id = num_attributes+1;
   int length_id = num_attributes+2;
@@ -76,6 +176,7 @@ int main(int argc, char *argv[])
   int min_strength_id = num_attributes+4;
   int dominance_id = num_attributes+5;
   int angle_id = num_attributes+6;
+  int bend_id = num_attributes+7;
   auto &att = forest.trees[0].attributes();
   for (auto &new_at: new_attributes)
   {
@@ -117,6 +218,8 @@ int main(int argc, char *argv[])
   double min_dominance = 1e10, max_dominance = -1e10;
   double total_angle = 0.0;
   double min_angle = 1e10, max_angle = -1e10;
+  double total_bend = 0.0;
+  double min_bend = 1e10, max_bend = -1e10;
   int num_branched_trees = 0;
   for (auto &tree: forest.trees)
   {
@@ -124,6 +227,8 @@ int main(int argc, char *argv[])
     std::vector< std::vector<int> > children(tree.segments().size());
     for (size_t i = 1; i<tree.segments().size(); i++)
       children[tree.segments()[i].parent_id].push_back((int)i);
+
+    setTrunkBend(tree, children, bend_id);
 
     double tree_dominance = 0.0;
     double tree_angle = 0.0;
@@ -242,6 +347,10 @@ int main(int argc, char *argv[])
     total_strength += tree_strength;
     min_strength = std::min(min_strength, tree_strength);
     max_strength = std::max(max_strength, tree_strength);
+    double tree_bend = tree.segments()[0].attributes[bend_id];
+    total_bend += tree_bend;
+    min_bend = std::min(min_bend, tree_bend);
+    max_bend = std::max(max_bend, tree_bend);
   
     // alright, now how do we get the minimum strength from tip to root?
     for (auto &segment: tree.segments())
@@ -267,6 +376,7 @@ int main(int argc, char *argv[])
   std::cout << "Mean trunk strength (diam^0.75/length): " << total_strength / (double)forest.trees.size() << ". Min/max: " << min_strength << ", " << max_strength << std::endl;
   std::cout << "Mean branch dominance (0 to 1): " << total_dominance / (double)num_branched_trees << ". Min/max: " << min_dominance << ", " << max_dominance << std::endl;
   std::cout << "Mean branch angle: " << total_angle / (double)num_branched_trees << " degrees. Min/max: " << min_angle << ", " << max_angle << " degrees" << std::endl;
+  std::cout << "Mean trunk bend: " << total_bend / (double)forest.trees.size() << ". Min/max: " << min_bend << ", " << max_bend << " degrees" << std::endl;
   std::cout << std::endl;
   std::cout << "saving per-tree and per-segment data to file" << std::endl;
   forest.save(forest_file.nameStub() + "_info.txt");
