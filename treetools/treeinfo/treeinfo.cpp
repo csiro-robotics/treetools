@@ -203,9 +203,9 @@ int main(int argc, char *argv[])
       }
     }
   }
-  const double taper_ratio = 100.0;
-  double extension = taper_ratio * min_branch_radius;
-  std::cout << "minimum branch diameter: " << 200.0 * min_branch_radius << " cm, so adding " << extension << " m to branch lengths" << std::endl; 
+  const double broken_diameter = 0.6; // larger than this is considered a broken branch and not extended
+  const double taper_ratio = 140.0;
+  std::cout << "minimum branch diameter: " << 200.0 * min_branch_radius << " cm" << std::endl; 
 
 
   double total_volume = 0.0;
@@ -240,6 +240,7 @@ int main(int argc, char *argv[])
       if (children[i].empty()) // so it is a leaf
       {
         Eigen::Vector3d tip = tree.segments()[i].tip;
+        const double extension = 2.0*tree.segments()[i].radius > broken_diameter ? 0.0 : (taper_ratio * tree.segments()[i].radius);
         int I = (int)i;
         int j = tree.segments()[I].parent_id;
         while (j != -1)

@@ -13,9 +13,11 @@
 
 void usage(int exit_code = 1)
 {
-  std::cout << "Export the trees to a mesh" << std::endl;
+  std::cout << "Export the trees to a mesh, auto scaling any colour by default" << std::endl;
   std::cout << "usage:" << std::endl;
   std::cout << "treemesh forest.txt" << std::endl;
+  std::cout << "                    --max_colour 1 - specify the value that gives full brightness" << std::endl;
+  std::cout << "                    --max_colour 1,0.1,1 - per-channel maximums" << std::endl;
   exit(exit_code);
 }
 
@@ -54,8 +56,14 @@ void addCylinder(ray::Mesh &mesh, const Eigen::Vector3d &pos1, const Eigen::Vect
 int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file;
-  bool parsed = ray::parseCommandLine(argc, argv, {&forest_file});
-  if (!parsed)
+  ray::DoubleArgument max_brightness;
+  ray::Vector3dArgument max_colour;
+  ray::OptionalKeyValueArgument max_brightness_option("max_colour", 'm', &max_brightness);
+  ray::OptionalKeyValueArgument max_colour_option("max_colour", 'm', &max_colour);
+
+  bool max_brightness_format = ray::parseCommandLine(argc, argv, {&forest_file}, {&max_brightness_option});
+  bool max_colour_format = ray::parseCommandLine(argc, argv, {&forest_file}, {&max_colour_option});
+  if (!max_brightness_format && !max_colour_format)
   {
     usage();
   }
@@ -80,20 +88,22 @@ int main(int argc, char *argv[])
   {
     red_id = (int)(it - att.begin());
   }
-  double col_scale = 1.0;
+  double red_scale = 1.0;
+  double green_scale = 1.0;
+  double blue_scale = 1.0;
   if (red_id != -1)
   {
-    bool is_int8 = true;
-    for (auto &tree: forest.trees)
+    if (max_brightness_option.isSet())
     {
-      for (auto &seg: tree.segments())
-      {
-        double mod = std::fmod(seg.attributes[red_id], 1.0);
-        if ((mod > 1e-10 & mod < 0.9999) || seg.attributes[red_id] <= -1.0 || seg.attributes[red_id]>=256.0)
-          is_int8 = false;
-      }
+      red_scale = green_scale = blue_scale = 255.0 / max_brightness.value();
     }
-    if (!is_int8) // then we ought to scale it
+    else if (max_colour_option.isSet())
+    {
+      red_scale = 255.0 / max_colour.value()[0];
+      green_scale = 255.0 / max_colour.value()[1];
+      blue_scale = 255.0 / max_colour.value()[2];
+    }
+    else // then we ought to auto-scale
     {
       double max_col = 0.0;
       for (auto &tree: forest.trees)
@@ -104,8 +114,8 @@ int main(int argc, char *argv[])
             max_col = std::max(max_col, segment.attributes[red_id+i]);
         }
       }
-      col_scale = 255.0 / max_col;
-      std::cout << "tree colour values are not 0-255 integers, so rescaling according to maximum colour, by " << 1.0/max_col << std::endl;
+      red_scale = green_scale = blue_scale = 255.0 / max_col;
+      std::cout << "auto re-scaling colour based on max colour value of " << max_col << std::endl;
     }
   }
   ray::Mesh mesh;
@@ -118,9 +128,9 @@ int main(int argc, char *argv[])
       rgba.red = 127; rgba.green = 127; rgba.blue = 127; rgba.alpha = 255;
       if (red_id != -1)
       {
-        rgba.red = uint8_t(col_scale * segment.attributes[red_id]);
-        rgba.green = uint8_t(col_scale * segment.attributes[red_id+1]);
-        rgba.blue = uint8_t(col_scale * segment.attributes[red_id+2]);
+        rgba.red = uint8_t(std::min(red_scale * segment.attributes[red_id], 255.0));
+        rgba.green = uint8_t(std::min(green_scale * segment.attributes[red_id+1], 255.0));
+        rgba.blue = uint8_t(std::min(blue_scale * segment.attributes[red_id+2], 255.0));
       }
       addCylinder(mesh, segment.tip, tree.segments()[segment.parent_id].tip, segment.radius, rgba);
     }
