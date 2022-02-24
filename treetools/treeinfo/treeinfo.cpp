@@ -118,16 +118,6 @@ void setTrunkBend(ray::TreeStructure &tree, const std::vector< std::vector<int> 
   variance /= total_weight;
   double sigma = std::sqrt(variance);
   double bend = sigma / length;
- /* if (ids.size() == 2)
-  {
-    std::cout << "points: " << tree.segments()[ids[0]].tip.transpose() << ", " << tree.segments()[ids[1]].tip.transpose() << std::endl;
-    std::cout << "mean: " << mean.transpose() << ", grad: " << grad.transpose() << ", sigma: " << sigma << ", length: " << length << ", bend: " << bend << std::endl;   
-  }
-  if (ids.size() == 3)
-  {
-    std::cout << "points: " << tree.segments()[ids[0]].tip.transpose() << ", " << tree.segments()[ids[1]].tip.transpose() << ", " << tree.segments()[ids[2]].tip.transpose() << std::endl;
-    std::cout << "mean: " << mean.transpose() << ", grad: " << grad.transpose() << ", sigma: " << sigma << ", length: " << length << ", bend: " << bend << std::endl;   
-  }*/
 
   for (auto &id: ids)
   {
@@ -233,13 +223,16 @@ int main(int argc, char *argv[])
     double tree_dominance = 0.0;
     double tree_angle = 0.0;
     double total_weight = 0.0;
+    double tree_height = 0;
     for (size_t i = 1; i<tree.segments().size(); i++)
     {
+      tree_height = std::max(tree_height, tree.segments()[i].tip[2] - tree.segments()[0].tip[2]);
       // for each leaf, iterate to trunk updating the maximum length...
       // TODO: would path length be better?
       if (children[i].empty()) // so it is a leaf
       {
-        Eigen::Vector3d tip = tree.segments()[i].tip;
+        // old version:
+/*      Eigen::Vector3d tip = tree.segments()[i].tip;
         const double extension = 2.0*tree.segments()[i].radius > broken_diameter ? 0.0 : (taper_ratio * tree.segments()[i].radius);
         int I = (int)i;
         int j = tree.segments()[I].parent_id;
@@ -256,6 +249,28 @@ int main(int argc, char *argv[])
             // TODO: this is a shortcut that won't work all the time, making the length a little approximate
             break; // remove to make it slower but exact
           }
+          I = j;
+          j = tree.segments()[I].parent_id;
+        }
+*/        
+        const double extension = 2.0*tree.segments()[i].radius > broken_diameter ? 0.0 : (taper_ratio * tree.segments()[i].radius);
+        int I = (int)i;
+        int j = tree.segments()[I].parent_id;
+        tree.segments()[I].attributes[length_id] = extension;
+        int child = I;
+        while (j != -1)
+        {
+          double dist = tree.segments()[child].attributes[length_id] + (tree.segments()[I].tip - tree.segments()[j].tip).norm();
+          double &length = tree.segments()[I].attributes[length_id];
+          if (dist > length)
+          {
+            length = dist;
+          }
+          else
+          {
+            break; 
+          }
+          child = I;
           I = j;
           j = tree.segments()[I].parent_id;
         }
@@ -340,11 +355,10 @@ int main(int argc, char *argv[])
     total_diameter += tree_diameter;
     min_diameter = std::min(min_diameter, tree_diameter);
     max_diameter = std::max(max_diameter, tree_diameter);
-    double tree_height = tree.segments()[0].attributes[length_id];
     total_height += tree_height;
     min_height = std::min(min_height, tree_height);
     max_height = std::max(max_height, tree_height);
-    tree.segments()[0].attributes[strength_id] = std::pow(tree_diameter, 3.0/4.0) / tree_height;
+    tree.segments()[0].attributes[strength_id] = std::pow(tree_diameter, 3.0/4.0) / std::max(1e-10, tree.segments()[0].attributes[length_id]);
     double tree_strength = tree.segments()[0].attributes[strength_id];
     total_strength += tree_strength;
     min_strength = std::min(min_strength, tree_strength);
