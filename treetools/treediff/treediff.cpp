@@ -15,11 +15,11 @@ void usage(int exit_code = 1)
   std::cout << "Difference information on two tree files" << std::endl;
   std::cout << "usage:" << std::endl;
   std::cout << "treediff forest1.txt forest2.txt - difference information from forest1 to forest2" << std::endl;
-  std::cout << "                            --disable_growth - does not calculate growth of tree (faster)" << std::endl;
+  std::cout << "                            --include_growth - estimates radius growth of tree (slower)" << std::endl;
   exit(exit_code);
 }
 
-double treeOverlapVolume(const ray::TreeStructure &tree1, const ray::TreeStructure &tree2, double tree1_scale)
+double treeOverlapVolume(const ray::TreeStructure &tree1, const ray::TreeStructure &tree2, double tree1_rad_scale)
 {
   double volume = 0.0;
   const double eps = 1e-7;
@@ -27,12 +27,12 @@ double treeOverlapVolume(const ray::TreeStructure &tree1, const ray::TreeStructu
   {
     auto &branch = tree1.segments()[i];
     Eigen::Vector3d base = tree1.segments()[branch.parent_id].tip;
-    tree::Cylinder cyl1(tree1_scale * (branch.tip - tree1.root()), tree1_scale * (base - tree1.root()), tree1_scale*branch.radius);
+    tree::Cylinder cyl1(branch.tip, base, tree1_rad_scale*branch.radius);
     for (size_t j = 1; j<tree2.segments().size(); j++)
     {
       auto &other = tree2.segments()[j];
       Eigen::Vector3d base2 = tree2.segments()[other.parent_id].tip;
-      tree::Cylinder cyl2(other.tip - tree2.root(), base2 - tree2.root(), other.radius);
+      tree::Cylinder cyl2(other.tip, base2, other.radius);
       if ((cyl2.v2 - cyl2.v1).squaredNorm() < eps)
         continue;
       volume += tree::intersectionVolume(cyl1, cyl2);
@@ -46,8 +46,8 @@ double treeOverlapVolume(const ray::TreeStructure &tree1, const ray::TreeStructu
 int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file1, forest_file2;
-  ray::OptionalFlagArgument disable_growth("disable_growth", 'd');
-  bool parsed = ray::parseCommandLine(argc, argv, {&forest_file1, &forest_file2}, {&disable_growth});
+  ray::OptionalFlagArgument include_growth("include_growth", 'i');
+  bool parsed = ray::parseCommandLine(argc, argv, {&forest_file1, &forest_file2}, {&include_growth});
   if (!parsed)
   {
     usage();
@@ -134,12 +134,7 @@ int main(int argc, char *argv[])
     double scale_mid = 1.0;
     double max_overlap = 0.0;
     double max_overlap_percent = 0.0;
-    if (disable_growth.isSet())
-    {
-      max_overlap = treeOverlapVolume(tree1, tree2, scale_mid);
-      max_overlap_percent = max_overlap * 2.0 / (scale_mid*scale_mid*scale_mid*tree1_volume + tree2_volume);
-    }
-    else
+    if (include_growth.isSet())
     {
       double scale_range = 0.5; // actually the half-range
       const double divisions = 5.0;
@@ -147,15 +142,15 @@ int main(int argc, char *argv[])
       {
         max_overlap_percent = 0.0;
         double max_overlap_scale = 0;
-        for (double scale = scale_mid-scale_range; scale <= scale_mid+scale_range; scale += scale_range/divisions)
+        for (double rad_scale = scale_mid-scale_range; rad_scale <= scale_mid+scale_range; rad_scale += scale_range/divisions)
         {
-          double overlap = treeOverlapVolume(tree1, tree2, scale);
-          double overlap_percent = overlap * 2.0 / (scale*scale*scale*tree1_volume + tree2_volume);
+          double overlap = treeOverlapVolume(tree1, tree2, rad_scale);
+          double overlap_percent = overlap * 2.0 / (rad_scale*rad_scale*tree1_volume + tree2_volume);
           if (overlap_percent > max_overlap_percent)
           {
             max_overlap = overlap;
             max_overlap_percent = overlap_percent;
-            max_overlap_scale = scale;
+            max_overlap_scale = rad_scale;
           }
         }
         if (max_overlap_scale == 0.0)
@@ -167,11 +162,16 @@ int main(int argc, char *argv[])
       max_growth = std::max(max_growth, scale_mid);
       min_growth = std::min(min_growth, scale_mid);
     }
+    else
+    {
+      max_overlap = treeOverlapVolume(tree1, tree2, scale_mid);
+      max_overlap_percent = max_overlap * 2.0 / (tree1_volume + tree2_volume);
+    }
 
     mean_overlap_percent += max_overlap_percent;
 
     // now we have a scale match, we need to look for change in volume:
-    double removed_volume = std::max(0.0, scale_mid*scale_mid*scale_mid*tree1_volume - max_overlap);
+    double removed_volume = std::max(0.0, scale_mid*scale_mid*tree1_volume - max_overlap);
     double added_volume = std::max(0.0, tree2_volume - max_overlap);
     total_volume += max_overlap;
     mean_added_volume += added_volume;
@@ -194,9 +194,9 @@ int main(int argc, char *argv[])
   mean_removed_volume /= (double)num_matches;
   mean_overlap_percent /= (double)num_matches;
   std::cout << "mean tree percentage overlap: " << 100.0*mean_overlap_percent << "%" << std::endl;
-  if (!disable_growth.isSet())
+  if (include_growth.isSet())
   {
-    std::cout << "mean scale growth: " << 100.0*(mean_growth-1.0) << "%, min growth: " << 100.0*(min_growth - 1.0) << "%, max growth: " << 100.0*(max_growth - 1.0) << "%" << std::endl;
+    std::cout << "mean radius growth: " << 100.0*(mean_growth-1.0) << "%, min growth: " << 100.0*(min_growth - 1.0) << "%, max growth: " << 100.0*(max_growth - 1.0) << "%" << std::endl;
     std::cout << "after scaling each tree to match new version:" << std::endl;
   }
 
