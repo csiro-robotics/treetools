@@ -35,6 +35,40 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
+// calculates the power law: # data larger than x = cx^d, with correlation coefficient r2
+void calculatePowerLaw(std::vector<double> &xs, double &c, double &d, double &r2)
+{
+  std::sort(xs.begin(), xs.end());
+  std::vector<Eigen::Vector2d> loglog;
+  Eigen::Vector2d mean(0,0);
+  for (int i = 0; i<(int)xs.size(); i++)
+  {
+    Eigen::Vector2d point(std::log(xs[i]), std::log((double)(xs.size() - i)));
+    mean += point;
+    loglog.push_back(point);
+  }
+  mean /= (double)xs.size();
+
+  double xx = 1e-10, xy = 0.0, yy = 0.0;
+  for (auto &point: loglog)
+  {
+    Eigen::Vector2d p = point - mean;
+    xx += p[0]*p[0];
+    xy += p[0]*p[1];
+    yy += p[1]*p[1];
+  }
+
+  // based on http://mathworld.wolfram.com/LeastSquaresFitting.html
+  // log # = a + b * log diam
+  double b = xy/xx;
+  double a = mean[1] - b * mean[0];
+  r2 = xy*xy / (xx * yy);
+  
+  // convert from log-log back to power law
+  c = std::exp(a);
+  d = b;
+}
+
 // TODO: this relies on segment 0's radius being accurate. If we allow linear interpolation of radii then this should always be tree
 // rather than it being zero or undefined, or total radius or something
 void setTrunkBend(ray::TreeStructure &tree, const std::vector< std::vector<int> > &children, int bend_id, int length_id)
@@ -143,7 +177,7 @@ int main(int argc, char *argv[])
   }  
   if (forest.trees.size() != 0 && forest.trees[0].segments().size() == 0)
   {
-    std::cout << "grow only works on tree structures, not trunks-only files" << std::endl;
+    std::cout << "info only works on tree structures, not trunks-only files" << std::endl;
     usage();
   }
   // attributes to estimate
@@ -191,7 +225,6 @@ int main(int argc, char *argv[])
   const double taper_ratio = 140.0;
   std::cout << "minimum branch diameter: " << 200.0 * min_branch_radius << " cm" << std::endl; 
 
-
   double total_volume = 0.0;
   double min_volume = 1e10, max_volume = -1e10;
   double total_diameter = 0.0;
@@ -209,6 +242,7 @@ int main(int argc, char *argv[])
   double total_children = 0.0;
   double min_children = 1e10, max_children = -1e10;
   int num_branched_trees = 0;
+  std::vector<double> tree_lengths;
   for (auto &tree: forest.trees)
   {
     // get the children
@@ -340,6 +374,7 @@ int main(int argc, char *argv[])
     total_height += tree_height;
     min_height = std::min(min_height, tree_height);
     max_height = std::max(max_height, tree_height);
+    tree_lengths.push_back(tree.segments()[0].attributes[length_id]);
     tree.segments()[0].attributes[strength_id] = std::pow(tree_diameter, 3.0/4.0) / std::max(1e-10, tree.segments()[0].attributes[length_id]);
     double tree_strength = tree.segments()[0].attributes[strength_id];
     total_strength += tree_strength;
@@ -364,8 +399,34 @@ int main(int argc, char *argv[])
     }
     tree.segments()[0].attributes[min_strength_id] = tree.segments()[0].attributes[strength_id]; // no different
   }
-  
   std::cout << "Number of trees: " << forest.trees.size() << std::endl;
+
+  // Trunk power laws:
+  std::vector<double> diameters;
+  for (auto &tree: forest.trees)
+  {
+    diameters.push_back(2.0 * tree.segments()[0].radius);
+  }
+  double c, d, r2;
+  calculatePowerLaw(diameters, c, d, r2);
+  std::cout << "Number of trunks wider than x = " << c << "x^" << d << ". With correlation (r2) " << r2 << std::endl;
+  calculatePowerLaw(tree_lengths, c, d, r2);
+  std::cout << "Number of trees longer than l = " << c << "l^" << d << ". With correlation (r2) " << r2 << std::endl;
+
+  // Branch power laws:
+  std::vector<double> lengths;
+  for (auto &tree: forest.trees)
+  {
+    for (auto &seg: tree.segments())
+    {
+      if (seg.attributes[children_id] > 1.0)
+        lengths.push_back(seg.attributes[length_id]);
+    }
+  }  
+  calculatePowerLaw(lengths, c, d, r2);
+  std::cout << "Number of branches longer than l = " << c << "l^" << d << ". With correlation (r2) " << r2 << std::endl;
+
+
   std::cout << "Total volume of wood: " << total_volume << " m^3. Min/mean/max: " << min_volume << ", " << total_volume/(double)forest.trees.size() << ", " << max_volume << " m^3" << std::endl;
   std::cout << "Using example wood density of 0.5 Tonnes/m^3: Total mass of wood: " << 0.5 * total_volume << " Tonnes. Min/mean/max: " << 500.0*min_volume << ", " << 500.0*total_volume/(double)forest.trees.size() << ", " << 500.0*max_volume << " kg" << std::endl;
   std::cout << "Mean trunk diameter: " << total_diameter / (double)forest.trees.size() << " m. Min/max: " << min_diameter << ", " << max_diameter << " m" << std::endl;
