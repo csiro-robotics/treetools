@@ -187,7 +187,7 @@ int main(int argc, char *argv[])
   std::cout << std::endl;
   
   int num_attributes = (int)forest.trees[0].attributes().size();
-  std::vector<std::string> new_attributes = {"volume", "diameter", "length", "strength", "min_strength", "dominance", "angle", "bend", "children"};
+  std::vector<std::string> new_attributes = {"volume", "diameter", "length", "strength", "min_strength", "dominance", "angle", "bend", "children", "dimension"};
   int volume_id = num_attributes+0;
   int diameter_id = num_attributes+1;
   int length_id = num_attributes+2;
@@ -197,6 +197,7 @@ int main(int argc, char *argv[])
   int angle_id = num_attributes+6;
   int bend_id = num_attributes+7;
   int children_id = num_attributes+8;
+  int dimension_id = num_attributes+9;
   auto &att = forest.trees[0].attributes();
   for (auto &new_at: new_attributes)
   {
@@ -328,7 +329,24 @@ int main(int argc, char *argv[])
     }
     for (auto &child: children[0])
       tree.segments()[0].attributes[length_id] = std::max(tree.segments()[0].attributes[length_id], tree.segments()[child].attributes[length_id]);
+    if (children[0].size() > 0)
+    {
+      tree.segments()[0].attributes[children_id] = (double)children[0].size();
+    }
     setTrunkBend(tree, children, bend_id, length_id);
+
+    std::vector<double> lengths;
+    for (auto &seg: tree.segments())
+    {
+      if (seg.attributes[children_id] > 1)
+      {
+        lengths.push_back(seg.attributes[length_id]);
+      }
+    }
+    double c, d, r2;
+    calculatePowerLaw(lengths, c, d, r2);
+    for (auto &seg: tree.segments())
+      seg.attributes[dimension_id] = std::min(-d, 3.0);
     
     if (total_weight > 0.0)
     {
