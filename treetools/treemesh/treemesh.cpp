@@ -18,6 +18,7 @@ void usage(int exit_code = 1)
   std::cout << "treemesh forest.txt" << std::endl;
   std::cout << "                    --max_colour 1 - specify the value that gives full brightness" << std::endl;
   std::cout << "                    --max_colour 1,0.1,1 - per-channel maximums" << std::endl;
+  std::cout << "                    --view - views the output immediately assuming meshlab is installed" << std::endl;
   exit(exit_code);
 }
 
@@ -57,12 +58,13 @@ int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file;
   ray::DoubleArgument max_brightness;
+  ray::OptionalFlagArgument view("--view", 'v');
   ray::Vector3dArgument max_colour;
   ray::OptionalKeyValueArgument max_brightness_option("max_colour", 'm', &max_brightness);
   ray::OptionalKeyValueArgument max_colour_option("max_colour", 'm', &max_colour);
 
-  bool max_brightness_format = ray::parseCommandLine(argc, argv, {&forest_file}, {&max_brightness_option});
-  bool max_colour_format = ray::parseCommandLine(argc, argv, {&forest_file}, {&max_colour_option});
+  bool max_brightness_format = ray::parseCommandLine(argc, argv, {&forest_file}, {&max_brightness_option, &view});
+  bool max_colour_format = ray::parseCommandLine(argc, argv, {&forest_file}, {&max_colour_option, &view});
   if (!max_brightness_format && !max_colour_format)
   {
     usage();
@@ -136,6 +138,11 @@ int main(int argc, char *argv[])
     }
   }
   ray::writePlyMesh(forest_file.nameStub() + "_mesh.ply", mesh, true);  
+  if (view.isSet())
+  {
+    return system(("meshlab " + forest_file.nameStub() + "_mesh.ply").c_str());
+  }
+  return 1;
 }
 
 
