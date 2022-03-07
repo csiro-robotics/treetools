@@ -35,27 +35,85 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
+void renderGraph(const std::string &filename, std::vector<Eigen::Vector2d> &loglog, double a, double b)
+{
+  double width = 300;
+  double height = 200;
+  double canvas_width = width + 10;
+  double canvas_height= height + 10;
+  std::ofstream ofs(filename + ".svg");
+  ofs << "<svg version=\"1.1\" width=\"" << canvas_width << "\" height=\"" << canvas_height << "\" xmlns=\"http://www.w3.org/2000/svg\">" << std::endl;
+  
+  double minx = 1e10, maxx = -1e10;
+  double miny = 1e10, maxy = -1e10;
+  for (auto &p: loglog)
+  {
+    minx = std::min(minx, p[0]);
+    maxx = std::max(maxx, p[0]);
+    miny = std::min(miny, p[1]);
+    maxy = std::max(maxy, p[1]);
+  }
+  Eigen::Vector2d horiz0(0,0), horiz1(width,0);
+  Eigen::Vector2d vert0(0,0), vert1(0,height);
+  Eigen::Vector2d bf0(0, height*((a + minx*b)-miny) / (maxy - miny)), bf1(width, height*((a + maxx*b)-miny) / (maxy - miny));
+  std::vector<Eigen::Vector2d> v0 = {horiz0, vert0, bf0};
+  std::vector<Eigen::Vector2d> v1 = {horiz1, vert1, bf1};
+  for (size_t i = 0; i<v0.size(); i++)
+  {
+    ofs << "<line x1=\"" << v0[i][0] << "\" y1=\"" << canvas_height - v0[i][1] << "\" x2=\"" << v1[i][0] << "\" y2=\"" << canvas_height - v1[i][1] << "\" style=\"stroke:rgb(0,0,0);stroke-width:1\" />" << std::endl;
+  }
+
+  for (auto &p: loglog)
+  {
+    double x = width * (p[0] - minx) / (maxx - minx);
+    double y = height *(p[1] - miny) / (maxy - miny);
+    double rad = 1;
+/*    double px = std::log(std::exp(p[0]) + 0.5*2.0);
+    double x2 = width * (px - minx) / (maxx - minx);
+    ofs << "<circle cx=\"" << x2 << "\" cy=\"" << canvas_height - y << "\" r=\"" << rad << "\" stroke-width=\"0\" fill=\"red\" />" << std::endl;
+*/
+    ofs << "<circle cx=\"" << x << "\" cy=\"" << canvas_height - y << "\" r=\"" << rad << "\" stroke-width=\"0\" fill=\"green\" />" << std::endl;
+  }
+
+  ofs << "<text x=\"" << width/2.0 << "\" y=\"" << canvas_height - 3 << "\" font-size=\"8\" text-anchor=\"middle\" fill=\"black\">log " << filename << "</text>" << std::endl;
+  ofs << "<text font-size=\"8\" text-anchor=\"middle\" fill=\"black\" transform=\"translate(" << 8 << "," << canvas_height/2.0 << ") rotate(-90)\">log number larger</text>" << std::endl;
+  ofs << "</svg>" << std::endl;
+}
+
 // calculates the power law: # data larger than x = cx^d, with correlation coefficient r2
-void calculatePowerLaw(std::vector<double> &xs, double &c, double &d, double &r2)
+void calculatePowerLaw(std::vector<double> &xs, double &c, double &d, double &r2, const std::string &graph_file = "")
 {
   std::sort(xs.begin(), xs.end());
   std::vector<Eigen::Vector2d> loglog;
-  Eigen::Vector2d mean(0,0);
   for (int i = 0; i<(int)xs.size(); i++)
   {
-    Eigen::Vector2d point(std::log(xs[i]), std::log((double)(xs.size() - i)));
-    mean += point;
-    loglog.push_back(point);
+    loglog.push_back(Eigen::Vector2d(std::log(xs[i]), std::log((double)(xs.size() - i))));
   }
-  mean /= (double)xs.size();
+  std::vector<double> weights(loglog.size());
+  double total_weight = 1e-10;
+  for (int i = 0; i<(int)loglog.size(); i++)
+  {
+    int i0 = std::max(0, i-1);
+    int i2 = std::min(i+1, (int)loglog.size()-1);
+    weights[i] = loglog[i2][0] - loglog[i0][0];
+    if (i==0 || i==(int)loglog.size()-1)
+      weights[i] *= 2.0; // because it is hampered by being on the end
+    total_weight += weights[i];
+  }
+  Eigen::Vector2d mean(0,0);
+  for (int i = 0; i<(int)loglog.size(); i++)
+  {
+    mean += weights[i] * loglog[i];
+  }
+  mean /= total_weight;
 
   double xx = 1e-10, xy = 0.0, yy = 0.0;
-  for (auto &point: loglog)
+  for (int i = 0; i<(int)loglog.size(); i++)
   {
-    Eigen::Vector2d p = point - mean;
-    xx += p[0]*p[0];
-    xy += p[0]*p[1];
-    yy += p[1]*p[1];
+    Eigen::Vector2d p = loglog[i] - mean;
+    xx += weights[i]*p[0]*p[0];
+    xy += weights[i]*p[0]*p[1];
+    yy += weights[i]*p[1]*p[1];
   }
 
   // based on http://mathworld.wolfram.com/LeastSquaresFitting.html
@@ -63,6 +121,8 @@ void calculatePowerLaw(std::vector<double> &xs, double &c, double &d, double &r2
   double b = xy/xx;
   double a = mean[1] - b * mean[0];
   r2 = xy*xy / (xx * yy);
+  if (graph_file != "")
+    renderGraph(graph_file, loglog, a, b);
   
   // convert from log-log back to power law
   c = std::exp(a);
@@ -447,10 +507,10 @@ int main(int argc, char *argv[])
     diameters.push_back(2.0 * tree.segments()[0].radius);
   }
   double c, d, r2;
-  calculatePowerLaw(diameters, c, d, r2);
-  std::cout << "    trunks wider than x: " << c << "x^" << d << "\t\tWith correlation (r2) " << r2 << std::endl;
-  calculatePowerLaw(tree_lengths, c, d, r2);
-  std::cout << "    trees longer than l: " << c << "l^" << d << "\tWith correlation (r2) " << r2 << std::endl;
+  calculatePowerLaw(diameters, c, d, r2, "trunkwidth");
+  std::cout << "    trunks wider than x: " << c << "x^" << d << "\t\twith correlation (r2) " << r2 << std::endl;
+  calculatePowerLaw(tree_lengths, c, d, r2, "treelength");
+  std::cout << "    trees longer than l: " << c << "l^" << d << "\twith correlation (r2) " << r2 << std::endl;
 
   // Branch power laws:
   std::vector<double> lengths;
@@ -462,8 +522,8 @@ int main(int argc, char *argv[])
         lengths.push_back(seg.attributes[length_id]);
     }
   }  
-  calculatePowerLaw(lengths, c, d, r2);
-  std::cout << " branches longer than l: " << c << "l^" << d << "\tWith correlation (r2) " << r2 << std::endl;
+  calculatePowerLaw(lengths, c, d, r2, "branchlength");
+  std::cout << " branches longer than l: " << c << "l^" << d << "\twith correlation (r2) " << r2 << std::endl;
   std::cout << std::endl;
 
   std::cout << "Total:" << std::endl;
