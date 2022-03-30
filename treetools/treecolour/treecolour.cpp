@@ -25,6 +25,8 @@ void usage(int exit_code = 1)
   std::cout << "                      trunk 1,length,diameter - rgb values or per-tree attributes" << std::endl;
   std::cout << "                      LAI_image.hdr 10.3,-12.4,0.2 - applies image colour to the tree file" << std::endl;
   std::cout << "                                                     at min coordinate 10.3,-12.4 and pixel width 0.2m" << std::endl;
+  std::cout << "                    --multiplier 1  - apply colour scale" << std::endl;  
+  std::cout << "                    --scale 1,0.1,1 - apply per-channel scales" << std::endl;  
   exit(exit_code);
 }
 
@@ -33,10 +35,13 @@ int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file, image_file, attribute(false);
   ray::TextArgument trunk("trunk");
-  ray::Vector3dArgument coord;
-  bool attribute_format = ray::parseCommandLine(argc, argv, {&forest_file, &attribute});
-  bool trunk_attribute_format = ray::parseCommandLine(argc, argv, {&forest_file, &trunk, &attribute});
-  bool image_format = ray::parseCommandLine(argc, argv, {&forest_file, &image_file, &coord});
+  ray::DoubleArgument scale;
+  ray::Vector3dArgument coord, scale3D;
+  ray::OptionalKeyValueArgument scale3D_option("scale", 's', &scale3D);
+  ray::OptionalKeyValueArgument scale_option("multiplier", 'm', &scale);
+  bool attribute_format = ray::parseCommandLine(argc, argv, {&forest_file, &attribute}, {&scale3D_option, &scale_option});
+  bool trunk_attribute_format = ray::parseCommandLine(argc, argv, {&forest_file, &trunk, &attribute}, {&scale3D_option, &scale_option});
+  bool image_format = ray::parseCommandLine(argc, argv, {&forest_file, &image_file, &coord}, {&scale3D_option, &scale_option});
   if (!image_format && !attribute_format && !trunk_attribute_format)
   {
     usage();
@@ -114,6 +119,15 @@ int main(int argc, char *argv[])
       usage();
     }
   }
+  if (scale_option.isSet())
+    std::cout << "linear scale set " << scale.value() << std::endl;
+  else if (scale3D_option.isSet())
+    std::cout << "3d scale option set " << scale3D.value().transpose() << std::endl;
+  Eigen::Vector3d scalevec(1,1,1);
+  if (scale_option.isSet())
+    scalevec = Eigen::Vector3d(scale.value(), scale.value(), scale.value());
+  else if (scale3D_option.isSet())
+    scalevec = scale3D.value();
 
   if (attribute_format)
   {
@@ -123,7 +137,7 @@ int main(int argc, char *argv[])
       {
         for (int i = 0; i<3; i++)
         {
-          segment.attributes[red_id+i] = attribute_ids[i] == -1 ? colour[i] : segment.attributes[attribute_ids[i]];
+          segment.attributes[red_id+i] = (attribute_ids[i] == -1 ? colour[i] : segment.attributes[attribute_ids[i]]) * scalevec[i];
         }
       }
     }
@@ -137,9 +151,9 @@ int main(int argc, char *argv[])
         col[i] = attribute_ids[i] == -1 ? colour[i] : tree.segments()[0].attributes[attribute_ids[i]];
       for (auto &segment: tree.segments())
       {
-        segment.attributes[red_id+0] = col[0]; 
-        segment.attributes[red_id+1] = col[1];
-        segment.attributes[red_id+2] = col[2];
+        segment.attributes[red_id+0] = col[0]*scalevec[0]; 
+        segment.attributes[red_id+1] = col[1]*scalevec[1];
+        segment.attributes[red_id+2] = col[2]*scalevec[2];
       }
     }    
   }
@@ -227,9 +241,9 @@ int main(int argc, char *argv[])
         colour /= (double)count;
       for (auto &segment: tree.segments())
       {
-        segment.attributes[red_id+0] = colour[0];
-        segment.attributes[red_id+1] = colour[1];
-        segment.attributes[red_id+2] = colour[2];
+        segment.attributes[red_id+0] = colour[0]*scalevec[0];
+        segment.attributes[red_id+1] = colour[1]*scalevec[1];
+        segment.attributes[red_id+2] = colour[2]*scalevec[2];
       }
     }
   }
