@@ -120,9 +120,9 @@ int main(int argc, char *argv[])
     }
   }
   if (scale_option.isSet())
-    std::cout << "linear scale set " << scale.value() << std::endl;
+    std::cout << "linear scale set to " << scale.value() << std::endl;
   else if (scale3D_option.isSet())
-    std::cout << "3d scale option set " << scale3D.value().transpose() << std::endl;
+    std::cout << "Per-channel scale option set to " << scale3D.value().transpose() << std::endl;
   Eigen::Vector3d scalevec(1,1,1);
   if (scale_option.isSet())
     scalevec = Eigen::Vector3d(scale.value(), scale.value(), scale.value());

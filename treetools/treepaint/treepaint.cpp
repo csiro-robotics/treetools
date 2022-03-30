@@ -22,9 +22,8 @@ void usage(int exit_code = 1)
   std::cout << "Paint a tree file's colour onto a segmented point cloud." << std::endl;
   std::cout << "The cloud should be segmented by branch or by tree" << std::endl;
   std::cout << "usage:" << std::endl;
-  std::cout << "treepaint trees forest.txt trees_segmented.ply - paint tree colours onto segmented cloud" << std::endl;
-  std::cout << "treepaint branches forest.txt branches_segmented.ply - paint branch colours onto branch segmented cloud" << std::endl;
-  std::cout << "                                --max_colour 1 - specify the maximum brightness, otherwise it autoscales" << std::endl;
+  std::cout << "treepaint forest.txt trees_segmented.ply - paint tree colours onto segmented cloud" << std::endl;
+  std::cout << "                     --max_colour 1 - specify the maximum brightness, otherwise it autoscales" << std::endl;
   exit(exit_code);
 }
 
@@ -32,14 +31,13 @@ void usage(int exit_code = 1)
 int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file, cloud_file;
-  ray::TextArgument trees_text("trees"), branches_text("branches");
 
   ray::DoubleArgument max_brightness;
   ray::OptionalKeyValueArgument max_brightness_option("max_colour", 'm', &max_brightness);
 
   ray::Vector3dArgument coord;
-  bool tree_format = ray::parseCommandLine(argc, argv, {&trees_text, &forest_file, &cloud_file}, {&max_brightness_option});
-  bool branch_format = ray::parseCommandLine(argc, argv, {&branches_text, &forest_file, &cloud_file}, {&max_brightness_option});
+  bool tree_format = ray::parseCommandLine(argc, argv, {&forest_file, &cloud_file}, {&max_brightness_option});
+  bool branch_format = ray::parseCommandLine(argc, argv, {&forest_file, &cloud_file}, {&max_brightness_option});
   if (!tree_format && !branch_format)
   {
     usage();
@@ -107,35 +105,6 @@ int main(int argc, char *argv[])
     }
   }
 
-  if (branch_format)
-  {
-    std::cerr << "branches not supported yet" << std::endl;
-    usage();
-  }
-
-/*  ray::Cloud cloud;
-  if (!cloud.load(cloud_file.name()))
-    usage();
-  
-  for (auto &colour: cloud.colours)
-  {
-    if (colour.alpha == 0)
-      continue;        
-    int seg_id = ray::convertColourToInt(colour);
-    if (seg_id != -1)
-    {
-      ray::TreeStructure::Segment *seg = segments[seg_id];
-      if (seg)
-      {
-        colour.red = (uint8_t)std::min(seg->attributes[att_ids[0]], 255.0);
-        colour.green = (uint8_t)std::min(seg->attributes[att_ids[1]], 255.0);
-        colour.blue = (uint8_t)std::min(seg->attributes[att_ids[2]], 255.0);
-      }
-    }
-  }
-  cloud.save(out_file);
-  return 1;*/
-
   ray::CloudWriter writer;
   if (!writer.begin(out_file))
     usage();
@@ -144,24 +113,21 @@ int main(int argc, char *argv[])
     (std::vector<Eigen::Vector3d> &starts, std::vector<Eigen::Vector3d> &ends, 
       std::vector<double> &times, std::vector<ray::RGBA> &colours)
   {
-    if (tree_format)
+    for (auto &colour : colours)
     {
-      for (auto &colour : colours)
+      int seg_id = ray::convertColourToInt(colour);
+      if (seg_id == -1)
       {
-        int seg_id = ray::convertColourToInt(colour);
-        if (seg_id == -1)
+        colour.red = colour.green = colour.blue = 0;
+      }
+      else 
+      {
+        ray::TreeStructure::Segment *seg = segments[seg_id];
+        if (seg)
         {
-          colour.red = colour.green = colour.blue = 0;
-        }
-        else 
-        {
-          ray::TreeStructure::Segment *seg = segments[seg_id];
-          if (seg)
-          {
-            colour.red = (uint8_t)std::min(255.0 * seg->attributes[att_ids[0]]/max_shade, 255.0);
-            colour.green = (uint8_t)std::min(255.0 * seg->attributes[att_ids[1]]/max_shade, 255.0);
-            colour.blue = (uint8_t)std::min(255.0 * seg->attributes[att_ids[2]]/max_shade, 255.0);
-          }
+          colour.red = (uint8_t)std::min(255.0 * seg->attributes[att_ids[0]]/max_shade, 255.0);
+          colour.green = (uint8_t)std::min(255.0 * seg->attributes[att_ids[1]]/max_shade, 255.0);
+          colour.blue = (uint8_t)std::min(255.0 * seg->attributes[att_ids[2]]/max_shade, 255.0);
         }
       }
     }
