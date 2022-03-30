@@ -24,6 +24,7 @@ void usage(int exit_code = 1)
   std::cout << "usage:" << std::endl;
   std::cout << "treepaint trees forest.txt trees_segmented.ply - paint tree colours onto segmented cloud" << std::endl;
   std::cout << "treepaint branches forest.txt branches_segmented.ply - paint branch colours onto branch segmented cloud" << std::endl;
+  std::cout << "                                --max_colour 1 - specify the maximum brightness, otherwise it autoscales" << std::endl;
   exit(exit_code);
 }
 
@@ -32,9 +33,13 @@ int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file, cloud_file;
   ray::TextArgument trees_text("trees"), branches_text("branches");
+
+  ray::DoubleArgument max_brightness;
+  ray::OptionalKeyValueArgument max_brightness_option("max_colour", 'm', &max_brightness);
+
   ray::Vector3dArgument coord;
-  bool tree_format = ray::parseCommandLine(argc, argv, {&trees_text, &forest_file, &cloud_file});
-  bool branch_format = ray::parseCommandLine(argc, argv, {&branches_text, &forest_file, &cloud_file});
+  bool tree_format = ray::parseCommandLine(argc, argv, {&trees_text, &forest_file, &cloud_file}, {&max_brightness_option});
+  bool branch_format = ray::parseCommandLine(argc, argv, {&branches_text, &forest_file, &cloud_file}, {&max_brightness_option});
   if (!tree_format && !branch_format)
   {
     usage();
@@ -63,6 +68,20 @@ int main(int argc, char *argv[])
     }
   }
   int segment_id = att_ids[3];
+  double max_shade = 0.0;
+  if (max_brightness_option.isSet())
+    max_shade = max_brightness.value();
+  else
+  {
+    for (auto &tree: forest.trees)
+    {
+      for (auto &segment: tree.segments())
+      {
+        for (int i = 0; i<3; i++)
+          max_shade = std::max(max_shade, segment.attributes[att_ids[i]]);
+      }
+    }
+  }
   std::string out_file = cloud_file.nameStub() + "_painted.ply";
 
   // finally, we need a mappinig from segment id to the segment structures...
@@ -139,9 +158,9 @@ int main(int argc, char *argv[])
           ray::TreeStructure::Segment *seg = segments[seg_id];
           if (seg)
           {
-            colour.red = (uint8_t)std::min(seg->attributes[att_ids[0]], 255.0);
-            colour.green = (uint8_t)std::min(seg->attributes[att_ids[1]], 255.0);
-            colour.blue = (uint8_t)std::min(seg->attributes[att_ids[2]], 255.0);
+            colour.red = (uint8_t)std::min(255.0 * seg->attributes[att_ids[0]]/max_shade, 255.0);
+            colour.green = (uint8_t)std::min(255.0 * seg->attributes[att_ids[1]]/max_shade, 255.0);
+            colour.blue = (uint8_t)std::min(255.0 * seg->attributes[att_ids[2]]/max_shade, 255.0);
           }
         }
       }
