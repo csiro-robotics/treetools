@@ -1,4 +1,5 @@
 add_subdirectory(treecolour)
+add_subdirectory(treecombine)
 add_subdirectory(treecreate)
 add_subdirectory(treedecimate)
 add_subdirectory(treediff)
