@@ -27,6 +27,7 @@ void usage(int exit_code = 1)
   std::cout << "                                                     at min coordinate 10.3,-12.4 and pixel width 0.2m" << std::endl;
   std::cout << "                    --multiplier 1  - apply colour scale" << std::endl;  
   std::cout << "                    --scale 1,0.1,1 - apply per-channel scales" << std::endl;  
+  std::cout << "                    --gradient_rgb - apply a red->green->blue gradient instead of greyscale" << std::endl;  
   exit(exit_code);
 }
 
@@ -37,10 +38,11 @@ int main(int argc, char *argv[])
   ray::TextArgument trunk("trunk");
   ray::DoubleArgument scale;
   ray::Vector3dArgument coord, scale3D;
+  ray::OptionalFlagArgument gradient_rgb("gradient_rgb", 'g');
   ray::OptionalKeyValueArgument scale3D_option("scale", 's', &scale3D);
   ray::OptionalKeyValueArgument scale_option("multiplier", 'm', &scale);
-  bool attribute_format = ray::parseCommandLine(argc, argv, {&forest_file, &attribute}, {&scale3D_option, &scale_option});
-  bool trunk_attribute_format = ray::parseCommandLine(argc, argv, {&forest_file, &trunk, &attribute}, {&scale3D_option, &scale_option});
+  bool attribute_format = ray::parseCommandLine(argc, argv, {&forest_file, &attribute}, {&scale3D_option, &scale_option, &gradient_rgb});
+  bool trunk_attribute_format = ray::parseCommandLine(argc, argv, {&forest_file, &trunk, &attribute}, {&scale3D_option, &scale_option, &gradient_rgb});
   bool image_format = ray::parseCommandLine(argc, argv, {&forest_file, &image_file, &coord}, {&scale3D_option, &scale_option});
   if (!image_format && !attribute_format && !trunk_attribute_format)
   {
@@ -78,28 +80,28 @@ int main(int argc, char *argv[])
   }
   int attribute_ids[3] = {-1,-1,-1};
   Eigen::Vector3d colour(0,0,0);
+  int num_attributes = 0;
   if (attribute_format || trunk_attribute_format)
   {
     std::stringstream ss(attribute.name());
     std::string field;
-    int i = 0;
     while (std::getline(ss, field, ','))
     {
-      if (i==3)
+      if (num_attributes==3)
       {
         std::cerr << "error: bad format for r,g,b: " << attribute.name() << std::endl;
         usage();
       }
       char *endptr;
       const char *str = field.c_str();
-      colour[i] = std::strtod(str, &endptr);
+      colour[num_attributes] = std::strtod(str, &endptr);
       if (endptr != str+std::strlen(str)) // if conversion to a double fails then it must be an attribute
       {
         const auto &it = std::find(att.begin(), att.end(), field);
         if (it != att.end())
         {
-          attribute_ids[i] = (int)(it - att.begin()); 
-          std::cout << "found attribute " << field << " at index " << attribute_ids[i] << std::endl;
+          attribute_ids[num_attributes] = (int)(it - att.begin()); 
+          std::cout << "found attribute " << field << " at index " << attribute_ids[num_attributes] << std::endl;
         }
         else
         {
@@ -107,13 +109,13 @@ int main(int argc, char *argv[])
           usage();
         }
       }
-      i++;
+      num_attributes++;
     }
-    if (i == 1)
+    if (num_attributes == 1)
     {
       attribute_ids[2] = attribute_ids[1] = attribute_ids[0];
     }
-    else if (i != 3)
+    else if (num_attributes != 3)
     {
       std::cerr << "error: bad format for r,g,b: " << attribute.name() << std::endl;
       usage();
@@ -138,6 +140,10 @@ int main(int argc, char *argv[])
         for (int i = 0; i<3; i++)
         {
           segment.attributes[red_id+i] = (attribute_ids[i] == -1 ? colour[i] : segment.attributes[attribute_ids[i]]) * scalevec[i];
+          if (num_attributes == 1 && gradient_rgb.isSet()) // then apply the gradient
+          {
+            segment.attributes[red_id+i] = ray::redGreenBlueGradient(segment.attributes[red_id+i])[i];
+          }
         }
       }
     }
