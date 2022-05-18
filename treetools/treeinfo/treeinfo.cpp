@@ -269,6 +269,32 @@ int main(int argc, char *argv[])
       usage();
     }
   }
+
+  std::cout << "Additional attributes mean, min, max:" << std::endl;
+  for (int i = 0; i<num_attributes; i++)
+  {
+    std::cout << "\t" << att[i] << ":";
+    for (int j = 0; j < 30-(int)att[i].length(); j++)
+      std::cout << " ";
+    double value = 0.0;
+    double num = 0.0;
+    double max_val = -1e10;
+    double min_val = 1e10;
+    for (auto &tree: forest.trees)
+    {
+      for (auto &segment: tree.segments())
+      {
+        double val = segment.attributes[i];
+        max_val = std::max(max_val, val);
+        min_val = std::min(min_val, val);
+        value += val;
+        num++;
+      }
+    }
+    std::cout << value/num << ",\t" << min_val << ",\t" << max_val << std::endl;
+  }  
+  std::cout << std::endl;
+
   // Fill in blank attributes across the whole structure
   double min_branch_radius = 1e10;
   double max_branch_radius = -1e10;
