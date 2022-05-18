@@ -19,7 +19,8 @@ void usage(int exit_code = 1)
 {
   std::cout << "Combine multiple trees together" << std::endl;
   std::cout << "usage:" << std::endl;
-  std::cout << "treecombine trees1.txt trees2.txt trees3.txt - concatenate together, as long as they have the same attributes" << std::endl;
+  std::cout << "treecombine trees1.txt trees2.txt trees3.txt - concatenate together if they have the same attributes" << std::endl;
+  std::cout << "                                             - or concatenate attributes if they have the same data" << std::endl;
   exit(exit_code);
 }
 
@@ -35,6 +36,8 @@ int main(int argc, char *argv[])
 
   ray::ForestStructure combined_forest;
   std::vector<std::string> attributes;
+  bool same_attributes = true, same_data = false;
+
   for (size_t i = 0; i<tree_files.files().size(); i++)
   {
     ray::ForestStructure forest;
@@ -46,18 +49,87 @@ int main(int argc, char *argv[])
     {
       attributes = forest.trees[0].attributes();
     }
-    else
+    else if (i==1)
     {
-      for (size_t j = 0; j<forest.trees[0].attributes().size(); j++)
+      same_attributes = forest.trees[0].attributes().size() == attributes.size();
+      if (same_attributes) // then check more closely...
       {
-        if (forest.trees[0].attributes()[j] != attributes[j])
+        for (size_t j = 0; j<forest.trees[0].attributes().size(); j++)
         {
-          std::cerr << "Error: tree files have different sets of attributes, cannot comcatenate" << std::endl;
-          usage();
+          if (forest.trees[0].attributes()[j] != attributes[j])
+          {
+            same_attributes = false;
+          }
         }
       }
+      same_data = forest.trees.size() == combined_forest.trees.size();
+      if (same_data) // then check more closely...
+      {
+        for (size_t j = 0; j<forest.trees.size(); j++)
+        {
+          if (forest.trees[j].segments().size() != combined_forest.trees[j].segments().size())
+          {
+            same_data = false;
+            break;
+          }
+          for (size_t k = 0; k<forest.trees[j].segments().size(); k++)
+          {
+            if (forest.trees[j].segments()[k].parent_id != combined_forest.trees[j].segments()[k].parent_id)
+            {
+              same_data = false;
+              break;
+            }
+          }
+          if (!same_data)
+            break;
+        }
+      }
+      if (!same_attributes && !same_data)
+      {
+        std::cerr << "Error: tree files have different sets of attributes and different tree structures, so cannot combine" << std::endl;
+        usage();
+      }
+      if (same_attributes && same_data)
+      {
+        std::cerr << "Error: tree files have same attributes and same tree structures, so no need to combine" << std::endl;
+        usage();
+      }
     }
-    combined_forest.trees.insert(combined_forest.trees.end(), forest.trees.begin(), forest.trees.end());
+    if (same_attributes)
+    {
+      combined_forest.trees.insert(combined_forest.trees.end(), forest.trees.begin(), forest.trees.end());
+    }
+    else if (same_data)
+    {
+      std::vector<int> att_locations(forest.trees[0].attributes().size(), -1);
+      auto &atts = combined_forest.trees[0].attributes();
+      for (size_t j = 0; j<forest.trees[0].attributes().size(); j++)
+      {
+        const auto &it = std::find(atts.begin(), atts.end(), forest.trees[0].attributes()[j]);
+        if (it != atts.end())
+        {
+          att_locations[j] = (int)(it - atts.begin());
+        }        
+      }
+      for (size_t l = 0; l<att_locations.size(); l++)
+      {
+        int id = att_locations[l];
+        if (id == -1)
+        {        
+          for (size_t j = 0; j<forest.trees.size(); j++)
+          {
+            combined_forest.trees[j].attributes().push_back(forest.trees[j].attributes()[l]);
+            for (size_t k = 0; k<forest.trees[j].segments().size(); k++)
+            {
+              combined_forest.trees[j].segments()[k].attributes.push_back(forest.trees[j].segments()[k].attributes[l]);
+            }
+          }
+        }
+        // shall we take the mean value? This could mess up on large double integers
+        // instead I suggest just keeping the values in the first data set
+        // so do nothing with the attribute, the first data set has priority
+      }      
+    }
   }
 
   combined_forest.save(tree_files.files()[0].nameStub() + "_combined.txt");
