@@ -1,7 +1,7 @@
 set(SOURCES
   treecombine.cpp
 )
-add_compile_options(-ggdb -O0)
+add_compile_options(-O3)
 
 ras_add_executable(treecombine
   LIBS treelib
