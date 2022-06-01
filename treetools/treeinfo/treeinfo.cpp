@@ -220,6 +220,94 @@ void setTrunkBend(ray::TreeStructure &tree, const std::vector< std::vector<int> 
   }
 }
 
+static int count = 0;
+static int max_id = -1;
+static double max_mon = 0.0;
+/// How much the tree is similar to a palm tree
+void setMonocotal(ray::TreeStructure &tree, const std::vector< std::vector<int> > &children, int monocotal_id, int bend_id, int length_id)
+{
+  const double width_per_height = 0.2;
+
+  // get the trunk
+  std::vector<int> ids = {0};
+  for (size_t i = 0; i<ids.size(); i++)
+  {
+    double max_score = -1;
+    int largest_child = -1;
+    for (const auto &child: children[ids[i]])
+    {
+      // we pick the route which has the longer and wider branch
+      double score = tree.segments()[child].radius * tree.segments()[child].attributes[length_id];
+      if (score > max_score)
+      {
+        max_score = score;
+        largest_child = child;
+      }
+    }
+    if (largest_child != -1)
+    {
+      ids.push_back(largest_child);
+    }
+  }
+  if (ids.size() <= 1)
+    return;
+
+  Eigen::Vector3d base = tree.segments()[0].tip;
+  ray::Cuboid cuboid;
+  cuboid.min_bound_ = cuboid.max_bound_ = base;
+  double max_distance = 0.0;
+  Eigen::Vector3d dir(0,0,1);
+  for (auto &id: ids)
+  {
+    if (children[id].size() > 1)
+    {
+      base = tree.segments()[id].tip;
+    }
+    int par = tree.segments()[id].parent_id;
+    if (par != -1)
+    {
+      Eigen::Vector3d dir2 = (tree.segments()[id].tip - tree.segments()[par].tip).normalized();
+      if (dir.dot(dir2) < 0.95)
+      {
+        base = tree.segments()[id].tip;
+      }
+      dir = dir2;
+    }
+    double distance = tree.segments()[id].tip[2] - base[2];
+    if (distance > max_distance)
+    {
+      max_distance = distance;
+    }
+  }
+  double full_distance = tree.segments()[ids.back()].tip[2] - tree.segments()[0].tip[2];
+  double monocotal = max_distance / std::max(0.1, full_distance - max_distance);
+
+  for (auto &segment: tree.segments())
+  {
+    cuboid.min_bound_ = ray::minVector(cuboid.min_bound_, segment.tip);
+    cuboid.max_bound_ = ray::maxVector(cuboid.max_bound_, segment.tip);
+  }
+  double radius = (cuboid.max_bound_ - cuboid.min_bound_).norm() / 2.0;
+  double grad = radius / full_distance;
+  double scale = grad < width_per_height ? grad / width_per_height : width_per_height / grad;
+  monocotal *= scale;
+ // monocotal /= tree.segments()[0].attributes[bend_id];
+
+  if (monocotal > 100)
+  {
+    max_id = count;
+    max_mon = monocotal;
+    std::cout << "max: " << max_distance << ", full: " << full_distance << ", rad: " << radius << ", grad: " << grad << ", bend: " << tree.segments()[0].attributes[bend_id] << ", mon: " << monocotal << std::endl;
+  }
+  count++;
+
+  for (auto &segment: tree.segments())
+  {
+    segment.attributes[monocotal_id] = monocotal;
+  }
+}
+
+
 // Read in a ray cloud and convert it into an array for topological optimisation
 int main(int argc, char *argv[])
 {
@@ -249,7 +337,7 @@ int main(int argc, char *argv[])
   std::cout << std::endl;
   
   int num_attributes = (int)forest.trees[0].attributes().size();
-  std::vector<std::string> new_attributes = {"volume", "diameter", "length", "strength", "min_strength", "dominance", "angle", "bend", "children", "dimension"};
+  std::vector<std::string> new_attributes = {"volume", "diameter", "length", "strength", "min_strength", "dominance", "angle", "bend", "children", "dimension", "monocotal"};
   int volume_id = num_attributes+0;
   int diameter_id = num_attributes+1;
   int length_id = num_attributes+2;
@@ -260,6 +348,7 @@ int main(int argc, char *argv[])
   int bend_id = num_attributes+7;
   int children_id = num_attributes+8;
   int dimension_id = num_attributes+9;
+  int monocotal_id = num_attributes+10;
   auto &att = forest.trees[0].attributes();
   for (auto &new_at: new_attributes)
   {
@@ -357,7 +446,6 @@ int main(int argc, char *argv[])
     {
       tree_height = std::max(tree_height, tree.segments()[i].tip[2] - tree.segments()[0].tip[2]);
       // for each leaf, iterate to trunk updating the maximum length...
-      // TODO: would path length be better?
       if (children[i].empty()) // so it is a leaf
       {      
         const double extension = 2.0*tree.segments()[i].radius > broken_diameter ? 0.0 : (taper_ratio * tree.segments()[i].radius);
@@ -431,6 +519,7 @@ int main(int argc, char *argv[])
       tree.segments()[0].attributes[children_id] = (double)children[0].size();
     }
     setTrunkBend(tree, children, bend_id, length_id);
+    setMonocotal(tree, children, monocotal_id, bend_id, length_id);
 
     std::vector<double> lengths;
     for (auto &seg: tree.segments())
