@@ -38,18 +38,20 @@ int main(int argc, char *argv[])
   std::vector<std::string> attributes;
   bool same_attributes = true, same_data = false;
 
+  int num_combined = 0;
   for (size_t i = 0; i<tree_files.files().size(); i++)
   {
     ray::ForestStructure forest;
     if (!forest.load(tree_files.files()[i].name()))
     {
-      usage();
-    }  
-    if (i == 0)
+      std::cout << "file " << tree_files.files()[i].name() << " doesn't load, so skipping it" << std::endl;
+      continue;
+    } 
+    if (num_combined == 0)
     {
       attributes = forest.trees[0].attributes();
     }
-    else if (i==1)
+    else if (num_combined==1)
     {
       same_attributes = forest.trees[0].attributes().size() == attributes.size();
       if (same_attributes) // then check more closely...
@@ -95,6 +97,7 @@ int main(int argc, char *argv[])
         usage();
       }
     }
+    num_combined++; 
     if (same_attributes)
     {
       combined_forest.trees.insert(combined_forest.trees.end(), forest.trees.begin(), forest.trees.end());
@@ -131,7 +134,11 @@ int main(int argc, char *argv[])
       }      
     }
   }
-
+  if (num_combined == 0)
+  {
+    std::cerr << "Error: no forest files could be loaded" << std::endl;
+    usage();
+  }
   combined_forest.save(tree_files.files()[0].nameStub() + "_combined.txt");
 }
 
