@@ -220,9 +220,6 @@ void setTrunkBend(ray::TreeStructure &tree, const std::vector< std::vector<int> 
   }
 }
 
-static int count = 0;
-static int max_id = -1;
-static double max_mon = 0.0;
 /// How much the tree is similar to a palm tree
 void setMonocotal(ray::TreeStructure &tree, const std::vector< std::vector<int> > &children, int monocotal_id, int bend_id, int length_id)
 {
@@ -257,6 +254,7 @@ void setMonocotal(ray::TreeStructure &tree, const std::vector< std::vector<int> 
   cuboid.min_bound_ = cuboid.max_bound_ = base;
   double max_distance = 0.0;
   Eigen::Vector3d dir(0,0,1);
+  double total_angle = 0.0;
   for (auto &id: ids)
   {
     if (children[id].size() > 1)
@@ -267,10 +265,7 @@ void setMonocotal(ray::TreeStructure &tree, const std::vector< std::vector<int> 
     if (par != -1)
     {
       Eigen::Vector3d dir2 = (tree.segments()[id].tip - tree.segments()[par].tip).normalized();
-      if (dir.dot(dir2) < 0.95)
-      {
-        base = tree.segments()[id].tip;
-      }
+      total_angle += std::acos(dir.dot(dir2));
       dir = dir2;
     }
     double distance = tree.segments()[id].tip[2] - base[2];
@@ -280,7 +275,7 @@ void setMonocotal(ray::TreeStructure &tree, const std::vector< std::vector<int> 
     }
   }
   double full_distance = tree.segments()[ids.back()].tip[2] - tree.segments()[0].tip[2];
-  double monocotal = max_distance / std::max(0.1, full_distance - max_distance);
+  double monocotal = max_distance / std::max(1.0, full_distance - max_distance);
 
   for (auto &segment: tree.segments())
   {
@@ -291,15 +286,9 @@ void setMonocotal(ray::TreeStructure &tree, const std::vector< std::vector<int> 
   double grad = radius / full_distance;
   double scale = grad < width_per_height ? grad / width_per_height : width_per_height / grad;
   monocotal *= scale;
+  if (total_angle > 0.0)
+    monocotal /= total_angle;
  // monocotal /= tree.segments()[0].attributes[bend_id];
-
-  if (monocotal > 100)
-  {
-    max_id = count;
-    max_mon = monocotal;
-    std::cout << "max: " << max_distance << ", full: " << full_distance << ", rad: " << radius << ", grad: " << grad << ", bend: " << tree.segments()[0].attributes[bend_id] << ", mon: " << monocotal << std::endl;
-  }
-  count++;
 
   for (auto &segment: tree.segments())
   {
