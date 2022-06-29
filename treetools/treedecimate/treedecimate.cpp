@@ -24,7 +24,7 @@ void usage(int exit_code = 1)
 // Read in a ray cloud and convert it into an array for topological optimisation
 int main(int argc, char *argv[])
 {
-  ray::FileArgument forest_file, cloud_file;
+  ray::FileArgument forest_file;
   ray::TextArgument segments_text("segments");
   ray::IntArgument decimation;
   bool parsed = ray::parseCommandLine(argc, argv, {&forest_file, &decimation, &segments_text});

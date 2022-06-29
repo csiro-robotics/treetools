@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
   }  
 
   auto &att = forest.trees[0].attributes();
-  int red_id = att.size();
+  int red_id = (int)att.size();
   const auto &it = std::find(att.begin(), att.end(), "red");
   if (it != att.end())
   {
