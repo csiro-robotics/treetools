@@ -223,77 +223,55 @@ void setTrunkBend(ray::TreeStructure &tree, const std::vector< std::vector<int> 
 /// How much the tree is similar to a palm tree
 void setMonocotal(ray::TreeStructure &tree, const std::vector< std::vector<int> > &children, int monocotal_id, int bend_id, int length_id)
 {
-  const double width_per_height = 0.2;
-
-  // get the trunk
-  std::vector<int> ids = {0};
-  for (size_t i = 0; i<ids.size(); i++)
+  // One per child of root, this is because many palms can grow from a single point at the bottom.
+  double max_monocotal = 0.0;
+  for (auto &root: children[0])
   {
-    double max_score = -1;
-    int largest_child = -1;
-    for (const auto &child: children[ids[i]])
+    // 1. find first branch id:
+    int segment = root;
+    while (children[segment].size() == 1)
     {
-      // we pick the route which has the longer and wider branch
-      double score = tree.segments()[child].radius * tree.segments()[child].attributes[length_id];
-      if (score > max_score)
-      {
-        max_score = score;
-        largest_child = child;
-      }
+      segment = children[segment][0];
     }
-    if (largest_child != -1)
+    // 2. get distance to root:
+    Eigen::Vector3d branch_point = tree.segments()[segment].tip;
+    double straight_distance = (branch_point - tree.segments()[0].tip).norm();
+    // 3. get path length to root:
+    double path_length = 0.0;
+    int top_segment = segment;
+    while (tree.segments()[segment].parent_id != -1)
     {
-      ids.push_back(largest_child);
+      int par = tree.segments()[segment].parent_id;
+      path_length += (tree.segments()[segment].tip - tree.segments()[par].tip).norm();
+      segment = par;
     }
-  }
-  if (ids.size() <= 1)
-    return;
+    // 4. get height difference to top of tree
+    std::vector<int> list = {root};
+    double max_height = tree.segments()[top_segment].tip[2];
+    int num_branches = 0;
+    for (int i = 0; i<(int)list.size(); i++)
+    {
+      max_height = std::max(max_height, tree.segments()[list[i]].tip[2]);
+      num_branches += children[list[i]].size() > 1 ? (int)children[list[i]].size() : 0;
+      list.insert(list.end(), children[list[i]].begin(), children[list[i]].end());
+    }
+    double dist_to_top = max_height - tree.segments()[top_segment].tip[2];
 
-  Eigen::Vector3d base = tree.segments()[0].tip;
-  ray::Cuboid cuboid;
-  cuboid.min_bound_ = cuboid.max_bound_ = base;
-  double max_distance = 0.0;
-  Eigen::Vector3d dir(0,0,1);
-  double total_angle = 0.0;
-  for (auto &id: ids)
-  {
-    if (children[id].size() > 1)
+    // 5. combine into a value for 'palmtree-ness'    
+    double monocotal = straight_distance / (path_length + dist_to_top); // this rewards a straight trunk with a small height from first branch point to peak
+    if (num_branches < 5) // this is a long pole with little on top. We shouldn't consider this a signal of being monocotal, even though it could be a dead one
     {
-      base = tree.segments()[id].tip;
+      monocotal = 0.0;
     }
-    int par = tree.segments()[id].parent_id;
-    if (par != -1)
-    {
-      Eigen::Vector3d dir2 = (tree.segments()[id].tip - tree.segments()[par].tip).normalized();
-      total_angle += std::acos(dir.dot(dir2));
-      dir = dir2;
-    }
-    double distance = tree.segments()[id].tip[2] - base[2];
-    if (distance > max_distance)
-    {
-      max_distance = distance;
-    }
-  }
-  double full_distance = tree.segments()[ids.back()].tip[2] - tree.segments()[0].tip[2];
-  double monocotal = max_distance / std::max(1.0, full_distance - max_distance);
 
-  for (auto &segment: tree.segments())
-  {
-    cuboid.min_bound_ = ray::minVector(cuboid.min_bound_, segment.tip);
-    cuboid.max_bound_ = ray::maxVector(cuboid.max_bound_, segment.tip);
+    // 6. fill in the attributes for this root upwards
+    for (auto &id: list)
+    {
+      tree.segments()[id].attributes[monocotal_id] = monocotal;
+    }
+    max_monocotal = std::max(max_monocotal, monocotal);
   }
-  double radius = (cuboid.max_bound_ - cuboid.min_bound_).norm() / 2.0;
-  double grad = radius / full_distance;
-  double scale = grad < width_per_height ? grad / width_per_height : width_per_height / grad;
-  monocotal *= scale;
-  if (total_angle > 0.0)
-    monocotal /= total_angle;
- // monocotal /= tree.segments()[0].attributes[bend_id];
-
-  for (auto &segment: tree.segments())
-  {
-    segment.attributes[monocotal_id] = monocotal;
-  }
+  tree.segments()[0].attributes[monocotal_id] = max_monocotal;
 }
 
 
