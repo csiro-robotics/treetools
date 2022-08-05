@@ -7,7 +7,7 @@
 #define TREELIB_TREEPRUNER_H
 
 #include "treelib/treelibconfig.h"
-#include <raylib/rayforestgen.h>
+#include <raylib/rayforeststructure.h>
 #include <raylib/raytreegen.h>
 #include <Eigen/Dense>
 

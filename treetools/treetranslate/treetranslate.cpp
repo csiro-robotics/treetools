@@ -4,7 +4,7 @@
 //
 // Author: Thomas Lowe
 #include "raylib/rayparse.h"
-#include "raylib/rayforestgen.h"
+#include "raylib/rayforeststructure.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

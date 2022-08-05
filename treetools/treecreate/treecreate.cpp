@@ -55,20 +55,23 @@ int main(int argc, char *argv[])
   params.min_branch_radius = 0.01;
 
   ray::ForestGen forest;
+  ray::ForestStructure forest_struct; // for saving
   if (tree_parsed)
   {
-    forest.trees.resize(1);
-    ray::TreeStructure &tree = forest.trees[0];
+    forest.trees().resize(1);
+    ray::TreeGen &tree = forest.trees()[0];
     tree.segments().resize(1);
     tree.segments()[0].tip = Eigen::Vector3d(0, 0, 0);
     tree.segments()[0].radius = params.max_tree_radius;
     tree.make(params);
-    forest.save("tree.txt");
+    forest.toForestStructure(forest_struct);
+    forest_struct.save("tree.txt");
   }
   else
   {
     forest.make(params);
-    forest.save("forest.txt");
+    forest.toForestStructure(forest_struct);
+    forest_struct.save("forest.txt");
   }
 }
 

@@ -6,7 +6,7 @@
 #include "treelib/treeutils.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "treelib/imageread.h"
-#include <raylib/rayforestgen.h>
+#include <raylib/rayforeststructure.h>
 #include <raylib/raytreegen.h>
 #include <raylib/rayparse.h>
 #include <raylib/raycloud.h>
