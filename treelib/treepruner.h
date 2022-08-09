@@ -6,18 +6,18 @@
 #ifndef TREELIB_TREEPRUNER_H
 #define TREELIB_TREEPRUNER_H
 
-#include "treelib/treelibconfig.h"
 #include <raylib/rayforeststructure.h>
 #include <raylib/raytreegen.h>
 #include <Eigen/Dense>
+#include "treelib/treelibconfig.h"
 
 namespace tree
 {
-/// remove all branches which are less than the specified diameter 
+/// remove all branches which are less than the specified diameter
 void pruneDiameter(ray::ForestStructure &forest, double diameter, ray::ForestStructure &new_forest);
 
 /// remove the specifiied length from the end of all branches
 void pruneLength(ray::ForestStructure &forest, double length, ray::ForestStructure &new_forest);
-}  // namespace ray
+}  // namespace tree
 
 #endif  // TREELIB_TREEPRUNER_H

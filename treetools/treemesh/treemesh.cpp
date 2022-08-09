@@ -13,12 +13,14 @@
 
 void usage(int exit_code = 1)
 {
+  // clang-format off
   std::cout << "Export the trees to a mesh, auto scaling any colour by default" << std::endl;
   std::cout << "usage:" << std::endl;
   std::cout << "treemesh forest.txt" << std::endl;
   std::cout << "                    --max_colour 1 - specify the value that gives full brightness" << std::endl;
   std::cout << "                    --max_colour 1,0.1,1 - per-channel maximums" << std::endl;
   std::cout << "                    --view - views the output immediately assuming meshlab is installed" << std::endl;
+  // clang-format on
   exit(exit_code);
 }
 
