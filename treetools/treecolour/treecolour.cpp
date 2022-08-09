@@ -33,7 +33,6 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
-// Read in a ray cloud and convert it into an array for topological optimisation
 int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file, image_file, attribute(false);
@@ -43,11 +42,11 @@ int main(int argc, char *argv[])
   ray::OptionalFlagArgument gradient_rgb("gradient_rgb", 'g');
   ray::OptionalKeyValueArgument scale3D_option("scale", 's', &scale3D);
   ray::OptionalKeyValueArgument scale_option("multiplier", 'm', &scale);
-  bool attribute_format =
+  const bool attribute_format =
     ray::parseCommandLine(argc, argv, { &forest_file, &attribute }, { &scale3D_option, &scale_option, &gradient_rgb });
-  bool trunk_attribute_format = ray::parseCommandLine(argc, argv, { &forest_file, &trunk, &attribute },
+  const bool trunk_attribute_format = ray::parseCommandLine(argc, argv, { &forest_file, &trunk, &attribute },
                                                       { &scale3D_option, &scale_option, &gradient_rgb });
-  bool image_format =
+  const bool image_format =
     ray::parseCommandLine(argc, argv, { &forest_file, &image_file, &coord }, { &scale3D_option, &scale_option });
   if (!image_format && !attribute_format && !trunk_attribute_format)
   {
@@ -128,14 +127,22 @@ int main(int argc, char *argv[])
     }
   }
   if (scale_option.isSet())
+  {
     std::cout << "linear scale set to " << scale.value() << std::endl;
+  }
   else if (scale3D_option.isSet())
+  {
     std::cout << "Per-channel scale option set to " << scale3D.value().transpose() << std::endl;
+  }
   Eigen::Vector3d scalevec(1, 1, 1);
   if (scale_option.isSet())
+  {
     scalevec = Eigen::Vector3d(scale.value(), scale.value(), scale.value());
+  }
   else if (scale3D_option.isSet())
+  {
     scalevec = scale3D.value();
+  }
 
   if (attribute_format)
   {
@@ -161,7 +168,9 @@ int main(int argc, char *argv[])
     {
       Eigen::Vector3d col;
       for (int i = 0; i < 3; i++)
+      {
         col[i] = attribute_ids[i] == -1 ? colour[i] : tree.segments()[0].attributes[attribute_ids[i]];
+      }
       for (auto &segment : tree.segments())
       {
         segment.attributes[red_id + 0] = col[0] * scalevec[0];
@@ -180,21 +189,31 @@ int main(int argc, char *argv[])
     int width, height, num_channels;
     unsigned char *image_data = 0;
     float *image_dataf = 0;
-    bool is_hdr = image_file.nameExt() == "hdr";
+    const bool is_hdr = image_file.nameExt() == "hdr";
     if (is_hdr)
+    {
       image_dataf = stbi_loadf(image_name, &width, &height, &num_channels, 0);
+    }
     else
+    {
       image_data = stbi_load(image_name, &width, &height, &num_channels, 0);
+    }
 
     int tree_radius_id = -1;
     for (size_t i = 0; i < forest.trees[0].attributes().size(); i++)
+    {
       if (forest.trees[0].attributes()[i] == "subtree_radius")
+      {
         tree_radius_id = (int)i;
-    double trunk_to_tree_radius_scale = 10.0;
-    bool trunks_only = forest.trees[0].segments().size() == 1;
+      }
+    }
+    const double trunk_to_tree_radius_scale = 10.0;
+    const bool trunks_only = forest.trees[0].segments().size() == 1;
     if (tree_radius_id == -1 && trunks_only)
+    {
       std::cout << "Warning: tree file does not contain tree radii, so they are estimated as "
                 << trunk_to_tree_radius_scale << " times the trunk radius." << std::endl;
+    }
 
     for (auto &tree : forest.trees)
     {
@@ -211,15 +230,15 @@ int main(int argc, char *argv[])
           minbound = ray::minVector(minbound, segment.tip);
           maxbound = ray::maxVector(maxbound, segment.tip);
         }
-        Eigen::Vector3d extent = (maxbound - minbound) / 2.0;
+        const Eigen::Vector3d extent = (maxbound - minbound) / 2.0;
         rad = 0.5 * (extent[0] + extent[1]);  // the mean diameter of the points
       }
 
-      Eigen::Vector2d minpos = centre - Eigen::Vector2d(rad, rad);
-      Eigen::Vector2d maxpos = centre + Eigen::Vector2d(rad, rad);
-      Eigen::Vector2d coords(coord.value()[0], coord.value()[1]);
-      Eigen::Vector2i boxmin = ((minpos - coords) / coord.value()[2]).cast<int>();
-      Eigen::Vector2i boxmax = ((maxpos - coords) / coord.value()[2]).cast<int>();
+      const Eigen::Vector2d minpos = centre - Eigen::Vector2d(rad, rad);
+      const Eigen::Vector2d maxpos = centre + Eigen::Vector2d(rad, rad);
+      const Eigen::Vector2d coords(coord.value()[0], coord.value()[1]);
+      const Eigen::Vector2i boxmin = ((minpos - coords) / coord.value()[2]).cast<int>();
+      const Eigen::Vector2i boxmax = ((maxpos - coords) / coord.value()[2]).cast<int>();
       Eigen::Vector3d colour(0, 0, 0);
       int count = 0;
       for (int i = std::max(0, boxmin[0]); i <= std::min(boxmax[0], width - 1); i++)
@@ -228,7 +247,9 @@ int main(int argc, char *argv[])
         {
           Eigen::Vector2d pos = Eigen::Vector2d(i + 0.5, j + 0.5) * coord.value()[2] + coords;
           if ((pos - centre).norm() > rad)
+          {
             continue;
+          }
           const int index = num_channels * (i + width * j);
           if (is_hdr)
           {
@@ -253,7 +274,9 @@ int main(int argc, char *argv[])
         }
       }
       if (count > 0)
+      {
         colour /= (double)count;
+      }
       for (auto &segment : tree.segments())
       {
         segment.attributes[red_id + 0] = colour[0] * scalevec[0];

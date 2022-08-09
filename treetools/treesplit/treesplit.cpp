@@ -26,7 +26,6 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
-// Read in a ray cloud and convert it into an array for topological optimisation
 int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file, attribute(false);
@@ -36,10 +35,12 @@ int main(int argc, char *argv[])
   ray::Vector3dArgument plane, colour, box;
   ray::KeyValueChoice choice({ "plane", "colour", "radius", "box" }, { &plane, &colour, &radius, &box });
 
-  bool parsed = ray::parseCommandLine(argc, argv, { &forest_file, &choice });
+  const bool parsed = ray::parseCommandLine(argc, argv, { &forest_file, &choice });
   bool attribute_format = false;
   if (!parsed)
+  {
     attribute_format = ray::parseCommandLine(argc, argv, { &forest_file, &attribute, &value });
+  }
   if (!parsed && !attribute_format)
   {
     usage();
@@ -59,8 +60,8 @@ int main(int argc, char *argv[])
     const auto &it = std::find(att.begin(), att.end(), attribute.name());
     if (it != att.end())
     {
-      attribute_id =
-        (int)(it - att.begin());  // we always assume that red is followed immediately by attributes green and blue
+      // we always assume that red is followed immediately by attributes green and blue
+      attribute_id = (int)(it - att.begin());  
     }
     else
     {
@@ -71,9 +72,13 @@ int main(int argc, char *argv[])
     for (auto &tree : forest.trees)
     {
       if (tree.segments()[0].attributes[attribute_id] < value.value())
+      {
         forest_in.trees.push_back(tree);
+      }
       else
+      {
         forest_out.trees.push_back(tree);
+      }
     }
   }
   else if (choice.selectedKey() == "radius")
@@ -81,38 +86,50 @@ int main(int argc, char *argv[])
     for (auto &tree : forest.trees)
     {
       if (tree.segments()[0].radius < radius.value())
+      {
         forest_in.trees.push_back(tree);
+      }
       else
+      {
         forest_out.trees.push_back(tree);
+      }
     }
   }
   else if (choice.selectedKey() == "plane")
   {
-    Eigen::Vector3d plane_vec = plane.value() / plane.value().squaredNorm();
+    const Eigen::Vector3d plane_vec = plane.value() / plane.value().squaredNorm();
     for (auto &tree : forest.trees)
     {
       if (tree.segments()[0].tip.dot(plane_vec) < 1.0)
+      {
         forest_in.trees.push_back(tree);
+      }
       else
+      {
         forest_out.trees.push_back(tree);
+      }
     }
   }
   else if (choice.selectedKey() == "colour")
   {
-    Eigen::Vector3d colour_vec = colour.value() / colour.value().squaredNorm();
+    const Eigen::Vector3d colour_vec = colour.value() / colour.value().squaredNorm();
     for (auto &tree : forest.trees)
     {
       const auto &it = std::find(tree.attributes().begin(), tree.attributes().end(), "red");
       if (it != tree.attributes().end())
       {
-        int red_index = (int)(it - tree.attributes().begin());
+        const int red_index = (int)(it - tree.attributes().begin());
         auto &ats = tree.segments()[0].attributes;
-        Eigen::Vector3d col(ats[red_index], ats[red_index + 1],
+        const Eigen::Vector3d col(ats[red_index], ats[red_index + 1],
                             ats[red_index + 2]);  // we assume green, blue follow on consecutively
         if (col.dot(colour_vec) < 1.0)
+        {
           forest_in.trees.push_back(tree);
+        }
         else
+        {
           forest_out.trees.push_back(tree);
+        }
       }
     }
   }
@@ -122,9 +139,13 @@ int main(int argc, char *argv[])
     {
       auto &pos = tree.segments()[0].tip;
       if (std::abs(pos[0]) < box.value()[0] && std::abs(pos[1]) < box.value()[1] && std::abs(pos[2]) < box.value()[2])
+      {
         forest_in.trees.push_back(tree);
+      }
       else
+      {
         forest_out.trees.push_back(tree);
+      }
     }
   }
 

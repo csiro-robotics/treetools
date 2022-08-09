@@ -8,6 +8,7 @@
 
 namespace tree
 {
+/// remove all branches which are less than the specified diameter
 void pruneDiameter(ray::ForestStructure &forest, double diameter_value, ray::ForestStructure &new_forest)
 {
   new_forest = forest;
@@ -18,7 +19,10 @@ void pruneDiameter(ray::ForestStructure &forest, double diameter_value, ray::For
     // temporarily get the children list, it helps
     std::vector<std::vector<int>> children(tree.segments().size());
     std::vector<double> max_diameter(tree.segments().size(), 0);
-    for (size_t i = 1; i < tree.segments().size(); i++) children[tree.segments()[i].parent_id].push_back((int)i);
+    for (size_t i = 1; i < tree.segments().size(); i++) 
+    {
+      children[tree.segments()[i].parent_id].push_back((int)i);
+    }
     for (size_t i = 0; i < tree.segments().size(); i++)
     {
       if (children[i].size() == 0)  // a leaf, so ...
@@ -75,6 +79,7 @@ void pruneDiameter(ray::ForestStructure &forest, double diameter_value, ray::For
   }
 }
 
+/// remove the specifiied length from the end of all branches
 void pruneLength(ray::ForestStructure &forest, double length_value, ray::ForestStructure &new_forest)
 {
   new_forest = forest;
@@ -85,7 +90,10 @@ void pruneLength(ray::ForestStructure &forest, double length_value, ray::ForestS
     // temporarily get the children list, it helps
     std::vector<std::vector<int>> children(tree.segments().size());
     std::vector<double> min_length_from_leaf(tree.segments().size(), 1e10);
-    for (size_t i = 1; i < tree.segments().size(); i++) children[tree.segments()[i].parent_id].push_back((int)i);
+    for (size_t i = 1; i < tree.segments().size(); i++) 
+    {
+      children[tree.segments()[i].parent_id].push_back((int)i);
+    }
     for (size_t i = 0; i < tree.segments().size(); i++)
     {
       if (children[i].size() == 0)  // a leaf, so ...
@@ -142,7 +150,9 @@ void pruneLength(ray::ForestStructure &forest, double length_value, ray::ForestS
           new_tree.segments().back().parent_id = new_index[seg.parent_id];
         }
         else
+        {
           new_index[i] = new_index[tree.segments()[i].parent_id];
+        }
       }
     }
     if (new_tree.segments().size() == 1)  // remove this tree

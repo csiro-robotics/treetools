@@ -25,7 +25,6 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
-// Read in a ray cloud and convert it into an array for topological optimisation
 int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file;
@@ -54,7 +53,7 @@ int main(int argc, char *argv[])
     {
       children[tree.segments()[i].parent_id].push_back((int)i);
     }
-    double full_rad_sqr = tree.segments()[0].radius * tree.segments()[0].radius;
+    const double full_rad_sqr = tree.segments()[0].radius * tree.segments()[0].radius;
 
     const int num_iterations = 4;
     for (int iteration = 0; iteration < num_iterations; iteration++)
@@ -70,9 +69,9 @@ int main(int argc, char *argv[])
       for (size_t i = 1; i < tree.segments().size(); i++)
       {
         auto &segment = tree.segments()[i];
-        Eigen::Vector3d segment_tip = old_tips[i];
-        Eigen::Vector3d parent_tip = old_tips[segment.parent_id];
-        size_t num_kids = children[i].size();
+        const Eigen::Vector3d segment_tip = old_tips[i];
+        const Eigen::Vector3d parent_tip = old_tips[segment.parent_id];
+        const size_t num_kids = children[i].size();
         Eigen::Vector3d child_tip(0, 0, 0);
         if (num_kids == 0)  // end of branch. Usually thin so do nothing
         {
@@ -87,8 +86,8 @@ int main(int argc, char *argv[])
           double weight = 0.0;
           for (auto &child : children[i])
           {
-            double rad = tree.segments()[child].radius;
-            double rad_sqr = rad * rad;
+            const double rad = tree.segments()[child].radius;
+            const double rad_sqr = rad * rad;
             child_tip += old_tips[child] * rad_sqr;
             weight += rad_sqr;
           }
@@ -97,11 +96,11 @@ int main(int argc, char *argv[])
             child_tip /= weight;
           }
         }
-        Eigen::Vector3d dir = (child_tip - parent_tip).normalized();
-        Eigen::Vector3d straight_tip = parent_tip + dir * (segment_tip - parent_tip).dot(dir);
-        double rad_sqr = segment.radius * segment.radius;
-        double blend = 0.5 * rad_sqr / full_rad_sqr;
-        Eigen::Vector3d new_tip = segment_tip * (1.0 - blend) + straight_tip * blend;
+        const Eigen::Vector3d dir = (child_tip - parent_tip).normalized();
+        const Eigen::Vector3d straight_tip = parent_tip + dir * (segment_tip - parent_tip).dot(dir);
+        const double rad_sqr = segment.radius * segment.radius;
+        const double blend = 0.5 * rad_sqr / full_rad_sqr;
+        const Eigen::Vector3d new_tip = segment_tip * (1.0 - blend) + straight_tip * blend;
         if (segment.parent_id == -1)
         {
           root_shift += (segment.tip - new_tip) * 0.5 * rad_sqr;  // 50% otherwise it is disproportionately pliant

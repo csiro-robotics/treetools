@@ -28,28 +28,26 @@ double treeOverlapVolume(const ray::TreeStructure &tree1, const ray::TreeStructu
   for (size_t i = 1; i < tree1.segments().size(); i++)
   {
     auto &branch = tree1.segments()[i];
-    Eigen::Vector3d base = tree1.segments()[branch.parent_id].tip;
-    tree::Cylinder cyl1(branch.tip, base, tree1_rad_scale * branch.radius);
+    const Eigen::Vector3d base = tree1.segments()[branch.parent_id].tip;
+    const tree::Cylinder cyl1(branch.tip, base, tree1_rad_scale * branch.radius);
     for (size_t j = 1; j < tree2.segments().size(); j++)
     {
       auto &other = tree2.segments()[j];
-      Eigen::Vector3d base2 = tree2.segments()[other.parent_id].tip;
-      tree::Cylinder cyl2(other.tip, base2, other.radius);
+      const Eigen::Vector3d base2 = tree2.segments()[other.parent_id].tip;
+      const tree::Cylinder cyl2(other.tip, base2, other.radius);
       if ((cyl2.v2 - cyl2.v1).squaredNorm() < eps)
         continue;
-      volume += tree::intersectionVolume(cyl1, cyl2);
+      volume += tree::approximateIntersectionVolume(cyl1, cyl2);
     }
   }
   return volume;
 }
 
-
-// Read in a ray cloud and convert it into an array for topological optimisation
 int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file1, forest_file2;
   ray::OptionalFlagArgument include_growth("include_growth", 'i');
-  bool parsed = ray::parseCommandLine(argc, argv, { &forest_file1, &forest_file2 }, { &include_growth });
+  const bool parsed = ray::parseCommandLine(argc, argv, { &forest_file1, &forest_file2 }, { &include_growth });
   if (!parsed)
   {
     usage();
@@ -77,12 +75,14 @@ int main(int argc, char *argv[])
     for (size_t j = 0; j < trees2.size(); j++)
     {
       if (std::find(trunk_matches.begin(), trunk_matches.end(), j) != trunk_matches.end())
+      {
         continue;  // don't look at matches we have already made
+      }
       auto &tree2 = trees2[j];
       double total_radius = tree1.segments()[0].radius + tree2.segments()[0].radius;
       Eigen::Vector3d dif = tree1.segments()[0].tip - tree2.segments()[0].tip;
       dif[2] = 0.0;
-      double overlap = dif.norm() / total_radius;
+      const double overlap = dif.norm() / total_radius;
       if (overlap < min_overlap && overlap < 1.0)
       {
         min_overlap = overlap;
@@ -128,11 +128,13 @@ int main(int argc, char *argv[])
   for (size_t i = 0; i < trees1.size(); i++)
   {
     if (trunk_matches[i] == -1)
+    {
       continue;
+    }
     auto &tree1 = trees1[i];
     auto &tree2 = trees2[trunk_matches[i]];
-    double tree1_volume = tree1.volume();
-    double tree2_volume = tree2.volume();
+    const double tree1_volume = tree1.volume();
+    const double tree2_volume = tree2.volume();
 
     // now we need to home in on the growth difference between the two versions of the trees.
     // here we assume that the point cloud aligning was perfect, so just adjust the scale for best match.
@@ -151,8 +153,8 @@ int main(int argc, char *argv[])
         for (double rad_scale = scale_mid - scale_range; rad_scale <= scale_mid + scale_range;
              rad_scale += scale_range / divisions)
         {
-          double overlap = treeOverlapVolume(tree1, tree2, rad_scale);
-          double overlap_percent = overlap * 2.0 / (rad_scale * rad_scale * tree1_volume + tree2_volume);
+          const double overlap = treeOverlapVolume(tree1, tree2, rad_scale);
+          const double overlap_percent = overlap * 2.0 / (rad_scale * rad_scale * tree1_volume + tree2_volume);
           if (overlap_percent > max_overlap_percent)
           {
             max_overlap = overlap;
@@ -161,7 +163,9 @@ int main(int argc, char *argv[])
           }
         }
         if (max_overlap_scale == 0.0)
+        {
           std::cout << "error: trunks overlap but no overlap scale found. This shouldn't happen" << std::endl;
+        }
         scale_mid = max_overlap_scale;
         scale_range /= divisions;
       }

@@ -23,7 +23,6 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
-// Read in a ray cloud and convert it into an array for topological optimisation
 int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file;
@@ -31,8 +30,8 @@ int main(int argc, char *argv[])
   ray::TextArgument cm("cm"), m("m"), long_text("long");
   ray::KeyValueChoice choice({ "diameter", "length" }, { &diameter, &length });
 
-  bool prune_diameter = ray::parseCommandLine(argc, argv, { &forest_file, &diameter, &cm });
-  bool prune_length = ray::parseCommandLine(argc, argv, { &forest_file, &length, &m, &long_text });
+  const bool prune_diameter = ray::parseCommandLine(argc, argv, { &forest_file, &diameter, &cm });
+  const bool prune_length = ray::parseCommandLine(argc, argv, { &forest_file, &length, &m, &long_text });
   if (!prune_diameter && !prune_length)
   {
     usage();
@@ -50,9 +49,13 @@ int main(int argc, char *argv[])
   }
   ray::ForestStructure new_forest;
   if (prune_diameter)
+  {
     tree::pruneDiameter(forest, diameter.value(), new_forest);
+  }
   else if (prune_length)
+  {
     tree::pruneLength(forest, length.value(), new_forest);
+  }
 
 
   if (new_forest.trees.empty())

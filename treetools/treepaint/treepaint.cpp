@@ -29,7 +29,6 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
-// Read in a ray cloud and convert it into an array for topological optimisation
 int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file, cloud_file;
@@ -38,8 +37,8 @@ int main(int argc, char *argv[])
   ray::OptionalKeyValueArgument max_brightness_option("max_colour", 'm', &max_brightness);
 
   ray::Vector3dArgument coord;
-  bool tree_format = ray::parseCommandLine(argc, argv, { &forest_file, &cloud_file }, { &max_brightness_option });
-  bool branch_format = ray::parseCommandLine(argc, argv, { &forest_file, &cloud_file }, { &max_brightness_option });
+  const bool tree_format = ray::parseCommandLine(argc, argv, { &forest_file, &cloud_file }, { &max_brightness_option });
+  const bool branch_format = ray::parseCommandLine(argc, argv, { &forest_file, &cloud_file }, { &max_brightness_option });
   if (!tree_format && !branch_format)
   {
     usage();
@@ -51,7 +50,7 @@ int main(int argc, char *argv[])
     usage();
   }
 
-  std::string attributes[4] = { "red", "green", "blue", "section_id" };
+  const std::string attributes[4] = { "red", "green", "blue", "section_id" };
   int att_ids[4];
   auto &att = forest.trees[0].attributes();
   for (int i = 0; i < 4; i++)
@@ -71,14 +70,19 @@ int main(int argc, char *argv[])
   int segment_id = att_ids[3];
   double max_shade = 0.0;
   if (max_brightness_option.isSet())
+  {
     max_shade = max_brightness.value();
+  }
   else
   {
     for (auto &tree : forest.trees)
     {
       for (auto &segment : tree.segments())
       {
-        for (int i = 0; i < 3; i++) max_shade = std::max(max_shade, segment.attributes[att_ids[i]]);
+        for (int i = 0; i < 3; i++) 
+        {
+          max_shade = std::max(max_shade, segment.attributes[att_ids[i]]);
+        }
       }
     }
   }
@@ -108,7 +112,9 @@ int main(int argc, char *argv[])
 
   ray::CloudWriter writer;
   if (!writer.begin(out_file))
+  {
     usage();
+  }
 
   auto colour_rays = [&](std::vector<Eigen::Vector3d> &starts, std::vector<Eigen::Vector3d> &ends,
                          std::vector<double> &times, std::vector<ray::RGBA> &colours) {

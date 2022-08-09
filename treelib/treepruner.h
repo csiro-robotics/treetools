@@ -14,10 +14,10 @@
 namespace tree
 {
 /// remove all branches which are less than the specified diameter
-void pruneDiameter(ray::ForestStructure &forest, double diameter, ray::ForestStructure &new_forest);
+void TREELIB_EXPORT pruneDiameter(ray::ForestStructure &forest, double diameter, ray::ForestStructure &new_forest);
 
 /// remove the specifiied length from the end of all branches
-void pruneLength(ray::ForestStructure &forest, double length, ray::ForestStructure &new_forest);
+void TREELIB_EXPORT pruneLength(ray::ForestStructure &forest, double length, ray::ForestStructure &new_forest);
 }  // namespace tree
 
 #endif  // TREELIB_TREEPRUNER_H

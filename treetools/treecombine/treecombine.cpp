@@ -26,11 +26,10 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
-// Read in a ray cloud and convert it into an array for topological optimisation
 int main(int argc, char *argv[])
 {
   ray::FileArgumentList tree_files(2);
-  bool parsed = ray::parseCommandLine(argc, argv, { &tree_files });
+  const bool parsed = ray::parseCommandLine(argc, argv, { &tree_files });
   if (!parsed)
   {
     usage();
@@ -110,7 +109,7 @@ int main(int argc, char *argv[])
     else if (same_data)
     {
       std::vector<int> att_locations(forest.trees[0].attributes().size(), -1);
-      auto &atts = combined_forest.trees[0].attributes();
+      const auto &atts = combined_forest.trees[0].attributes();
       for (size_t j = 0; j < forest.trees[0].attributes().size(); j++)
       {
         const auto &it = std::find(atts.begin(), atts.end(), forest.trees[0].attributes()[j]);
@@ -121,7 +120,7 @@ int main(int argc, char *argv[])
       }
       for (size_t l = 0; l < att_locations.size(); l++)
       {
-        int id = att_locations[l];
+        const int id = att_locations[l];
         if (id == -1)
         {
           for (size_t j = 0; j < forest.trees.size(); j++)

@@ -40,12 +40,13 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
+// render the log-log data to an svg file.
 void renderGraph(const std::string &filename, std::vector<Eigen::Vector2d> &loglog, double a, double b)
 {
-  double width = 300;
-  double height = 200;
-  double canvas_width = width + 10;
-  double canvas_height = height + 10;
+  const double width = 300;
+  const double height = 200;
+  const double canvas_width = width + 10;
+  const double canvas_height = height + 10;
   std::ofstream ofs(filename + ".svg");
   ofs << "<svg version=\"1.1\" width=\"" << canvas_width << "\" height=\"" << canvas_height
       << "\" xmlns=\"http://www.w3.org/2000/svg\">" << std::endl;
@@ -59,12 +60,12 @@ void renderGraph(const std::string &filename, std::vector<Eigen::Vector2d> &logl
     miny = std::min(miny, p[1]);
     maxy = std::max(maxy, p[1]);
   }
-  Eigen::Vector2d horiz0(0, 0), horiz1(width, 0);
-  Eigen::Vector2d vert0(0, 0), vert1(0, height);
-  Eigen::Vector2d bf0(0, height * ((a + minx * b) - miny) / (maxy - miny)),
+  const Eigen::Vector2d horiz0(0, 0), horiz1(width, 0);
+  const Eigen::Vector2d vert0(0, 0), vert1(0, height);
+  const Eigen::Vector2d bf0(0, height * ((a + minx * b) - miny) / (maxy - miny)),
     bf1(width, height * ((a + maxx * b) - miny) / (maxy - miny));
-  std::vector<Eigen::Vector2d> v0 = { horiz0, vert0, bf0 };
-  std::vector<Eigen::Vector2d> v1 = { horiz1, vert1, bf1 };
+  const std::vector<Eigen::Vector2d> v0 = { horiz0, vert0, bf0 };
+  const std::vector<Eigen::Vector2d> v1 = { horiz1, vert1, bf1 };
   for (size_t i = 0; i < v0.size(); i++)
   {
     ofs << "<line x1=\"" << v0[i][0] << "\" y1=\"" << canvas_height - v0[i][1] << "\" x2=\"" << v1[i][0] << "\" y2=\""
@@ -73,14 +74,9 @@ void renderGraph(const std::string &filename, std::vector<Eigen::Vector2d> &logl
 
   for (auto &p : loglog)
   {
-    double x = width * (p[0] - minx) / (maxx - minx);
-    double y = height * (p[1] - miny) / (maxy - miny);
-    double rad = 1;
-    /*    double px = std::log(std::exp(p[0]) + 0.5*2.0);
-        double x2 = width * (px - minx) / (maxx - minx);
-        ofs << "<circle cx=\"" << x2 << "\" cy=\"" << canvas_height - y << "\" r=\"" << rad << "\" stroke-width=\"0\"
-       fill=\"red\" />" << std::endl;
-    */
+    const double x = width * (p[0] - minx) / (maxx - minx);
+    const double y = height * (p[1] - miny) / (maxy - miny);
+    const double rad = 1;
     ofs << "<circle cx=\"" << x << "\" cy=\"" << canvas_height - y << "\" r=\"" << rad
         << "\" stroke-width=\"0\" fill=\"green\" />" << std::endl;
   }
@@ -105,11 +101,13 @@ void calculatePowerLaw(std::vector<double> &xs, double &c, double &d, double &r2
   double total_weight = 1e-10;
   for (int i = 0; i < (int)loglog.size(); i++)
   {
-    int i0 = std::max(0, i - 1);
-    int i2 = std::min(i + 1, (int)loglog.size() - 1);
+    const int i0 = std::max(0, i - 1);
+    const int i2 = std::min(i + 1, (int)loglog.size() - 1);
     weights[i] = loglog[i2][0] - loglog[i0][0];
     if (i == 0 || i == (int)loglog.size() - 1)
+    {
       weights[i] *= 2.0;  // because it is hampered by being on the end
+    }
     total_weight += weights[i];
   }
   Eigen::Vector2d mean(0, 0);
@@ -130,11 +128,13 @@ void calculatePowerLaw(std::vector<double> &xs, double &c, double &d, double &r2
 
   // based on http://mathworld.wolfram.com/LeastSquaresFitting.html
   // log # = a + b * log diam
-  double b = xy / xx;
-  double a = mean[1] - b * mean[0];
+  const double b = xy / xx;
+  const double a = mean[1] - b * mean[0];
   r2 = xy * xy / (xx * yy);
   if (graph_file != "")
+  {
     renderGraph(graph_file, loglog, a, b);
+  }
 
   // convert from log-log back to power law
   c = std::exp(a);
@@ -167,9 +167,11 @@ void setTrunkBend(ray::TreeStructure &tree, const std::vector<std::vector<int>> 
     }
   }
   if (ids.size() <= 2)  // zero bend in these edge cases
+  {
     return;
+  }
 
-  double length = (tree.segments()[0].tip - tree.segments()[ids.back()].tip).norm();
+  const double length = (tree.segments()[0].tip - tree.segments()[ids.back()].tip).norm();
   struct Accumulator
   {
     Accumulator()
@@ -198,10 +200,10 @@ void setTrunkBend(ray::TreeStructure &tree, const std::vector<std::vector<int>> 
   for (auto &id : ids)
   {
     auto &seg = tree.segments()[id];
-    Eigen::Vector3d to_point = seg.tip - mean;
-    Eigen::Vector2d offset(to_point[0], to_point[1]);
-    double w = sqr(seg.radius);
-    double h = to_point[2];
+    const Eigen::Vector3d to_point = seg.tip - mean;
+    const Eigen::Vector2d offset(to_point[0], to_point[1]);
+    const double w = sqr(seg.radius);
+    const double h = to_point[2];
     sum.x += h * w;
     sum.y += offset * w;
     sum.xy += h * offset * w;
@@ -210,26 +212,26 @@ void setTrunkBend(ray::TreeStructure &tree, const std::vector<std::vector<int>> 
 
   // based on http://mathworld.wolfram.com/LeastSquaresFitting.html
   Eigen::Vector2d sXY = sum.xy - sum.x * sum.y / total_weight;
-  double sXX = sum.x2 - sum.x * sum.x / total_weight;
+  const double sXX = sum.x2 - sum.x * sum.x / total_weight;
   if (std::abs(sXX) > 1e-10)
     sXY /= sXX;
 
-  Eigen::Vector3d grad(sXY[0], sXY[1], 1.0);
+  const Eigen::Vector3d grad(sXY[0], sXY[1], 1.0);
 
   // now get sigma relative to the line
   double variance = 0.0;
   for (auto &id : ids)
   {
     auto &seg = tree.segments()[id];
-    double h = seg.tip[2] - mean[2];
-    Eigen::Vector3d pos = mean + grad * h;
+    const double h = seg.tip[2] - mean[2];
+    const Eigen::Vector3d pos = mean + grad * h;
     Eigen::Vector3d dif = (pos - seg.tip);
     dif[2] = 0.0;
     variance += dif.squaredNorm() * sqr(seg.radius);
   }
   variance /= total_weight;
-  double sigma = std::sqrt(variance);
-  double bend = sigma / length;
+  const double sigma = std::sqrt(variance);
+  const double bend = sigma / length;
 
   for (auto &id : ids)
   {
@@ -238,8 +240,7 @@ void setTrunkBend(ray::TreeStructure &tree, const std::vector<std::vector<int>> 
 }
 
 /// How much the tree is similar to a palm tree
-void setMonocotal(ray::TreeStructure &tree, const std::vector<std::vector<int>> &children, int monocotal_id,
-                  int bend_id, int length_id)
+void setMonocotal(ray::TreeStructure &tree, const std::vector<std::vector<int>> &children, int monocotal_id)
 {
   // One per child of root, this is because many palms can grow from a single point at the bottom.
   double max_monocotal = 0.0;
@@ -252,14 +253,14 @@ void setMonocotal(ray::TreeStructure &tree, const std::vector<std::vector<int>> 
       segment = children[segment][0];
     }
     // 2. get distance to root:
-    Eigen::Vector3d branch_point = tree.segments()[segment].tip;
-    double straight_distance = (branch_point - tree.segments()[0].tip).norm();
+    const Eigen::Vector3d branch_point = tree.segments()[segment].tip;
+    const double straight_distance = (branch_point - tree.segments()[0].tip).norm();
     // 3. get path length to root:
     double path_length = 0.0;
     int top_segment = segment;
     while (tree.segments()[segment].parent_id != -1)
     {
-      int par = tree.segments()[segment].parent_id;
+      const int par = tree.segments()[segment].parent_id;
       path_length += (tree.segments()[segment].tip - tree.segments()[par].tip).norm();
       segment = par;
     }
@@ -273,12 +274,11 @@ void setMonocotal(ray::TreeStructure &tree, const std::vector<std::vector<int>> 
       num_branches += children[list[i]].size() > 1 ? (int)children[list[i]].size() : 0;
       list.insert(list.end(), children[list[i]].begin(), children[list[i]].end());
     }
-    double dist_to_top = max_height - tree.segments()[top_segment].tip[2];
+    const double dist_to_top = max_height - tree.segments()[top_segment].tip[2];
 
     // 5. combine into a value for 'palmtree-ness'
-    double monocotal =
-      straight_distance /
-      (path_length + dist_to_top);  // this rewards a straight trunk with a small height from first branch point to peak
+    // this rewards a straight trunk with a small height from first branch point to peak
+    double monocotal = straight_distance / (path_length + dist_to_top);  
     if (num_branches < 5)  // this is a long pole with little on top. We shouldn't consider this a signal of being
                            // monocotal, even though it could be a dead one
     {
@@ -295,14 +295,12 @@ void setMonocotal(ray::TreeStructure &tree, const std::vector<std::vector<int>> 
   tree.segments()[0].attributes[monocotal_id] = max_monocotal;
 }
 
-
-// Read in a ray cloud and convert it into an array for topological optimisation
 int main(int argc, char *argv[])
 {
   std::cout.setf(std::ios::fixed, std::ios::floatfield);
   std::cout.precision(3);
   ray::FileArgument forest_file;
-  bool parsed = ray::parseCommandLine(argc, argv, { &forest_file });
+  const bool parsed = ray::parseCommandLine(argc, argv, { &forest_file });
   if (!parsed)
   {
     usage();
@@ -324,21 +322,21 @@ int main(int argc, char *argv[])
   std::cout << "Information" << std::endl;
   std::cout << std::endl;
 
-  int num_attributes = (int)forest.trees[0].attributes().size();
-  std::vector<std::string> new_attributes = { "volume",       "diameter",  "length",   "strength",
-                                              "min_strength", "dominance", "angle",    "bend",
-                                              "children",     "dimension", "monocotal" };
-  int volume_id = num_attributes + 0;
-  int diameter_id = num_attributes + 1;
-  int length_id = num_attributes + 2;
-  int strength_id = num_attributes + 3;
-  int min_strength_id = num_attributes + 4;
-  int dominance_id = num_attributes + 5;
-  int angle_id = num_attributes + 6;
-  int bend_id = num_attributes + 7;
-  int children_id = num_attributes + 8;
-  int dimension_id = num_attributes + 9;
-  int monocotal_id = num_attributes + 10;
+  const int num_attributes = (int)forest.trees[0].attributes().size();
+  const std::vector<std::string> new_attributes = { "volume",       "diameter",  "length",   "strength",
+                                                    "min_strength", "dominance", "angle",    "bend",
+                                                    "children",     "dimension", "monocotal" };
+  const int volume_id = num_attributes + 0;
+  const int diameter_id = num_attributes + 1;
+  const int length_id = num_attributes + 2;
+  const int strength_id = num_attributes + 3;
+  const int min_strength_id = num_attributes + 4;
+  const int dominance_id = num_attributes + 5;
+  const int angle_id = num_attributes + 6;
+  const int bend_id = num_attributes + 7;
+  const int children_id = num_attributes + 8;
+  const int dimension_id = num_attributes + 9;
+  const int monocotal_id = num_attributes + 10;
   auto &att = forest.trees[0].attributes();
   for (auto &new_at : new_attributes)
   {
@@ -362,7 +360,7 @@ int main(int argc, char *argv[])
     {
       for (auto &segment : tree.segments())
       {
-        double val = segment.attributes[i];
+        const double val = segment.attributes[i];
         max_val = std::max(max_val, val);
         min_val = std::min(min_val, val);
         value += val;
@@ -380,7 +378,10 @@ int main(int argc, char *argv[])
   int num_total = 0;
   for (auto &tree : forest.trees)
   {
-    for (auto &new_at : new_attributes) tree.attributes().push_back(new_at);
+    for (auto &new_at : new_attributes) 
+    {
+      tree.attributes().push_back(new_at);
+    }
     for (auto &segment : tree.segments())
     {
       min_branch_radius = std::min(min_branch_radius, segment.radius);
@@ -422,7 +423,10 @@ int main(int argc, char *argv[])
   {
     // get the children
     std::vector<std::vector<int>> children(tree.segments().size());
-    for (size_t i = 1; i < tree.segments().size(); i++) children[tree.segments()[i].parent_id].push_back((int)i);
+    for (size_t i = 1; i < tree.segments().size(); i++) 
+    {
+      children[tree.segments()[i].parent_id].push_back((int)i);
+    }
 
     double tree_dominance = 0.0;
     double tree_angle = 0.0;
@@ -443,7 +447,7 @@ int main(int argc, char *argv[])
         int child = I;
         while (j != -1)
         {
-          double dist =
+          const double dist =
             tree.segments()[child].attributes[length_id] + (tree.segments()[I].tip - tree.segments()[j].tip).norm();
           double &length = tree.segments()[I].attributes[length_id];
           if (dist > length)
@@ -469,8 +473,8 @@ int main(int argc, char *argv[])
         {
           double rad = tree.segments()[child].radius;
           Eigen::Vector3d dir = tree.segments()[child].tip - tree.segments()[i].tip;
-          if (children[child].size() ==
-              1)  // we go up a segment if we can, as the radius and angle will have settled better here
+          // we go up a segment if we can, as the radius and angle will have settled better here
+          if (children[child].size() == 1)  
           {
             rad = tree.segments()[children[child][0]].radius;
             dir = tree.segments()[children[child][0]].tip - tree.segments()[child].tip;
@@ -488,14 +492,14 @@ int main(int argc, char *argv[])
             dir2 = dir;
           }
         }
-        double weight = sqr(max_rad) + sqr(second_max);
-        double dominance = -1.0 + 2.0 * sqr(max_rad) / weight;
+        const double weight = sqr(max_rad) + sqr(second_max);
+        const double dominance = -1.0 + 2.0 * sqr(max_rad) / weight;
         tree.segments()[i].attributes[dominance_id] = dominance;
         // now where do we spread this to?
         // if we spread to leaves then base will be empty, if we spread to parent then leave will be empty...
         tree_dominance += weight * dominance;
         total_weight += weight;
-        double branch_angle = (180.0 / ray::kPi) * std::atan2(dir1.cross(dir2).norm(), dir1.dot(dir2));
+        const double branch_angle = (180.0 / ray::kPi) * std::atan2(dir1.cross(dir2).norm(), dir1.dot(dir2));
         tree.segments()[i].attributes[angle_id] = branch_angle;
         tree_angle += weight * branch_angle;
         tree.segments()[i].attributes[children_id] = (double)children[i].size();
@@ -503,14 +507,16 @@ int main(int argc, char *argv[])
       }
     }
     for (auto &child : children[0])
+    {
       tree.segments()[0].attributes[length_id] =
         std::max(tree.segments()[0].attributes[length_id], tree.segments()[child].attributes[length_id]);
+    }
     if (children[0].size() > 0)
     {
       tree.segments()[0].attributes[children_id] = (double)children[0].size();
     }
     setTrunkBend(tree, children, bend_id, length_id);
-    setMonocotal(tree, children, monocotal_id, bend_id, length_id);
+    setMonocotal(tree, children, monocotal_id);
 
     std::vector<double> lengths;
     for (auto &seg : tree.segments())
@@ -525,8 +531,11 @@ int main(int argc, char *argv[])
     {
       double c, d, r2;
       calculatePowerLaw(lengths, c, d, r2);
-      double tree_dimension = std::min(-d, 3.0);
-      for (auto &seg : tree.segments()) seg.attributes[dimension_id] = tree_dimension;
+      const double tree_dimension = std::min(-d, 3.0);
+      for (auto &seg : tree.segments()) 
+      {
+        seg.attributes[dimension_id] = tree_dimension;
+      }
       total_dimension += tree_dimension;
       max_dimension = std::max(max_dimension, tree_dimension);
       min_dimension = std::min(min_dimension, tree_dimension);
@@ -558,13 +567,13 @@ int main(int argc, char *argv[])
     for (size_t i = 1; i < tree.segments().size(); i++)
     {
       auto &branch = tree.segments()[i];
-      double volume =
+      const double volume =
         ray::kPi * (branch.tip - tree.segments()[branch.parent_id].tip).norm() * branch.radius * branch.radius;
       branch.attributes[volume_id] = volume;
       branch.attributes[diameter_id] = 2.0 * branch.radius;
       tree_diameter = std::max(tree_diameter, branch.attributes[diameter_id]);
       tree_volume += volume;
-      double denom = std::max(1e-10, branch.attributes[length_id]);  // avoid a divide by 0
+      const double denom = std::max(1e-10, branch.attributes[length_id]);  // avoid a divide by 0
       branch.attributes[strength_id] = std::pow(branch.attributes[diameter_id], 3.0 / 4.0) / denom;
     }
     tree.segments()[0].attributes[volume_id] = tree_volume;
@@ -581,17 +590,20 @@ int main(int argc, char *argv[])
     tree_lengths.push_back(tree.segments()[0].attributes[length_id]);
     tree.segments()[0].attributes[strength_id] =
       std::pow(tree_diameter, 3.0 / 4.0) / std::max(1e-10, tree.segments()[0].attributes[length_id]);
-    double tree_strength = tree.segments()[0].attributes[strength_id];
+    const double tree_strength = tree.segments()[0].attributes[strength_id];
     total_strength += tree_strength;
     min_strength = std::min(min_strength, tree_strength);
     max_strength = std::max(max_strength, tree_strength);
-    double tree_bend = tree.segments()[0].attributes[bend_id];
+    const double tree_bend = tree.segments()[0].attributes[bend_id];
     total_bend += tree_bend;
     min_bend = std::min(min_bend, tree_bend);
     max_bend = std::max(max_bend, tree_bend);
 
     // alright, now how do we get the minimum strength from tip to root?
-    for (auto &segment : tree.segments()) segment.attributes[min_strength_id] = 1e10;
+    for (auto &segment : tree.segments()) 
+    {
+      segment.attributes[min_strength_id] = 1e10;
+    }
     std::vector<int> inds = children[0];
     for (size_t i = 0; i < inds.size(); i++)
     {
@@ -599,7 +611,10 @@ int main(int argc, char *argv[])
       auto &seg = tree.segments()[j];
       seg.attributes[min_strength_id] =
         std::min(seg.attributes[strength_id], tree.segments()[seg.parent_id].attributes[min_strength_id]);
-      for (auto &child : children[j]) inds.push_back(child);
+      for (auto &child : children[j]) 
+      {
+        inds.push_back(child);
+      }
     }
     tree.segments()[0].attributes[min_strength_id] = tree.segments()[0].attributes[strength_id];  // no different
   }

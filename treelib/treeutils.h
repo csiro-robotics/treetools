@@ -11,7 +11,7 @@
 
 namespace tree
 {
-struct Cylinder
+struct TREELIB_EXPORT Cylinder
 {
   Cylinder(const Eigen::Vector3d &v1, const Eigen::Vector3d &v2, double radius)
     : v1(v1)
@@ -21,7 +21,8 @@ struct Cylinder
   Eigen::Vector3d v1, v2;
   double radius;
 };
-double intersectionVolume(Cylinder cyl1, Cylinder cyl2);
+/// Find the volume of intersection between two cylinders
+double TREELIB_EXPORT approximateIntersectionVolume(Cylinder cyl1, Cylinder cyl2);
 }  // namespace tree
 
 #endif  // TREELIB_TREEUTILS_H

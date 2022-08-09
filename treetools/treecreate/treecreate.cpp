@@ -26,7 +26,6 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
-// Read in a ray cloud and convert it into an array for topological optimisation
 int main(int argc, char *argv[])
 {
   ray::TextArgument tree_text("tree"), forest_text("forest");
@@ -40,9 +39,9 @@ int main(int argc, char *argv[])
   ray::OptionalKeyValueArgument tree_density_option("tree_density", 't', &tree_density);
   ray::OptionalKeyValueArgument random_factor_option("random_factor", 'r', &random_factor);
 
-  bool tree_parsed =
+  const bool tree_parsed =
     ray::parseCommandLine(argc, argv, { &tree_text, &seed }, { &max_trunk_radius_option, &random_factor_option });
-  bool forest_parsed = ray::parseCommandLine(
+  const bool forest_parsed = ray::parseCommandLine(
     argc, argv, { &forest_text, &seed },
     { &width_option, &max_trunk_radius_option, &dimension_option, &tree_density_option, &random_factor_option });
   if (!tree_parsed && !forest_parsed)

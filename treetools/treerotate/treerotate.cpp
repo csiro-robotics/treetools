@@ -28,12 +28,14 @@ int main(int argc, char *argv[])
   ray::FileArgument tree_file;
   ray::Vector3dArgument rotation_arg(-360, 360);
   if (!ray::parseCommandLine(argc, argv, { &tree_file, &rotation_arg }))
+  {
     usage();
+  }
 
   Eigen::Vector3d rot = rotation_arg.value();
   const double angle = rot.norm();
   rot /= angle;
-  Eigen::Quaterniond rotation(Eigen::AngleAxisd(angle * ray::kPi / 180.0, rot));
+  const Eigen::Quaterniond rotation(Eigen::AngleAxisd(angle * ray::kPi / 180.0, rot));
 
   ray::ForestStructure forest;
   forest.load(tree_file.name());

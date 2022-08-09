@@ -23,13 +23,12 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
-// Read in a ray cloud and convert it into an array for topological optimisation
 int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file;
   ray::TextArgument segments_text("segments");
   ray::IntArgument decimation;
-  bool parsed = ray::parseCommandLine(argc, argv, { &forest_file, &decimation, &segments_text });
+  const bool parsed = ray::parseCommandLine(argc, argv, { &forest_file, &decimation, &segments_text });
   if (!parsed)
   {
     usage();
@@ -53,7 +52,10 @@ int main(int argc, char *argv[])
     auto &tree = forest.trees[t];
     // temporarily get the children list, it helps
     std::vector<std::vector<int>> children(tree.segments().size());
-    for (size_t i = 1; i < tree.segments().size(); i++) children[tree.segments()[i].parent_id].push_back((int)i);
+    for (size_t i = 1; i < tree.segments().size(); i++) 
+    {
+      children[tree.segments()[i].parent_id].push_back((int)i);
+    }
     std::vector<int> new_index(tree.segments().size());
     std::vector<int> counts(tree.segments().size());  // count up from each branch point
     new_index[0] = 0;

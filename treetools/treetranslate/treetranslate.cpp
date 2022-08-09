@@ -25,17 +25,21 @@ int main(int argc, char *argv[])
   ray::FileArgument tree_file;
   ray::Vector3dArgument translation3;
 
-  bool vec3 = ray::parseCommandLine(argc, argv, { &tree_file, &translation3 });
-  if (!vec3)
+  if (!ray::parseCommandLine(argc, argv, { &tree_file, &translation3 }))
+  {
     usage();
+  }
 
-  Eigen::Vector3d translation = translation3.value();
+  const Eigen::Vector3d translation = translation3.value();
 
   ray::ForestStructure forest;
   forest.load(tree_file.name());
   for (auto &tree : forest.trees)
   {
-    for (auto &segment : tree.segments()) segment.tip += translation;
+    for (auto &segment : tree.segments()) 
+    {
+      segment.tip += translation;
+    }
   }
   forest.save(tree_file.name());
 
