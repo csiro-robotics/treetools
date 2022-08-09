@@ -23,6 +23,7 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
+/// This method rotates the tree cloud in-place. To undo, apply the negative rotation.
 int main(int argc, char *argv[])
 {
   ray::FileArgument tree_file;

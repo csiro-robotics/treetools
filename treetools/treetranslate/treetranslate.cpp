@@ -20,6 +20,7 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
+/// This method translates a tree file in-place. To undo, apply the negative translation.
 int main(int argc, char *argv[])
 {
   ray::FileArgument tree_file;

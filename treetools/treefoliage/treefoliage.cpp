@@ -25,6 +25,8 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
+/// This method sets a foliage_density (and foliage_sparsity) attribute per-segment into the tree file, 
+/// by estimating the one-sided leaf area density in the specified accompanying ray cloud.
 int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file, cloud_file;

@@ -26,6 +26,8 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
+/// This method splits the tree file into two files on a per-tree basis, according to the specified 
+/// criterion. 
 int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file, attribute(false);

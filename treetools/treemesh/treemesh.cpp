@@ -59,6 +59,9 @@ void addCylinder(ray::Mesh &mesh, const Eigen::Vector3d &pos1, const Eigen::Vect
   }
 }
 
+/// This method converts the tree file into a .ply mesh structure, with one cylinder approximation 
+/// per segment, coloured according to the tree file's colour attributes. 
+/// The -v option can be used if you have meshlab installed, to view the result immediately.
 int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file;

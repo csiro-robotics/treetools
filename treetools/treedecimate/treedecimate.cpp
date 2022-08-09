@@ -23,6 +23,8 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
+/// This method reduces the number of segments in a tree file, while maintaining the topology of each tree.
+/// The highest decimation therefore reduces to one cylindrical segment between two adjacent junctions
 int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file;

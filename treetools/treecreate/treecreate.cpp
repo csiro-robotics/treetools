@@ -26,6 +26,8 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
+/// This method generates a tree file according to a small set of procedural parameters and a random seed.
+/// It can generate a single tree or a firest of trees.
 int main(int argc, char *argv[])
 {
   ray::TextArgument tree_text("tree"), forest_text("forest");

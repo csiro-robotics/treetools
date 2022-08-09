@@ -295,6 +295,11 @@ void setMonocotal(ray::TreeStructure &tree, const std::vector<std::vector<int>> 
   tree.segments()[0].attributes[monocotal_id] = max_monocotal;
 }
 
+/// This method analayses and outputs statistical information on the specified tree file. 
+/// This includes bulk measures for the whole file, and also outputs a tree file with attributes added
+/// which are measures on a per-section and per-tree basis. Treecolour can then be used to visualise these
+/// more localised statistics. The method also outputs several (.svg) graphs of branch frequency 
+/// relationships 
 int main(int argc, char *argv[])
 {
   std::cout.setf(std::ios::fixed, std::ios::floatfield);

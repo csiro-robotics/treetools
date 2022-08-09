@@ -33,6 +33,9 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
+// This method adds a red, green, blue component to the tree file, set based on the specified
+// colouration scheme, such as according to the value of a specified attribute in the file.
+// By default treecolour colours in shades of grey, unless you specify the gradient_rgb.
 int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file, image_file, attribute(false);

@@ -19,7 +19,7 @@
 void usage(int exit_code = 1)
 {
   // clang-format off
-  std::cout << "Paint a tree file's colour onto a segmented point cloud." << std::endl;
+  std::cout << "Paint a tree file's colour onto a segmented ray cloud." << std::endl;
   std::cout << "The cloud should be segmented by branch or by tree" << std::endl;
   std::cout << "usage:" << std::endl;
   std::cout << "treepaint forest.txt trees_segmented.ply - paint tree colours onto segmented cloud" << std::endl;
@@ -29,6 +29,10 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
+/// This method applies the tree file's colour onto the specified segmented ray cloud. It is assumed 
+/// that the ray cloud was generated from rayextract and therefore its segment colouring matches the
+/// section_id values within the tree file. This is how the tree file's colours are applied to the correct
+/// sections of the ray cloud.
 int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file, cloud_file;

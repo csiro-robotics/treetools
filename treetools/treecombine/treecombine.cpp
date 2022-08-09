@@ -26,6 +26,9 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
+/// This method combines multiple tree files into a single file. There are currently two ways it can combine:
+/// 1. the files have the same attributes - so concatenate the files
+/// 2. the files have the same mandatory data - so concatenate the attributes
 int main(int argc, char *argv[])
 {
   ray::FileArgumentList tree_files(2);

@@ -43,6 +43,8 @@ double treeOverlapVolume(const ray::TreeStructure &tree1, const ray::TreeStructu
   return volume;
 }
 
+/// This method outputs the difference between two tree files. In particular, what percentage of
+/// trees overlap each other, and statistics of the similarity of the set of overlapping trees.
 int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file1, forest_file2;

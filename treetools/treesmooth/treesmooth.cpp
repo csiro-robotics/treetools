@@ -25,6 +25,8 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
+/// This method smoothes the locations of the cylinders in the tree file, so that trunks and 
+/// thicker branches are proportionally straighter than the small branches. 
 int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file;

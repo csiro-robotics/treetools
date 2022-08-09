@@ -24,6 +24,8 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
+/// This method is used to grow or shrink a tree file by a number of years according to a very basic
+/// model of tree growth.
 int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file;
