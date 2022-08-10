@@ -11,6 +11,7 @@
 
 namespace tree
 {
+/// Basic cylinder class
 struct TREELIB_EXPORT Cylinder
 {
   Cylinder(const Eigen::Vector3d &v1, const Eigen::Vector3d &v2, double radius)
