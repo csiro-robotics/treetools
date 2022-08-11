@@ -23,6 +23,8 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
+/// This method prunes the ends off branches according to a specified diameter or length.
+/// The pruned tree file is output with an _pruned.txt suffix.
 int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file;

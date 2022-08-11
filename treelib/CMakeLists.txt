@@ -13,11 +13,13 @@ endif()
 configure_file(treelibconfig.in.h "${CMAKE_CURRENT_BINARY_DIR}/treelibconfig.h")
 
 set(PUBLIC_HEADERS
+  treeinformation.h
   treeutils.h
 )
 
 set(SOURCES
   ${PUBLIC_HEADERS}
+  treeinformation.cpp
   treepruner.cpp
   treeutils.cpp
 )
