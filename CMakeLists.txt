@@ -24,6 +24,8 @@ ras_project(
 # Add project level options here.
 # Setup doxygen
 option(TREE_BUILD_DOXYGEN "Build doxgen documentation?" OFF)
+# Setup unit tests
+option(TREE_BUILD_TESTS "Build unit tests?" OFF)
 
 # Required packages.
 find_package(raycloudtools REQUIRED)
@@ -41,6 +43,21 @@ message(STATUS "TREETOOLS_LINK: ${TREETOOLS_LINK}")
 # Create libs
 add_subdirectory(treelib)
 add_subdirectory(treetools)
+
+# Test setup.
+if(TREE_BUILD_TESTS)
+  find_package(GTest REQUIRED)
+
+  # We can enable testing here and/or in the subdirectory, but doing it here allows us to run CTest from the build root.
+  # To run the tests, we execute:
+  #   CTest -C [Debug|Release|RelWithDebInfo|MinSizeRel] --output-on-failure
+  # CTest normally shows only a very terse test ouput, but we make sure failed tests show all output by adding
+  #   --output-on-failure
+  # The full test output is always available in:
+  #   <build>/Testing/Temporary/LastTest.log
+  enable_testing()
+  add_subdirectory(tests)
+endif(TREE_BUILD_TESTS)
 
 # Doxygen setup.
 if(TREE_BUILD_DOXYGEN)
