@@ -432,5 +432,5 @@ int main(int argc, char *argv[])
 
   std::cout << "saving per-tree and per-segment data to file" << std::endl;
   forest.save(forest_file.nameStub() + "_info.txt");
-  return 1;
+  return 0;
 }

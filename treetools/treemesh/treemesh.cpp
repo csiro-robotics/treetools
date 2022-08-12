@@ -157,5 +157,5 @@ int main(int argc, char *argv[])
   {
     return system(("meshlab " + forest_file.nameStub() + "_mesh.ply").c_str());
   }
-  return 1;
+  return 0;
 }

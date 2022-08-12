@@ -289,4 +289,5 @@ int main(int argc, char *argv[])
     }
   }
   forest.save(forest_file.nameStub() + "_coloured.txt");
+  return 0;
 }

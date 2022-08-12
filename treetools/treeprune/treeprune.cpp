@@ -68,4 +68,5 @@ int main(int argc, char *argv[])
   {
     new_forest.save(forest_file.nameStub() + "_pruned.txt");
   }
+  return 0;
 }

@@ -117,4 +117,5 @@ int main(int argc, char *argv[])
     }
   }
   forest.save(forest_file.nameStub() + "_smoothed.txt");
+  return 0;
 }

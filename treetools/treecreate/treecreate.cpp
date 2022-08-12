@@ -80,4 +80,5 @@ int main(int argc, char *argv[])
     forest.toForestStructure(forest_struct);
     forest_struct.save("forest.txt");
   }
+  return 0;
 }

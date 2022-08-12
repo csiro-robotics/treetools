@@ -118,5 +118,5 @@ int main(int argc, char *argv[])
   {
     grown_forest.save(forest_file.nameStub() + "_grown.txt");
   }
-  return 1;
+  return 0;
 }

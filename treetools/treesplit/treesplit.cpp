@@ -153,4 +153,5 @@ int main(int argc, char *argv[])
 
   forest_in.save(forest_file.nameStub() + "_inside.txt");
   forest_out.save(forest_file.nameStub() + "_outside.txt");
+  return 0;
 }

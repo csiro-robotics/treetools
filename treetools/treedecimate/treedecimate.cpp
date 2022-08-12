@@ -83,4 +83,5 @@ int main(int argc, char *argv[])
     }
   }
   new_forest.save(forest_file.nameStub() + "_decimated.txt");
+  return 0;
 }

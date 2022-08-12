@@ -147,4 +147,5 @@ int main(int argc, char *argv[])
     usage();
   }
   combined_forest.save(tree_files.files()[0].nameStub() + "_combined.txt");
+  return 0;
 }

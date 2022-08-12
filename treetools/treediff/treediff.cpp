@@ -100,6 +100,11 @@ int main(int argc, char *argv[])
       mean_radius2 += min_overlap_rad;
     }
   }
+  if (num_matches == 0)
+  {
+    std::cout << "no matches found between trees." << std::endl;
+    return 0;
+  }
   mean_overlap /= (double)num_matches;
   std::cout << 100.0 * (double)num_matches / (double)trees2.size() << "% of " << forest_file2.nameStub()
             << " trees overlap the " << forest_file1.nameStub() << " trees" << std::endl;
@@ -111,7 +116,7 @@ int main(int argc, char *argv[])
   // if we only have trunk information then this is as far as we get
   if (forest1.trees[0].segments().size() == 1 || forest2.trees[0].segments().size() == 1)
   {
-    return 1;
+    return 0;
   }
   std::cout << std::endl;
 
@@ -224,4 +229,5 @@ int main(int argc, char *argv[])
             << mean_removed_volume << " m^3 per tree." << std::endl;
   std::cout << "maximum removed volume " << max_removed_volume << " m^3 for tree at "
             << trees1[max_removal_i].root().transpose() << std::endl;
+  return 0;
 }

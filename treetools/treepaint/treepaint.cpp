@@ -148,4 +148,5 @@ int main(int argc, char *argv[])
     usage();
   }
   writer.end();
+  return 0;
 }
