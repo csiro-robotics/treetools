@@ -32,9 +32,9 @@ represents a single tree rooted at 0,0,0 with radius 0.1m and a 1m vertical heig
 
 ## Build:
 ```console
-git clone https://bitbucket.csiro.au/projects/ASR/repos/raycloudtools
+git clone https://github.com/csiro-robotics/raycloudtools
 cd raycloudtools
-git checkout experimental_victoria
+git checkout experimental
 mkdir build
 cd build
 cmake ..
