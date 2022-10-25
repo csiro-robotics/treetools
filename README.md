@@ -7,7 +7,7 @@ Tree files are text files that can either store a tree trunk per tree, or a full
 ```console
 # any initial comments
 # followed by the format:
-x,y,z,radius,parent_id,subtree_radius,red,green,blue,...      - the fields for each segment
+x,y,z,radius,parent_id,subtree_radius,red,green,blue,...      - the fields for each segment. Optionally this line begins with per-tree attributes, e.g. 'height,crown_radius, '
 comma-separated data here
 ```
 The x,y,z,radius fields are mandatory, and the parent_id field is mandatory for branch structures. All additional fields can be added at will, and are double values.

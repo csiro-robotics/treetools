@@ -65,7 +65,7 @@ namespace raytest
     EXPECT_EQ(command("treecolour forest_info.txt length"), 0);
     ray::ForestStructure forest;
     EXPECT_TRUE(forest.load("forest_info_coloured.txt"));
-    compareMoments(forest.getMoments(), {20, 25.8189, 908.824, 1.53544, 0.129849, 2.59429, 14, 91888, 10.4244});  
+    compareMoments(forest.getMoments(), {20, 25.8189, 908.824, 1.53544, 0.129849, 2.59429, 45657, 13.3538, 1.18585});  
   }
 
   /// Create two trees, then combine them
@@ -125,7 +125,7 @@ namespace raytest
 
     ray::ForestStructure forest;
     EXPECT_TRUE(forest.load("forest_trees_foliage.txt"));
-    compareMoments(forest.getMoments(), {20, 22.4323, 1037.21, 1.05798, 0.0646387, 0.917908, 3, 86012, 1960.36});
+    compareMoments(forest.getMoments(), {20, 22.4892, 1037.77, 1.36903, 0.111749, 1.73921, 86012, 0, 77.0709});
     ray::Cloud cloud;
     EXPECT_TRUE(cloud.load("forest_densities.ply"));
     compareMoments(cloud.getMoments(), {0.273292, 0.432565, 1.74031, 5.7036, 5.6054, 0.622008, 0.341838, 0.406296, 3.09499, 5.75313, 5.69983, 3.16611, 63.8625, 36.8713, 0.0936766, 0.0936766, 0.0936766, 1, 0.156845, 0.156845, 0.156845, 0});
@@ -153,7 +153,7 @@ namespace raytest
     EXPECT_EQ(command("treeinfo forest.txt"), 0);
     ray::ForestStructure forest;
     EXPECT_TRUE(forest.load("forest_info.txt"));
-    compareMoments(forest.getMoments(), {20.000, 22.294, 944.819, 1.534, 0.136, 2.909, 11.000, 43233.000, 9.601});
+    compareMoments(forest.getMoments(), {20.000, 22.294, 944.819, 1.534, 0.136, 2.909, 48618.000, 13.297, 0.956});
   }  
 
   /// Create a forest then mesh it
