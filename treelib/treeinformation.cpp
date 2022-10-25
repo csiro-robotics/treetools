@@ -258,13 +258,9 @@ void setMonocotal(ray::TreeStructure &tree, const std::vector<std::vector<int>> 
     }
 
     // 6. fill in the attributes for this root upwards
-    for (auto &id : list)
-    {
-      tree.segments()[id].attributes[monocotal_id] = monocotal;
-    }
     max_monocotal = std::max(max_monocotal, monocotal);
   }
-  tree.segments()[0].attributes[monocotal_id] = max_monocotal;
+  tree.treeAttributes()[monocotal_id] = max_monocotal;
 }
 
 }  // namespace tree
