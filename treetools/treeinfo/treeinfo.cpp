@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
   std::cout << "Information" << std::endl;
   std::cout << std::endl;
 
-  const int num_attributes = (int)forest.trees[0].attributes().size();
+  const int num_attributes = (int)forest.trees[0].attributeNames().size();
   const std::vector<std::string> new_attributes = { "volume",       "diameter",  "length",   "strength",
                                                     "min_strength", "dominance", "angle",    "bend",
                                                     "children",     "dimension", "monocotal" };
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
   const int children_id = num_attributes + 8;
   const int dimension_id = num_attributes + 9;
   const int monocotal_id = num_attributes + 10;
-  auto &att = forest.trees[0].attributes();
+  auto &att = forest.trees[0].attributeNames();
   for (auto &new_at : new_attributes)
   {
     if (std::find(att.begin(), att.end(), new_at) != att.end())
@@ -130,7 +130,7 @@ int main(int argc, char *argv[])
   {
     for (auto &new_at : new_attributes) 
     {
-      tree.attributes().push_back(new_at);
+      tree.attributeNames().push_back(new_at);
     }
     for (auto &segment : tree.segments())
     {

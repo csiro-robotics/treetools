@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
 
   // if colouring the mesh:
   int red_id = -1;
-  auto &att = forest.trees[0].attributes();
+  auto &att = forest.trees[0].attributeNames();
   const auto &it = std::find(att.begin(), att.end(), "red");
   if (it != att.end())
   {

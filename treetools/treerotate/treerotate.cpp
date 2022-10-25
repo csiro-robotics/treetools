@@ -42,7 +42,10 @@ int main(int argc, char *argv[])
   forest.load(tree_file.name());
   for (auto &tree : forest.trees)
   {
-    for (auto &segment : tree.segments()) segment.tip = rotation * segment.tip;
+    for (auto &segment : tree.segments()) 
+    {
+      segment.tip = rotation * segment.tip;
+    }
   }
   forest.save(tree_file.name());
 

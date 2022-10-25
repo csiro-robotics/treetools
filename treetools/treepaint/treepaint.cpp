@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
 
   const std::string attributes[4] = { "red", "green", "blue", "section_id" };
   int att_ids[4];
-  auto &att = forest.trees[0].attributes();
+  auto &att = forest.trees[0].attributeNames();
   for (int i = 0; i < 4; i++)
   {
     const auto &it = std::find(att.begin(), att.end(), attributes[i]);

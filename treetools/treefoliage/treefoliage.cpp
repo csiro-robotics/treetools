@@ -66,8 +66,8 @@ int main(int argc, char *argv[])
   double max_density = 0.0;
   for (auto &tree : forest.trees)
   {
-    tree.attributes().push_back("foliage_density");
-    tree.attributes().push_back("foliage_sparsity");
+    tree.attributeNames().push_back("foliage_density");
+    tree.attributeNames().push_back("foliage_sparsity");
     double tree_density = 0.0;
     double tree_weight = 0.0;
     for (size_t s = 1; s < tree.segments().size(); s++)

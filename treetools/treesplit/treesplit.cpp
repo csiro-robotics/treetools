@@ -18,10 +18,12 @@ void usage(int exit_code = 1)
   // clang-format off
   std::cout << "Split a tree file around a criterion" << std::endl;
   std::cout << "usage:" << std::endl;
-  std::cout << "treesplit forest.txt radius 0.1   - split around tree radius (or any other attribute)" << std::endl;
-  std::cout << "                     plane 0,0,1  - split around horizontal plane at height 1" << std::endl;
-  std::cout << "                     colour 0,0,1 - split around colour green value 1" << std::endl;
-  std::cout << "                     box rx,ry,rz - split around a centred box of the given radii" << std::endl;
+  std::cout << "treesplit forest.txt radius 0.1        - split around trunk radius" << std::endl;
+  std::cout << "                     tree height 0.1   - split around tree height (or any other whole-tree attribute)" << std::endl;
+  std::cout << "                     trunk strength 0.1- split around trunk strength, or any other trunk user-attribute" << std::endl;
+  std::cout << "                     plane 0,0,1       - split around horizontal plane at height 1" << std::endl;
+  std::cout << "                     colour 0,0,1      - split around colour green value 1" << std::endl;
+  std::cout << "                     box rx,ry,rz      - split around a centred box of the given radii" << std::endl;
   // clang-format on
   exit(exit_code);
 }
@@ -31,6 +33,7 @@ void usage(int exit_code = 1)
 int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file, attribute(false);
+  ray::TextArgument tree_text("tree"), trunk_text("trunk");
   ray::Vector3dArgument coord;
 
   ray::DoubleArgument value(0.0, 10000.0), radius(0.0, 10000.0);
@@ -38,12 +41,14 @@ int main(int argc, char *argv[])
   ray::KeyValueChoice choice({ "plane", "colour", "radius", "box" }, { &plane, &colour, &radius, &box });
 
   const bool parsed = ray::parseCommandLine(argc, argv, { &forest_file, &choice });
-  bool attribute_format = false;
+  bool attribute_trunk_format = false;
+  bool attribute_tree_format = false;
   if (!parsed)
   {
-    attribute_format = ray::parseCommandLine(argc, argv, { &forest_file, &attribute, &value });
+    attribute_trunk_format = ray::parseCommandLine(argc, argv, { &forest_file, &trunk_text, &attribute, &value });
+    attribute_tree_format = ray::parseCommandLine(argc, argv, { &forest_file, &tree_text, &attribute, &value });
   }
-  if (!parsed && !attribute_format)
+  if (!parsed && !attribute_trunk_format && !attribute_tree_format)
   {
     usage();
   }
@@ -55,9 +60,9 @@ int main(int argc, char *argv[])
   }
 
   ray::ForestStructure forest_in, forest_out;
-  if (attribute_format)
+  if (attribute_tree_format || attribute_trunk_format)
   {
-    auto &att = forest.trees[0].attributes();
+    auto &att = attribute_tree_format ? forest.trees[0].treeAttributeNames() : forest.trees[0].attributeNames();;
     int attribute_id = -1;
     const auto &it = std::find(att.begin(), att.end(), attribute.name());
     if (it != att.end())
@@ -73,7 +78,8 @@ int main(int argc, char *argv[])
 
     for (auto &tree : forest.trees)
     {
-      if (tree.segments()[0].attributes[attribute_id] < value.value())
+      if ((attribute_tree_format && tree.treeAttributes()[attribute_id] < value.value()) ||
+          (attribute_trunk_format && tree.segments()[0].attributes[attribute_id] < value.value()))
       {
         forest_in.trees.push_back(tree);
       }
@@ -117,10 +123,10 @@ int main(int argc, char *argv[])
     const Eigen::Vector3d colour_vec = colour.value() / colour.value().squaredNorm();
     for (auto &tree : forest.trees)
     {
-      const auto &it = std::find(tree.attributes().begin(), tree.attributes().end(), "red");
-      if (it != tree.attributes().end())
+      const auto &it = std::find(tree.attributeNames().begin(), tree.attributeNames().end(), "red");
+      if (it != tree.attributeNames().end())
       {
-        const int red_index = (int)(it - tree.attributes().begin());
+        const int red_index = (int)(it - tree.attributeNames().begin());
         auto &ats = tree.segments()[0].attributes;
         const Eigen::Vector3d col(ats[red_index], ats[red_index + 1],
                             ats[red_index + 2]);  // we assume green, blue follow on consecutively

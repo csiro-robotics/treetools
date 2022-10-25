@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
   }
 
   ray::ForestStructure combined_forest;
-  std::vector<std::string> attributes;
+  std::vector<std::string> attributes, tree_attributes;
   bool same_attributes = true, same_data = false;
 
   int num_combined = 0;
@@ -53,21 +53,13 @@ int main(int argc, char *argv[])
     }
     if (num_combined == 0)
     {
-      attributes = forest.trees[0].attributes();
+      attributes = forest.trees[0].attributeNames();
+      tree_attributes = forest.trees[0].treeAttributeNames();
     }
     else if (num_combined == 1)
     {
-      same_attributes = forest.trees[0].attributes().size() == attributes.size();
-      if (same_attributes)  // then check more closely...
-      {
-        for (size_t j = 0; j < forest.trees[0].attributes().size(); j++)
-        {
-          if (forest.trees[0].attributes()[j] != attributes[j])
-          {
-            same_attributes = false;
-          }
-        }
-      }
+      same_attributes = forest.trees[0].attributeNames() == attributes && forest.trees[0].treeAttributeNames() == tree_attributes;
+
       same_data = forest.trees.size() == combined_forest.trees.size();
       if (same_data)  // then check more closely...
       {
@@ -111,33 +103,58 @@ int main(int argc, char *argv[])
     }
     else if (same_data)
     {
-      std::vector<int> att_locations(forest.trees[0].attributes().size(), -1);
-      const auto &atts = combined_forest.trees[0].attributes();
-      for (size_t j = 0; j < forest.trees[0].attributes().size(); j++)
-      {
-        const auto &it = std::find(atts.begin(), atts.end(), forest.trees[0].attributes()[j]);
-        if (it != atts.end())
+      // If the trees share an attribute, I don't take the mean. This could mess up on large double integers
+      // instead I just keep the values in the first data set; the first data set has priority
+      { // first the tree attributes:
+        std::vector<int> att_locations(forest.trees[0].treeAttributeNames().size(), -1);
+        const auto &atts = combined_forest.trees[0].treeAttributeNames();
+        for (size_t j = 0; j < forest.trees[0].treeAttributeNames().size(); j++)
         {
-          att_locations[j] = (int)(it - atts.begin());
-        }
-      }
-      for (size_t l = 0; l < att_locations.size(); l++)
-      {
-        const int id = att_locations[l];
-        if (id == -1)
-        {
-          for (size_t j = 0; j < forest.trees.size(); j++)
+          const auto &it = std::find(atts.begin(), atts.end(), forest.trees[0].treeAttributeNames()[j]);
+          if (it != atts.end())
           {
-            combined_forest.trees[j].attributes().push_back(forest.trees[j].attributes()[l]);
-            for (size_t k = 0; k < forest.trees[j].segments().size(); k++)
+            att_locations[j] = (int)(it - atts.begin());
+          }
+        }
+        for (size_t l = 0; l < att_locations.size(); l++)
+        {
+          const int id = att_locations[l];
+          if (id == -1)
+          {
+            for (size_t j = 0; j < forest.trees.size(); j++)
             {
-              combined_forest.trees[j].segments()[k].attributes.push_back(forest.trees[j].segments()[k].attributes[l]);
+              combined_forest.trees[j].treeAttributeNames().push_back(forest.trees[j].treeAttributeNames()[l]);
+              combined_forest.trees[j].treeAttributes().push_back(forest.trees[j].treeAttributes()[l]);
             }
           }
         }
-        // shall we take the mean value? This could mess up on large double integers
-        // instead I suggest just keeping the values in the first data set
-        // so do nothing with the attribute, the first data set has priority
+      }
+      { // then the segment attributes:
+        std::vector<int> att_locations(forest.trees[0].attributeNames().size(), -1);
+        const auto &atts = combined_forest.trees[0].attributeNames();
+        for (size_t j = 0; j < forest.trees[0].attributeNames().size(); j++)
+        {
+          const auto &it = std::find(atts.begin(), atts.end(), forest.trees[0].attributeNames()[j]);
+          if (it != atts.end())
+          {
+            att_locations[j] = (int)(it - atts.begin());
+          }
+        }
+        for (size_t l = 0; l < att_locations.size(); l++)
+        {
+          const int id = att_locations[l];
+          if (id == -1)
+          {
+            for (size_t j = 0; j < forest.trees.size(); j++)
+            {
+              combined_forest.trees[j].attributeNames().push_back(forest.trees[j].attributeNames()[l]);
+              for (size_t k = 0; k < forest.trees[j].segments().size(); k++)
+              {
+                combined_forest.trees[j].segments()[k].attributes.push_back(forest.trees[j].segments()[k].attributes[l]);
+              }
+            }
+          }
+        }        
       }
     }
   }

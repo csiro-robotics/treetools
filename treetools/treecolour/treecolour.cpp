@@ -22,8 +22,12 @@ void usage(int exit_code = 1)
   std::cout << "usage:" << std::endl;
   std::cout << "treecolour forest.txt diameter - greyscale by branch diameter, or any other attribute" << std::endl;
   std::cout << "                      trunk diameter - greyscale by diameter (or any other attribute) for the trunk" << std::endl;
+  std::cout << "                      tree height - greyscale by tree height (or any other attribute) for the whole tree" << std::endl;
+  std::cout << std::endl;
   std::cout << "                      1,length,diameter - rgb values or per-segment attributes" << std::endl;
-  std::cout << "                      trunk 1,length,diameter - rgb values or per-tree attributes" << std::endl;
+  std::cout << "                      trunk 1,length,diameter - rgb values or per-trunk attributes" << std::endl;
+  std::cout << "                      tree 1,height,width - rgb values or per-tree attributes" << std::endl;
+  std::cout << std::endl;
   std::cout << "                      LAI_image.hdr 10.3,-12.4,0.2 - applies image colour to the tree file" << std::endl;
   std::cout << "                                                     at min coordinate 10.3,-12.4 and pixel width 0.2m" << std::endl;
   std::cout << "                    --multiplier 1  - apply colour scale" << std::endl;
@@ -39,7 +43,7 @@ void usage(int exit_code = 1)
 int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file, image_file, attribute(false);
-  ray::TextArgument trunk("trunk");
+  ray::TextArgument trunk("trunk"), whole_tree("tree");
   ray::DoubleArgument scale;
   ray::Vector3dArgument coord, scale3D;
   ray::OptionalFlagArgument gradient_rgb("gradient_rgb", 'g');
@@ -49,9 +53,11 @@ int main(int argc, char *argv[])
     ray::parseCommandLine(argc, argv, { &forest_file, &attribute }, { &scale3D_option, &scale_option, &gradient_rgb });
   const bool trunk_attribute_format = ray::parseCommandLine(argc, argv, { &forest_file, &trunk, &attribute },
                                                       { &scale3D_option, &scale_option, &gradient_rgb });
+  const bool  tree_attribute_format = ray::parseCommandLine(argc, argv, { &forest_file, &whole_tree, &attribute },
+                                                      { &scale3D_option, &scale_option, &gradient_rgb });
   const bool image_format =
     ray::parseCommandLine(argc, argv, { &forest_file, &image_file, &coord }, { &scale3D_option, &scale_option });
-  if (!image_format && !attribute_format && !trunk_attribute_format)
+  if (!image_format && !attribute_format && !trunk_attribute_format && !tree_attribute_format)
   {
     usage();
   }
@@ -62,7 +68,8 @@ int main(int argc, char *argv[])
     usage();
   }
 
-  auto &att = forest.trees[0].attributes();
+  auto &input_attributes = tree_attribute_format ? forest.trees[0].treeAttributeNames() : forest.trees[0].attributeNames();
+  auto &att = forest.trees[0].attributeNames();
   int red_id = (int)att.size();
   const auto &it = std::find(att.begin(), att.end(), "red");
   if (it != att.end())
@@ -74,9 +81,9 @@ int main(int argc, char *argv[])
   {
     for (auto &tree : forest.trees)
     {
-      tree.attributes().push_back("red");
-      tree.attributes().push_back("green");
-      tree.attributes().push_back("blue");
+      tree.attributeNames().push_back("red");
+      tree.attributeNames().push_back("green");
+      tree.attributeNames().push_back("blue");
       for (auto &segment : tree.segments())
       {
         segment.attributes.push_back(0);
@@ -88,7 +95,7 @@ int main(int argc, char *argv[])
   int attribute_ids[3] = { -1, -1, -1 };
   Eigen::Vector3d colour(0, 0, 0);
   int num_attributes = 0;
-  if (attribute_format || trunk_attribute_format)
+  if (attribute_format || trunk_attribute_format || tree_attribute_format)
   {
     std::stringstream ss(attribute.name());
     std::string field;
@@ -104,10 +111,10 @@ int main(int argc, char *argv[])
       colour[num_attributes] = std::strtod(str, &endptr);
       if (endptr != str + std::strlen(str))  // if conversion to a double fails then it must be an attribute
       {
-        const auto &it = std::find(att.begin(), att.end(), field);
-        if (it != att.end())
+        const auto &it = std::find(input_attributes.begin(), input_attributes.end(), field);
+        if (it != input_attributes.end())
         {
-          attribute_ids[num_attributes] = (int)(it - att.begin());
+          attribute_ids[num_attributes] = (int)(it - input_attributes.begin());
           std::cout << "found attribute " << field << " at index " << attribute_ids[num_attributes] << std::endl;
         }
         else
@@ -182,6 +189,23 @@ int main(int argc, char *argv[])
       }
     }
   }
+  else if (tree_attribute_format)
+  {
+    for (auto &tree : forest.trees)
+    {
+      Eigen::Vector3d col;
+      for (int i = 0; i < 3; i++)
+      {
+        col[i] = attribute_ids[i] == -1 ? colour[i] : tree.treeAttributes()[attribute_ids[i]];
+      }
+      for (auto &segment : tree.segments())
+      {
+        segment.attributes[red_id + 0] = col[0] * scalevec[0];
+        segment.attributes[red_id + 1] = col[1] * scalevec[1];
+        segment.attributes[red_id + 2] = col[2] * scalevec[2];
+      }
+    }
+  }
   else
   {
     std::cout << "reading image: " << image_file.name() << std::endl;
@@ -203,9 +227,9 @@ int main(int argc, char *argv[])
     }
 
     int tree_radius_id = -1;
-    for (size_t i = 0; i < forest.trees[0].attributes().size(); i++)
+    for (size_t i = 0; i < forest.trees[0].attributeNames().size(); i++)
     {
-      if (forest.trees[0].attributes()[i] == "subtree_radius")
+      if (forest.trees[0].attributeNames()[i] == "subtree_radius")
       {
         tree_radius_id = (int)i;
       }
