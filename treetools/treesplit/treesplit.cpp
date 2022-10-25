@@ -18,9 +18,8 @@ void usage(int exit_code = 1)
   // clang-format off
   std::cout << "Split a tree file around a criterion" << std::endl;
   std::cout << "usage:" << std::endl;
-  std::cout << "treesplit forest.txt radius 0.1        - split around trunk radius" << std::endl;
+  std::cout << "treesplit forest.txt radius 0.1        - split around trunk radius, or any other trunk user-attribute" << std::endl;
   std::cout << "                     tree height 0.1   - split around tree height (or any other whole-tree attribute)" << std::endl;
-  std::cout << "                     trunk strength 0.1- split around trunk strength, or any other trunk user-attribute" << std::endl;
   std::cout << "                     plane 0,0,1       - split around horizontal plane at height 1" << std::endl;
   std::cout << "                     colour 0,0,1      - split around colour green value 1" << std::endl;
   std::cout << "                     box rx,ry,rz      - split around a centred box of the given radii" << std::endl;
@@ -45,7 +44,7 @@ int main(int argc, char *argv[])
   bool attribute_tree_format = false;
   if (!parsed)
   {
-    attribute_trunk_format = ray::parseCommandLine(argc, argv, { &forest_file, &trunk_text, &attribute, &value });
+    attribute_trunk_format = ray::parseCommandLine(argc, argv, { &forest_file, &attribute, &value });
     attribute_tree_format = ray::parseCommandLine(argc, argv, { &forest_file, &tree_text, &attribute, &value });
   }
   if (!parsed && !attribute_trunk_format && !attribute_tree_format)

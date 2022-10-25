@@ -120,8 +120,9 @@ int main(int argc, char *argv[])
       double max_col = 0.0;
       for (auto &tree : forest.trees)
       {
-        for (auto &segment : tree.segments())
+        for (size_t s = 1; s<tree.segments().size(); s++)
         {
+          auto &segment = tree.segments()[s];
           for (int i = 0; i < 3; i++)
           {
             max_col = std::max(max_col, segment.attributes[red_id + i]);
