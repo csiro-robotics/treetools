@@ -8,7 +8,7 @@ Tree files are text files that can either store a tree trunk per tree, or a full
 # any initial comments
 # followed by the format:
 x,y,z,radius,parent_id,subtree_radius,red,green,blue,...      - the fields for each segment. Optionally this line begins with per-tree attributes e.g. 'height,crown_radius, '
-comma-separated data here, with a space between sections.
+comma-separated data here, with a space between sections
 ```
 The x,y,z,radius fields are mandatory, and the parent_id field is mandatory for branch structures. All additional fields can be added at will, and are double values.
 
@@ -29,10 +29,10 @@ x,y,z,radius,parent_id,red,green,blue
 ```
 represents a single tree rooted at 0,0,0 with radius 0.1m and a 1m vertical height, with colour red. The segments are separated by a space, the first has parent_id -1 which indicates that it is parentless, the subsequent segments represent cylinders from their specified x,y,z tip position to the parent's x,y,z position. The radius of this cylinder is the radius of the segment (0.1 in this case), so the root segment radius is not used in this case.
 
-Note that there are three types of data: 
-1. per-tree user-defined attributes, such as the crown radius or the tree height
-2. per-branch-segment attributes such as volume or radius
-3. the root attributes: this is the first segment for each tree, which is parentless and lacks volume. It has the same attributes as the other branch segments, but the user-attributes typically represent the mean or total over the whole tree. 
+Note that there are three types of data in each line of the text file. In order: 
+1. optional per-tree user-defined attributes, such as the crown radius or the tree height
+2. root attributes: this is for first segment of each tree, which is parentless and volumeless. It has the same attributes as the other branch segments but the user-attributes typically represent the mean or total over the whole tree. 
+3. per-branch-segment attributes such as volume or radius
 
 ## Build:
 ```console
