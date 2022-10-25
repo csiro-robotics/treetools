@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
 
 
   const int num_tree_attributes = (int)forest.trees[0].treeAttributeNames().size();
-  const std::vector<std::string> new_tree_attributes = { "height2", "crown_radius", "dimension", "monocotal" };
+  const std::vector<std::string> new_tree_attributes = { "height", "crown_radius", "dimension", "monocotal" };
   const int height_id = num_tree_attributes + 0;
   const int crown_radius_id = num_tree_attributes + 1;
   const int dimension_id = num_tree_attributes + 2;
