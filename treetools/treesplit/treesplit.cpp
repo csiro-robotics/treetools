@@ -23,6 +23,7 @@ void usage(int exit_code = 1)
   std::cout << "                     plane 0,0,1       - split around horizontal plane at height 1" << std::endl;
   std::cout << "                     colour 0,0,1      - split around colour green value 1" << std::endl;
   std::cout << "                     box rx,ry,rz      - split around a centred box of the given radii" << std::endl;
+  std::cout << "                     per-tree          - one file per tree" << std::endl;
   // clang-format on
   exit(exit_code);
 }
@@ -32,7 +33,7 @@ void usage(int exit_code = 1)
 int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file, attribute(false);
-  ray::TextArgument tree_text("tree"), trunk_text("trunk");
+  ray::TextArgument tree_text("tree"), trunk_text("trunk"), per_tree_text("per-tree");
   ray::Vector3dArgument coord;
 
   ray::DoubleArgument value(0.0, 10000.0), radius(0.0, 10000.0);
@@ -40,16 +41,17 @@ int main(int argc, char *argv[])
   ray::KeyValueChoice choice({ "plane", "colour", "radius", "box" }, { &plane, &colour, &radius, &box });
 
   const bool parsed = ray::parseCommandLine(argc, argv, { &forest_file, &choice });
+  const bool split_per_tree = ray::parseCommandLine(argc, argv, { &forest_file, &per_tree_text });
   bool attribute_trunk_format = false;
   bool attribute_tree_format = false;
-  if (!parsed)
+  if (!parsed && !split_per_tree)
   {
     attribute_trunk_format = ray::parseCommandLine(argc, argv, { &forest_file, &attribute, &value });
     attribute_tree_format = ray::parseCommandLine(argc, argv, { &forest_file, &tree_text, &attribute, &value });
-  }
-  if (!parsed && !attribute_trunk_format && !attribute_tree_format)
-  {
-    usage();
+    if (!attribute_trunk_format && !attribute_tree_format)
+    {
+      usage();
+    }
   }
 
   ray::ForestStructure forest;
@@ -87,6 +89,18 @@ int main(int argc, char *argv[])
         forest_out.trees.push_back(tree);
       }
     }
+  }
+  else if (split_per_tree)
+  {
+    int i = 0;
+    for (auto &tree : forest.trees)
+    {
+      i++;
+      ray::ForestStructure new_tree;
+      new_tree.trees.push_back(tree);
+      new_tree.save(forest_file.nameStub() + "_" + std::to_string(i) + ".txt");
+    }
+    return 0;
   }
   else if (choice.selectedKey() == "radius")
   {
