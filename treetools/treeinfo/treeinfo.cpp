@@ -229,6 +229,7 @@ int main(int argc, char *argv[])
   int num_stat_trees = 0;  // used for dimension values
 
   int num_branched_trees = 0;
+  int num_branches = 0;
   std::vector<double> tree_lengths;
   for (auto &tree : forest.trees)
   {
@@ -332,14 +333,20 @@ int main(int argc, char *argv[])
     tree::setMonocotal(tree, children, monocotal_id);
 
     std::vector<double> lengths;
+    int num_leaves = 0;
     for (auto &seg : tree.segments())
     {
       if (seg.attributes[children_id] > 1)
       {
         lengths.push_back(seg.attributes[length_id]);
       }
+      else if (seg.attributes[children_id] == 0)
+      {
+        num_leaves++;
+      }
     }
-    const int min_branch_count = 6;  // can't ddo any reasonable stats with fewer than this number of branches
+    const int min_branch_count = 6;  // can't do any reasonable stats with fewer than this number of branches
+    num_branches += num_leaves + (int)lengths.size();
     if (lengths.size() >= min_branch_count)
     {
       double c, d, r2;
@@ -437,6 +444,7 @@ int main(int argc, char *argv[])
   }
   std::cout << "Number of:" << std::endl;
   std::cout << "                  trees: " << forest.trees.size() << std::endl;
+  std::cout << "                  branches: " << num_branches << std::endl;
 
   // Trunk power laws:
   std::vector<double> diameters;
