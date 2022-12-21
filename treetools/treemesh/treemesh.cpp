@@ -21,7 +21,7 @@ void usage(int exit_code = 1)
   std::cout << "                    --max_colour 1,0.1,1 - per-channel maximums (0 auto-scales to fit)" << std::endl;
   std::cout << "                    --rescale_colours - rescale each colour channel independently to fit in range" << std::endl;
   std::cout << "                    --view   - views the output immediately assuming meshlab is installed" << std::endl;
-  std::cout << "                    --smooth - makes each main branch a continuous mesh" << std::endl;
+  std::cout << "                    --capsules - generate branch segments as the individual capsules" << std::endl;
   // clang-format on
   exit(exit_code);
 }
@@ -30,7 +30,8 @@ void usage(int exit_code = 1)
 void addCylinder(ray::Mesh &mesh, const Eigen::Vector3d &pos1, const Eigen::Vector3d &pos2, double radius, ray::RGBA rgba);
 void addCylinderPiece(ray::Mesh &mesh, int wind, const Eigen::Vector3d &pos, const Eigen::Vector3d &side1, 
   const Eigen::Vector3d &side2, double radius, const ray::RGBA &rgba, bool cap_start, bool cap_end);
-void generateSmoothMesh(ray::Mesh &mesh, const ray::ForestStructure &forest);
+void generateSmoothMesh(ray::Mesh &mesh, const ray::ForestStructure &forest, int red_id, 
+  double red_scale, double green_scale, double blue_scale);
 
 /// This method converts the tree file into a .ply mesh structure, with one cylinder approximation 
 /// per segment, coloured according to the tree file's colour attributes. 
@@ -39,14 +40,14 @@ int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file;
   ray::DoubleArgument max_brightness;
-  ray::OptionalFlagArgument view("view", 'v'), smooth_option("smooth", 's');
+  ray::OptionalFlagArgument view("view", 'v'), capsules_option("capsules", 'c');
   ray::Vector3dArgument max_colour;
   ray::OptionalKeyValueArgument max_brightness_option("max_colour", 'm', &max_brightness);
   ray::OptionalKeyValueArgument max_colour_option("max_colour", 'm', &max_colour);
 
   const bool max_brightness_format =
-    ray::parseCommandLine(argc, argv, { &forest_file }, { &max_brightness_option, &view });
-  const bool max_colour_format = ray::parseCommandLine(argc, argv, { &forest_file }, { &max_colour_option, &view, &smooth_option });
+    ray::parseCommandLine(argc, argv, { &forest_file }, { &max_brightness_option, &view, &capsules_option });
+  const bool max_colour_format = ray::parseCommandLine(argc, argv, { &forest_file }, { &max_colour_option, &view, &capsules_option });
   if (!max_brightness_format && !max_colour_format)
   {
     usage();
@@ -125,11 +126,7 @@ int main(int argc, char *argv[])
     }
   }
   ray::Mesh mesh;
-  if (smooth_option.isSet())
-  {
-    generateSmoothMesh(mesh, forest);
-  }
-  else
+  if (capsules_option.isSet())
   {
     for (auto &tree : forest.trees)
     {
@@ -150,6 +147,10 @@ int main(int argc, char *argv[])
         addCylinder(mesh, segment.tip, tree.segments()[segment.parent_id].tip, segment.radius, rgba);
       }
     }
+  }
+  else
+  {
+    generateSmoothMesh(mesh, forest, red_id, red_scale, green_scale, blue_scale);
   }
   ray::writePlyMesh(forest_file.nameStub() + "_mesh.ply", mesh, true);
   if (view.isSet())
@@ -239,13 +240,14 @@ void addCylinderPiece(ray::Mesh &mesh, int wind, const Eigen::Vector3d &pos,
   }
 }
 
-void generateSmoothMesh(ray::Mesh &mesh, const ray::ForestStructure &forest)
+void generateSmoothMesh(ray::Mesh &mesh, const ray::ForestStructure &forest, int red_id, 
+  double red_scale, double green_scale, double blue_scale)
 {
   for (const auto &tree : forest.trees)
   {
     const auto &segments = tree.segments();
     std::vector<std::vector<int> > children(segments.size());
-    for (size_t i = 0; i < segments.size(); i++)
+    for (int i = 0; i < (int)segments.size(); i++)
     {
       const auto &segment = segments[i];
       int parent = segment.parent_id;
@@ -255,7 +257,7 @@ void generateSmoothMesh(ray::Mesh &mesh, const ray::ForestStructure &forest)
       }
     }
     std::vector<int> roots;
-    for (size_t i = 1; i < segments.size(); i++)
+    for (int i = 1; i < (int)segments.size(); i++)
     {
       if (segments[i].parent_id > 0)
       {
@@ -280,6 +282,17 @@ void generateSmoothMesh(ray::Mesh &mesh, const ray::ForestStructure &forest)
 
         Eigen::Vector3d axis1 = normal.cross(dir).normalized();
         Eigen::Vector3d axis2 = axis1.cross(dir);
+
+        rgba.red = 127;
+        rgba.green = 127;
+        rgba.blue = 127;
+        if (red_id != -1)
+        {
+          rgba.red = uint8_t(std::min(red_scale * segments[child_id].attributes[red_id], 255.0));
+          rgba.green = uint8_t(std::min(green_scale * segments[child_id].attributes[red_id + 1], 255.0));
+          rgba.blue = uint8_t(std::min(blue_scale * segments[child_id].attributes[red_id + 2], 255.0));
+        }
+
         if (child_id == root_id)
         {
           addCylinderPiece(mesh, wind, segments[par_id].tip, axis1, axis2, segments[child_id].radius, rgba, true, false);
@@ -294,7 +307,7 @@ void generateSmoothMesh(ray::Mesh &mesh, const ray::ForestStructure &forest)
         }
         double max_rad = 0.0;
         int max_k = 0;
-        for (size_t k = 0; k<kids.size(); k++)
+        for (int k = 0; k<(int)kids.size(); k++)
         {
           double rad = segments[kids[k]].radius;
           if (rad > max_rad)
@@ -303,7 +316,7 @@ void generateSmoothMesh(ray::Mesh &mesh, const ray::ForestStructure &forest)
             max_k = k;
           }
         }
-        for (size_t k = 0; k<kids.size(); k++)
+        for (int k = 0; k<(int)kids.size(); k++)
         {
           if (k != max_k)
           {
