@@ -265,7 +265,12 @@ void generateSmoothMesh(ray::Mesh &mesh, const ray::ForestStructure &forest, int
       }
       roots.push_back(i);
     }
-    ray::RGBA rgba(127, 127, 127, 255);
+
+    ray::RGBA rgba;
+    rgba.red = 127;
+    rgba.green = 127;
+    rgba.blue = 127;
+    rgba.alpha = 255;
     // for each root
     for (size_t i = 0; i < roots.size(); i++)
     {
