@@ -267,10 +267,6 @@ void generateSmoothMesh(ray::Mesh &mesh, const ray::ForestStructure &forest, int
     }
 
     ray::RGBA rgba;
-    rgba.red = 127;
-    rgba.green = 127;
-    rgba.blue = 127;
-    rgba.alpha = 255;
     // for each root
     for (size_t i = 0; i < roots.size(); i++)
     {
@@ -287,10 +283,7 @@ void generateSmoothMesh(ray::Mesh &mesh, const ray::ForestStructure &forest, int
 
         Eigen::Vector3d axis1 = normal.cross(dir).normalized();
         Eigen::Vector3d axis2 = axis1.cross(dir);
-
-        rgba.red = 127;
-        rgba.green = 127;
-        rgba.blue = 127;
+        rgba = ray::RGBA::treetrunk();
         if (red_id != -1)
         {
           rgba.red = uint8_t(std::min(red_scale * segments[child_id].attributes[red_id], 255.0));
