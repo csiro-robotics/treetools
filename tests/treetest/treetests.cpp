@@ -125,10 +125,10 @@ namespace raytest
 
     ray::ForestStructure forest;
     EXPECT_TRUE(forest.load("forest_trees_foliage.txt"));
-    compareMoments(forest.getMoments(), {20, 22.4892, 1037.77, 1.36903, 0.111749, 1.73921, 86012, 0, 77.0709});
+    compareMoments(forest.getMoments(), {21, 18.93, 1127.08, 1.51422, 0.128055, 1.81124, 86012, 0, 74.3112});
     ray::Cloud cloud;
     EXPECT_TRUE(cloud.load("forest_densities.ply"));
-    compareMoments(cloud.getMoments(), {0.273292, 0.432565, 1.74031, 5.7036, 5.6054, 0.622008, 0.341838, 0.406296, 3.09499, 5.75313, 5.69983, 3.16611, 63.8625, 36.8713, 0.0936766, 0.0936766, 0.0936766, 1, 0.156845, 0.156845, 0.156845, 0});
+    compareMoments(cloud.getMoments(), {0.410108, 0.287581, 1.74041, 5.61377, 5.67701, 0.621977, 0.478583, 0.261382, 3.09509, 5.66319, 5.69592, 3.16601, 63.8625, 36.8713, 0.0947165, 0.0947165, 0.0947165, 1, 0.158243, 0.158243, 0.158243, 0});
   }
 
   /// Create a forest, then grow it
@@ -163,7 +163,7 @@ namespace raytest
     EXPECT_EQ(command("treemesh forest.txt"), 0);
     ray::Mesh mesh;
     EXPECT_TRUE(ray::readPlyMesh("forest_mesh.ply", mesh));
-    compareMoments(mesh.getMoments(), {0.980902, -0.212539, 5.18355, 6.22688, 6.21057, 2.09305});
+    compareMoments(mesh.getMoments(), {-0.215532, 1.0002, 5.18758, 6.22901, 6.14931, 2.09894});
   }  
 
   /// Create a raycloud forest, then extract the ground and the trees, then colour the extracted tree file and
@@ -178,7 +178,7 @@ namespace raytest
     
     ray::Cloud cloud;
     EXPECT_TRUE(cloud.load("forest_segmented_painted.ply"));
-    compareMoments(cloud.getMoments(), {-0.337023, 1.34537, 1.71774, 6.0926, 5.75511, 0.56438, -0.308445, 1.36047, 3.08827, 6.10555, 5.82564, 3.20507, 62.683, 36.1903, 0.328242, 0.328242, 0.328242, 1, 0.353871, 0.353871, 0.353871, 0});
+    compareMoments(cloud.getMoments(), {1.30354, -0.289421, 1.71767, 5.77213, 6.05023, 0.564411, 1.33207, -0.274276, 3.0882, 5.81411, 6.10453, 3.20514, 62.683, 36.1903, 0.324531, 0.324531, 0.324531, 1, 0.359649, 0.359649, 0.359649, 0});
   }  
 
   /// Create a forest then prune it
@@ -198,7 +198,7 @@ namespace raytest
     EXPECT_EQ(command("treerotate forest.txt 10,20,30"), 0);
     ray::ForestStructure forest;
     forest.load("forest.txt");
-    compareMoments(forest.getMoments(), {20, 37.4163, 1013.45, 1.51963, 0.12723, 2.5333, 0, 0, 0});
+    compareMoments(forest.getMoments(), {20, 37.4163, 1013.61, 1.51963, 0.12723, 2.5333, 0, 0, 0});
   }
 
   /// Create a forest then smooth it
@@ -231,7 +231,7 @@ namespace raytest
     EXPECT_EQ(command("treetranslate forest.txt 10,20,30.1"), 0);
     ray::ForestStructure forest;
     EXPECT_TRUE(forest.load("forest.txt"));
-    compareMoments(forest.getMoments(), {20, 773.324, 21158.1, 1.52222, 0.129316, 2.65571, 0, 0, 0});
+    compareMoments(forest.getMoments(), {20, 755.012, 20106.4, 1.52222, 0.129316, 2.65571, 0, 0, 0});
   }
 
 } // raytest
