@@ -23,8 +23,8 @@ void renderLogLogGraph(const std::string &filename, std::vector<Eigen::Vector2d>
   ofs << "<svg version=\"1.1\" width=\"" << canvas_width << "\" height=\"" << canvas_height
       << "\" xmlns=\"http://www.w3.org/2000/svg\">" << std::endl;
 
-  double minx = 1e10, maxx = -1e10;
-  double miny = 1e10, maxy = -1e10;
+  double minx = std::numeric_limits<double>::max(), maxx = std::numeric_limits<double>::lowest();
+  double miny = std::numeric_limits<double>::max(), maxy = std::numeric_limits<double>::lowest();
   for (auto &p : loglog)
   {
     minx = std::min(minx, p[0]);
@@ -70,7 +70,7 @@ void calculatePowerLaw(std::vector<double> &xs, double &c, double &d, double &r2
     loglog.push_back(Eigen::Vector2d(std::log(xs[i]), std::log(static_cast<double>(xs.size() - i))));
   }
   std::vector<double> weights(loglog.size());
-  double total_weight = 1e-10;
+  double total_weight = std::numeric_limits<double>::min();
   for (int i = 0; i < static_cast<int>(loglog.size()); i++)
   {
     const int i0 = std::max(0, i - 1);
@@ -89,7 +89,7 @@ void calculatePowerLaw(std::vector<double> &xs, double &c, double &d, double &r2
   }
   mean /= total_weight;
 
-  double xx = 1e-10, xy = 0.0, yy = 0.0;
+  double xx = std::numeric_limits<double>::min(), xy = 0.0, yy = 0.0;
   for (size_t i = 0; i < loglog.size(); i++)
   {
     Eigen::Vector2d p = loglog[i] - mean;
@@ -165,7 +165,7 @@ void setTrunkBend(ray::TreeStructure &tree, const std::vector<std::vector<int>> 
   };
   Accumulator sum;
   Eigen::Vector3d mean(0, 0, 0);
-  double total_weight = 1e-10;
+  double total_weight = std::numeric_limits<double>::min();
   for (auto &id : ids)
   {
     auto &seg = tree.segments()[id];
@@ -192,7 +192,7 @@ void setTrunkBend(ray::TreeStructure &tree, const std::vector<std::vector<int>> 
   // based on http://mathworld.wolfram.com/LeastSquaresFitting.html
   Eigen::Vector2d sXY = sum.xy - sum.x * sum.y / total_weight;
   const double sXX = sum.x2 - sum.x * sum.x / total_weight;
-  if (std::abs(sXX) > 1e-10)
+  if (std::abs(sXX) > std::numeric_limits<double>::min())
     sXY /= sXX;
 
   // estimate the gradient of the line

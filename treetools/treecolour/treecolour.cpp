@@ -252,8 +252,9 @@ int main(int argc, char *argv[])
       // get the radius:
       if (tree_radius_id == -1 && trunks_only == false)  // no tree radius specified, so estimate it from the branches
       {
-        const double big = 1e10;
-        Eigen::Vector3d minbound(big, big, big), maxbound(-big, -big, -big);
+        const double big = std::numeric_limits<double>::max();
+        const double low = std::numeric_limits<double>::lowest();
+        Eigen::Vector3d minbound(big, big, big), maxbound(low, low, low);
         for (auto &segment : tree.segments())
         {
           minbound = ray::minVector(minbound, segment.tip);

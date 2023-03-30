@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
   for (size_t i = 0; i < trees1.size(); i++)
   {
     auto &tree1 = trees1[i];
-    double min_overlap = 1e10;
+    double min_overlap = std::numeric_limits<double>::max();
     double min_overlap_rad = 0;
     for (size_t j = 0; j < trees2.size(); j++)
     {
@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
 
   double mean_growth = 0;
   double max_growth = 0.0;
-  double min_growth = 1e10;
+  double min_growth = std::numeric_limits<double>::max();
   double mean_overlap_percent = 0;
   double total_volume = 0;
   double mean_added_volume = 0;

@@ -60,8 +60,8 @@ void printAttributes(const ray::ForestStructure &forest, std::vector<std::string
       }
       double value = 0.0;
       double num = 0.0;
-      double max_val = -1e10;
-      double min_val = 1e10;
+      double max_val = std::numeric_limits<double>::lowest();
+      double min_val = std::numeric_limits<double>::max();
       for (auto &tree : forest.trees)
       {
         const double val = tree.treeAttributes()[i];
@@ -87,8 +87,8 @@ void printAttributes(const ray::ForestStructure &forest, std::vector<std::string
       }
       double value = 0.0;
       double num = 0.0;
-      double max_val = -1e10;
-      double min_val = 1e10;
+      double max_val = std::numeric_limits<double>::lowest();
+      double min_val = std::numeric_limits<double>::max();
       for (auto &tree : forest.trees)
       {
         for (auto &segment : tree.segments())
@@ -181,8 +181,8 @@ int main(int argc, char *argv[])
   printAttributes(forest, tree_att, num_tree_attributes, att, num_attributes);
 
   // Fill in blank attributes across the whole structure
-  double min_branch_radius = 1e10;
-  double max_branch_radius = -1e10;
+  double min_branch_radius = std::numeric_limits<double>::max();
+  double max_branch_radius = std::numeric_limits<double>::lowest();
   double total_branch_radius = 0.0;
   int num_total = 0;
   for (auto &tree : forest.trees)
@@ -212,25 +212,25 @@ int main(int argc, char *argv[])
   const double taper_ratio = 140.0;
 
   double total_volume = 0.0;
-  double min_volume = 1e10, max_volume = -1e10;
+  double min_volume = std::numeric_limits<double>::max(), max_volume = std::numeric_limits<double>::lowest();
   double total_diameter = 0.0;
-  double min_diameter = 1e10, max_diameter = -1e10;
+  double min_diameter = std::numeric_limits<double>::max(), max_diameter = std::numeric_limits<double>::lowest();
   double total_height = 0.0;
-  double min_height = 1e10, max_height = -1e10;
+  double min_height = std::numeric_limits<double>::max(), max_height = std::numeric_limits<double>::lowest();
   double total_strength = 0.0;
-  double min_strength = 1e10, max_strength = -1e10;
+  double min_strength = std::numeric_limits<double>::max(), max_strength = std::numeric_limits<double>::lowest();
   double total_dominance = 0.0;
-  double min_dominance = 1e10, max_dominance = -1e10;
+  double min_dominance = std::numeric_limits<double>::max(), max_dominance = std::numeric_limits<double>::lowest();
   double total_angle = 0.0;
-  double min_angle = 1e10, max_angle = -1e10;
+  double min_angle = std::numeric_limits<double>::max(), max_angle = std::numeric_limits<double>::lowest();
   double total_bend = 0.0;
-  double min_bend = 1e10, max_bend = -1e10;
+  double min_bend = std::numeric_limits<double>::max(), max_bend = std::numeric_limits<double>::lowest();
   double total_children = 0.0;
-  double min_children = 1e10, max_children = -1e10;
+  double min_children = std::numeric_limits<double>::max(), max_children = std::numeric_limits<double>::lowest();
   double total_dimension = 0.0;
-  double min_dimension = 1e10, max_dimension = -1e10;
+  double min_dimension = std::numeric_limits<double>::max(), max_dimension = std::numeric_limits<double>::lowest();
   double total_crown_radius = 0.0;
-  double min_crown_radius = 1e10, max_crown_radius = -1e10;
+  double min_crown_radius = std::numeric_limits<double>::max(), max_crown_radius = std::numeric_limits<double>::lowest();
   int num_stat_trees = 0;  // used for dimension values
 
   int num_branched_trees = 0;
@@ -397,7 +397,7 @@ int main(int argc, char *argv[])
       branch.attributes[diameter_id] = 2.0 * branch.radius;
       tree_diameter = std::max(tree_diameter, branch.attributes[diameter_id]);
       tree_volume += volume;
-      const double denom = std::max(1e-10, branch.attributes[length_id]);  // avoid a divide by 0
+      const double denom = std::max(std::numeric_limits<double>::min(), branch.attributes[length_id]);  // avoid a divide by 0
       branch.attributes[strength_id] = std::pow(branch.attributes[diameter_id], 3.0 / 4.0) / denom;
     }
     // update whole-tree and tree root attributes
@@ -421,8 +421,8 @@ int main(int argc, char *argv[])
     min_height = std::min(min_height, tree_height);
     max_height = std::max(max_height, tree_height);
     tree_lengths.push_back(tree.segments()[0].attributes[length_id]);
-    tree.segments()[0].attributes[strength_id] =
-      std::pow(tree_diameter, 3.0 / 4.0) / std::max(1e-10, tree.segments()[0].attributes[length_id]);
+    tree.segments()[0].attributes[strength_id] = std::pow(tree_diameter, 3.0 / 4.0) 
+      / std::max(std::numeric_limits<double>::min(), tree.segments()[0].attributes[length_id]);
     const double tree_strength = tree.segments()[0].attributes[strength_id];
     total_strength += tree_strength;
     min_strength = std::min(min_strength, tree_strength);
@@ -435,7 +435,7 @@ int main(int argc, char *argv[])
     // alright, now we get the minimum strength from root to tip
     for (auto &segment : tree.segments())
     {
-      segment.attributes[min_strength_id] = 1e10;
+      segment.attributes[min_strength_id] = std::numeric_limits<double>::max();
     }
     std::vector<int> inds = children[0];
     for (size_t i = 0; i < inds.size(); i++)

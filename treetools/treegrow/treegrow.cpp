@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
       auto &tree = forest.trees[t];
       auto &new_tree = grown_forest.trees[t];
       std::vector<std::vector<int>> children(tree.segments().size());
-      std::vector<double> min_length_from_leaf(tree.segments().size(), 1e10);
+      std::vector<double> min_length_from_leaf(tree.segments().size(), std::numeric_limits<double>::max());
       for (size_t i = 1; i < tree.segments().size(); i++)
       {
         children[tree.segments()[i].parent_id].push_back(static_cast<int>(i));
