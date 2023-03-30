@@ -67,7 +67,7 @@ void calculatePowerLaw(std::vector<double> &xs, double &c, double &d, double &r2
   std::vector<Eigen::Vector2d> loglog;
   for (size_t i = 0; i < xs.size(); i++)
   {
-    loglog.push_back(Eigen::Vector2d(std::log(xs[i]), std::log((double)(xs.size() - i))));
+    loglog.push_back(Eigen::Vector2d(std::log(xs[i]), std::log(static_cast<double>(xs.size() - i))));
   }
   std::vector<double> weights(loglog.size());
   double total_weight = 1e-10;

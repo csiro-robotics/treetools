@@ -282,9 +282,9 @@ int main(int argc, char *argv[])
           {
             if (image_dataf[index] > 0.f || image_dataf[index + 1] > 0.f || image_dataf[index + 2] > 0.f)
             {
-              colour[0] += (double)image_dataf[index];
-              colour[1] += (double)image_dataf[index + 1];
-              colour[2] += (double)image_dataf[index + 2];
+              colour[0] += static_cast<double>(image_dataf[index]);
+              colour[1] += static_cast<double>(image_dataf[index + 1]);
+              colour[2] += static_cast<double>(image_dataf[index + 2]);
               count++;
             }
           }
@@ -292,9 +292,9 @@ int main(int argc, char *argv[])
           {
             if (image_data[index] > 0 || image_data[index + 1] > 0 || image_data[index + 2] > 0)
             {
-              colour[0] += (double)image_data[index];
-              colour[1] += (double)image_data[index + 1];
-              colour[2] += (double)image_data[index + 2];
+              colour[0] += static_cast<double>(image_data[index]);
+              colour[1] += static_cast<double>(image_data[index + 1]);
+              colour[2] += static_cast<double>(image_data[index + 2]);
               count++;
             }
           }
@@ -302,7 +302,7 @@ int main(int argc, char *argv[])
       }
       if (count > 0)
       {
-        colour /= (double)count;
+        colour /= static_cast<double>(count);
       }
       for (auto &segment : tree.segments())
       {

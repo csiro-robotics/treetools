@@ -108,8 +108,8 @@ int main(int argc, char *argv[])
     std::cout << "no matches found between trees." << std::endl;
     return 0;
   }
-  mean_overlap /= (double)num_matches;
-  std::cout << 100.0 * (double)num_matches / (double)trees2.size() << "% of " << forest_file2.nameStub()
+  mean_overlap /= static_cast<double>(num_matches);
+  std::cout << 100.0 * static_cast<double>(num_matches) / static_cast<double>(trees2.size()) << "% of " << forest_file2.nameStub()
             << " trees overlap the " << forest_file1.nameStub() << " trees" << std::endl;
   std::cout << "#trees 1: " << trees1.size() << ", #trees 2: " << trees2.size() << ", #overlapping: " << num_matches
             << std::endl;
@@ -209,11 +209,11 @@ int main(int argc, char *argv[])
     }
   }
 
-  mean_growth /= (double)num_matches;
-  total_volume /= (double)num_matches;
-  mean_added_volume /= (double)num_matches;
-  mean_removed_volume /= (double)num_matches;
-  mean_overlap_percent /= (double)num_matches;
+  mean_growth /= static_cast<double>(num_matches);
+  total_volume /= static_cast<double>(num_matches);
+  mean_added_volume /= static_cast<double>(num_matches);
+  mean_removed_volume /= static_cast<double>(num_matches);
+  mean_overlap_percent /= static_cast<double>(num_matches);
   std::cout << "mean tree percentage overlap: " << 100.0 * mean_overlap_percent << "%" << std::endl;
   if (include_growth.isSet())
   {

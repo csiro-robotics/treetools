@@ -192,7 +192,7 @@ void addCapsule(ray::Mesh &mesh, const Eigen::Vector3d &pos1, const Eigen::Vecto
   for (int i = 0; i < 6; i++)
   {
     const double pi = 3.14156;
-    const double angle = (double)i * 2.0 * pi / 6.0;
+    const double angle = static_cast<double>(i) * 2.0 * pi / 6.0;
     const double angle2 = angle + pi / 6.0;
     vertices[i] = pos1 + radius * (side1 * std::sin(angle) + side2 * std::cos(angle));
     vertices[i + 6] = pos2 + radius * (side1 * std::sin(angle2) + side2 * std::cos(angle2));
@@ -226,7 +226,7 @@ void addCapsulePiece(ray::Mesh &mesh, int wind, const Eigen::Vector3d &pos,
   for (int i = 0; i < 6; i++)
   {
     const double pi = 3.14156;
-    double angle = ((double)i * 2.0 + (double)wind) * pi / 6.0;
+    double angle = (static_cast<double>(i) * 2.0 + static_cast<double>(wind)) * pi / 6.0;
 
     vertices.push_back(pos + radius * (side1 * std::sin(angle) + side2 * std::cos(angle)));
     // the indexing is a bit more complicated, to connect the vertices with triangles
