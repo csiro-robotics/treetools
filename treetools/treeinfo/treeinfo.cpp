@@ -66,39 +66,26 @@ struct Metrics
   void print(size_t numtrees, int num_branched_trees, int num_stat_trees, int num_total)
   {
     const double num_trees = static_cast<double>(numtrees);
+    // clang-format off
     std::cout << "Total:" << std::endl;
-    std::cout << "              volume of wood: " << volume.total << " m^3.\tMean,min,max: " << volume.total / num_trees
-              << ", " << volume.min << ", " << volume.max << " m^3" << std::endl;
-    std::cout << " mass of wood (at 0.5 T/m^3): " << 0.5 * volume.total
-              << " Tonnes.\tMean,min,max: " << 500.0 * volume.total / num_trees << ", " << 500.0 * volume.min << ", "
-              << 500.0 * volume.max << " kg" << std::endl;
+    std::cout << "              volume of wood: " << volume.total << " m^3.\tMean,min,max: " << volume.total / num_trees << ", " << volume.min << ", " << volume.max << " m^3" << std::endl;
+    std::cout << " mass of wood (at 0.5 T/m^3): " << 0.5 * volume.total << " Tonnes.\tMean,min,max: " << 500.0 * volume.total / num_trees << ", " << 500.0 * volume.min << ", " << 500.0 * volume.max << " kg" << std::endl;
     std::cout << std::endl;
-
     std::cout << "Per-tree mean, min, max:" << std::endl;
-    std::cout << "                trunk diameter (m): " << diameter.total / num_trees << ",\t" << diameter.min << ",\t"
-              << diameter.max << std::endl;
-    std::cout << "                   tree height (m): " << height.total / num_trees << ",\t" << height.min << ",\t"
-              << height.max << std::endl;
-    std::cout << "                  crown radius (m): " << crown_radius.total / num_trees << ",\t" << crown_radius.min
-              << ",\t" << crown_radius.max << std::endl;
-    std::cout << " trunk strength (diam^0.75/length): " << strength.total / num_trees << ",\t" << strength.min << ",\t"
-              << strength.max << std::endl;
-    std::cout << "         branch dominance (0 to 1): " << dominance.total / static_cast<double>(num_branched_trees)
-              << ",\t" << dominance.min << ",\t" << dominance.max << std::endl;
-    std::cout << "            branch angle (degrees): " << angle.total / static_cast<double>(num_branched_trees) << ",\t"
-              << angle.min << ",\t" << angle.max << std::endl;
-    std::cout << "              trunk bend (degrees): " << bend.total / num_trees << ",\t" << bend.min << ",\t"
-              << bend.max << std::endl;
-    std::cout << "               children per branch: " << children.total / static_cast<double>(num_branched_trees)
-              << ",\t" << children.min << ",\t" << children.max << std::endl;
-    std::cout << "          dimension (w.r.t length): " << dimension.total / static_cast<double>(num_stat_trees) << ",\t"
-              << dimension.min << ",\t" << dimension.max << std::endl;
+    std::cout << "                trunk diameter (m): " << diameter.total / num_trees << ",\t" << diameter.min << ",\t" << diameter.max << std::endl;
+    std::cout << "                   tree height (m): " << height.total / num_trees << ",\t" << height.min << ",\t" << height.max << std::endl;
+    std::cout << "                  crown radius (m): " << crown_radius.total / num_trees << ",\t" << crown_radius.min << ",\t" << crown_radius.max << std::endl;
+    std::cout << " trunk strength (diam^0.75/length): " << strength.total / num_trees << ",\t" << strength.min << ",\t" << strength.max << std::endl;
+    std::cout << "         branch dominance (0 to 1): " << dominance.total / static_cast<double>(num_branched_trees) << ",\t" << dominance.min << ",\t" << dominance.max << std::endl;
+    std::cout << "            branch angle (degrees): " << angle.total / static_cast<double>(num_branched_trees) << ",\t" << angle.min << ",\t" << angle.max << std::endl;
+    std::cout << "              trunk bend (degrees): " << bend.total / num_trees << ",\t" << bend.min << ",\t" << bend.max << std::endl;
+    std::cout << "               children per branch: " << children.total / static_cast<double>(num_branched_trees) << ",\t" << children.min << ",\t" << children.max << std::endl;
+    std::cout << "          dimension (w.r.t length): " << dimension.total / static_cast<double>(num_stat_trees) << ",\t" << dimension.min << ",\t" << dimension.max << std::endl;
     std::cout << std::endl;
-
     std::cout << "Per-branch mean, min, max:" << std::endl;
-    std::cout << "                     diameter (cm): " << 200.0 * branch_radius.total / static_cast<double>(num_total)
-              << ",\t" << 200.0 * branch_radius.min << ",\t" << 200.0 * branch_radius.max << std::endl;
+    std::cout << "                     diameter (cm): " << 200.0 * branch_radius.total / static_cast<double>(num_total) << ",\t" << 200.0 * branch_radius.min << ",\t" << 200.0 * branch_radius.max << std::endl;
     std::cout << std::endl;
+    // clang-format on
   }
 };
 
