@@ -113,8 +113,13 @@ void calculatePowerLaw(std::vector<double> &xs, double &c, double &d, double &r2
   d = b;
 }
 
-// TODO: this relies on segment 0's radius being accurate. If we allow linear interpolation of radii then this should
-// always be tree rather than it being zero or undefined, or total radius or something
+/// @brief sets the trunk bend parameter in the tree. 
+/// NOTE: this relies on segment 0's radius being accurate. If we allow linear interpolation of radii then this should
+/// always be tree rather than it being zero or undefined, or total radius or something
+/// @param tree the tree to analyse trunk bend on 
+/// @param children the precalculated list of children for each segment
+/// @param bend_id the id of the parameter representing the trunk bend (to fill in)
+/// @param length_id the id of the parameter representing length (to fill in)
 void setTrunkBend(ray::TreeStructure &tree, const std::vector<std::vector<int>> &children, int bend_id, int length_id)
 {
   // get the trunk
@@ -144,6 +149,7 @@ void setTrunkBend(ray::TreeStructure &tree, const std::vector<std::vector<int>> 
   }
 
   const double length = (tree.segments()[0].tip - tree.segments()[ids.back()].tip).norm();
+  // this temporary data tructure is used to get a least squares line of best fit
   struct Accumulator
   {
     Accumulator()
@@ -169,6 +175,7 @@ void setTrunkBend(ray::TreeStructure &tree, const std::vector<std::vector<int>> 
   }
   mean /= total_weight;
 
+  // code to estimate the line of best fit
   for (auto &id : ids)
   {
     auto &seg = tree.segments()[id];
@@ -188,6 +195,7 @@ void setTrunkBend(ray::TreeStructure &tree, const std::vector<std::vector<int>> 
   if (std::abs(sXX) > 1e-10)
     sXY /= sXX;
 
+  // estimate the gradient of the line
   const Eigen::Vector3d grad(sXY[0], sXY[1], 1.0);
 
   // now get sigma relative to the line
@@ -212,6 +220,11 @@ void setTrunkBend(ray::TreeStructure &tree, const std::vector<std::vector<int>> 
 }
 
 /// How much the tree is similar to a palm tree
+
+/// @brief analyse the tree and set the degree to which it is monocotal (palm-like in structure)
+/// @param tree the tree to analyse
+/// @param children precalculated list of children per segment
+/// @param monocotal_id the id of the parameter to fill in representing the monocotal value
 void setMonocotal(ray::TreeStructure &tree, const std::vector<std::vector<int>> &children, int monocotal_id)
 {
   // One per child of root, this is because many palms can grow from a single point at the bottom.
