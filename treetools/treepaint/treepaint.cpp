@@ -29,7 +29,7 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
-/// This method applies the tree file's colour onto the specified segmented ray cloud. It is assumed 
+/// This method applies the tree file's colour onto the specified segmented ray cloud. It is assumed
 /// that the ray cloud was generated from rayextract and therefore its segment colouring matches the
 /// section_id values within the tree file. This is how the tree file's colours are applied to the correct
 /// sections of the ray cloud.
@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
     {
       for (auto &segment : tree.segments())
       {
-        for (int i = 0; i < 3; i++) 
+        for (int i = 0; i < 3; i++)
         {
           max_shade = std::max(max_shade, segment.attributes[att_ids[i]]);
         }
@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
   int num_segments = 0;
   for (auto &tree : forest.trees)
   {
-    for (auto &segment : tree.segments()) 
+    for (auto &segment : tree.segments())
     {
       num_segments = std::max(num_segments, static_cast<int>(segment.attributes[segment_id]));
     }
@@ -135,7 +135,8 @@ int main(int argc, char *argv[])
       }
       else if (seg_id > segments.size())
       {
-        std::cerr << "Error: colours found in cloud are not segment IDs, make sure to use the segmented cloud" << std::endl;
+        std::cerr << "Error: colours found in cloud are not segment IDs, make sure to use the segmented cloud"
+                  << std::endl;
         usage();
       }
       else
@@ -156,6 +157,6 @@ int main(int argc, char *argv[])
     usage();
   }
   writer.end();
-  
+
   return 0;
 }

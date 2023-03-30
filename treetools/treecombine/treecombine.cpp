@@ -58,7 +58,8 @@ int main(int argc, char *argv[])
     }
     else if (num_combined == 1)
     {
-      same_attributes = forest.trees[0].attributeNames() == attributes && forest.trees[0].treeAttributeNames() == tree_attributes;
+      same_attributes =
+        forest.trees[0].attributeNames() == attributes && forest.trees[0].treeAttributeNames() == tree_attributes;
 
       same_data = forest.trees.size() == combined_forest.trees.size();
       if (same_data)  // then check more closely...
@@ -105,7 +106,7 @@ int main(int argc, char *argv[])
     {
       // If the trees share an attribute, I don't take the mean. This could mess up on large double integers
       // instead I just keep the values in the first data set; the first data set has priority
-      { // first the tree attributes:
+      {  // first the tree attributes:
         std::vector<int> att_locations(forest.trees[0].treeAttributeNames().size(), -1);
         const auto &atts = combined_forest.trees[0].treeAttributeNames();
         for (size_t j = 0; j < forest.trees[0].treeAttributeNames().size(); j++)
@@ -129,7 +130,7 @@ int main(int argc, char *argv[])
           }
         }
       }
-      { // then the segment attributes:
+      {  // then the segment attributes:
         std::vector<int> att_locations(forest.trees[0].attributeNames().size(), -1);
         const auto &atts = combined_forest.trees[0].attributeNames();
         for (size_t j = 0; j < forest.trees[0].attributeNames().size(); j++)
@@ -150,11 +151,12 @@ int main(int argc, char *argv[])
               combined_forest.trees[j].attributeNames().push_back(forest.trees[j].attributeNames()[l]);
               for (size_t k = 0; k < forest.trees[j].segments().size(); k++)
               {
-                combined_forest.trees[j].segments()[k].attributes.push_back(forest.trees[j].segments()[k].attributes[l]);
+                combined_forest.trees[j].segments()[k].attributes.push_back(
+                  forest.trees[j].segments()[k].attributes[l]);
               }
             }
           }
-        }        
+        }
       }
     }
   }

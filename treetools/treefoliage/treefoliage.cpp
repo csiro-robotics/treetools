@@ -25,7 +25,7 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
-/// This method sets a foliage_density (and foliage_sparsity) attribute per-segment into the tree file, 
+/// This method sets a foliage_density (and foliage_sparsity) attribute per-segment into the tree file,
 /// by estimating the one-sided leaf area density in the specified accompanying ray cloud.
 int main(int argc, char *argv[])
 {
@@ -88,7 +88,8 @@ int main(int argc, char *argv[])
         {
           for (int k = std::max(0, mini[2]); k <= std::min(maxi[2], dims[2] - 1); k++)
           {
-            const Eigen::Vector3d pos = Eigen::Vector3d(i + 0.5, j + 0.5, k + 0.5) * voxel_width + info.ends_bound.min_bound_;
+            const Eigen::Vector3d pos =
+              Eigen::Vector3d(i + 0.5, j + 0.5, k + 0.5) * voxel_width + info.ends_bound.min_bound_;
             const double d = std::max(0.0, std::min((pos - p1).dot(p2 - p1) / (p2 - p1).squaredNorm(), 1.0));
             const Eigen::Vector3d nearest = p1 + (p2 - p1) * d;
             const double distance = (nearest - pos).norm();
@@ -161,7 +162,7 @@ int main(int argc, char *argv[])
       {
         continue;
       }
-      const Eigen::Vector3d pos = ends[i];  
+      const Eigen::Vector3d pos = ends[i];
       const double density = grid.voxels()[grid.getIndexFromPos(pos)].density();
       const uint8_t shade = (uint8_t)std::max(0.0, std::min(3.0 * 255.0 * density / max_density, 255.0));
       colours[i].red = colours[i].green = colours[i].blue = shade;

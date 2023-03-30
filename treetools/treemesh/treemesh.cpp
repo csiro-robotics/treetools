@@ -27,14 +27,15 @@ void usage(int exit_code = 1)
 }
 
 // forward declarations
-void addCapsule(ray::Mesh &mesh, const Eigen::Vector3d &pos1, const Eigen::Vector3d &pos2, double radius, ray::RGBA rgba);
-void addCapsulePiece(ray::Mesh &mesh, int wind, const Eigen::Vector3d &pos, const Eigen::Vector3d &side1, 
-  const Eigen::Vector3d &side2, double radius, const ray::RGBA &rgba, bool cap_start, bool cap_end);
-void generateSmoothMesh(ray::Mesh &mesh, const ray::ForestStructure &forest, int red_id, 
-  double red_scale, double green_scale, double blue_scale);
+void addCapsule(ray::Mesh &mesh, const Eigen::Vector3d &pos1, const Eigen::Vector3d &pos2, double radius,
+                ray::RGBA rgba);
+void addCapsulePiece(ray::Mesh &mesh, int wind, const Eigen::Vector3d &pos, const Eigen::Vector3d &side1,
+                     const Eigen::Vector3d &side2, double radius, const ray::RGBA &rgba, bool cap_start, bool cap_end);
+void generateSmoothMesh(ray::Mesh &mesh, const ray::ForestStructure &forest, int red_id, double red_scale,
+                        double green_scale, double blue_scale);
 
-/// This method converts the tree file into a .ply mesh structure, with one cylinder approximation 
-/// per segment, coloured according to the tree file's colour attributes. 
+/// This method converts the tree file into a .ply mesh structure, with one cylinder approximation
+/// per segment, coloured according to the tree file's colour attributes.
 /// The -v option can be used if you have meshlab installed, to view the result immediately.
 int main(int argc, char *argv[])
 {
@@ -47,7 +48,8 @@ int main(int argc, char *argv[])
 
   const bool max_brightness_format =
     ray::parseCommandLine(argc, argv, { &forest_file }, { &max_brightness_option, &view, &capsules_option });
-  const bool max_colour_format = ray::parseCommandLine(argc, argv, { &forest_file }, { &max_colour_option, &view, &capsules_option });
+  const bool max_colour_format =
+    ray::parseCommandLine(argc, argv, { &forest_file }, { &max_colour_option, &view, &capsules_option });
   if (!max_brightness_format && !max_colour_format)
   {
     usage();
@@ -91,31 +93,31 @@ int main(int argc, char *argv[])
       green_scale = 255.0 / max_colour.value()[1];
       blue_scale = 255.0 / max_colour.value()[2];
 
-      for (int i = 0; i<3; i++)
+      for (int i = 0; i < 3; i++)
       {
         if (max_colour.value()[i] <= 0.0)
         {
           double max_col = 0.0;
           for (auto &tree : forest.trees)
           {
-            for (size_t s = 1; s<tree.segments().size(); s++)
+            for (size_t s = 1; s < tree.segments().size(); s++)
             {
               auto &segment = tree.segments()[s];
               max_col = std::max(max_col, segment.attributes[red_id + i]);
             }
-          }  
-          double &channel = i==0 ? red_scale : (i==1 ? green_scale : blue_scale);
+          }
+          double &channel = i == 0 ? red_scale : (i == 1 ? green_scale : blue_scale);
           channel = 255.0 / max_col;
         }
       }
     }
     // otherwise auto-scale
-    else  
+    else
     {
       double max_col = 0.0;
       for (auto &tree : forest.trees)
       {
-        for (size_t s = 1; s<tree.segments().size(); s++)
+        for (size_t s = 1; s < tree.segments().size(); s++)
         {
           auto &segment = tree.segments()[s];
           for (int i = 0; i < 3; i++)
@@ -144,7 +146,7 @@ int main(int argc, char *argv[])
         rgba.green = 127;
         rgba.blue = 127;
         rgba.alpha = 255;
-        if (red_id != -1) // using per-segment colouring if supplied
+        if (red_id != -1)  // using per-segment colouring if supplied
         {
           rgba.red = uint8_t(std::min(red_scale * segment.attributes[red_id], 255.0));
           rgba.green = uint8_t(std::min(green_scale * segment.attributes[red_id + 1], 255.0));
@@ -168,14 +170,14 @@ int main(int argc, char *argv[])
   return 0;
 }
 
-/// @brief add the capsule (cylinder with hemispherical ends) to the mesh, approximated with 6 circumferential vertices 
+/// @brief add the capsule (cylinder with hemispherical ends) to the mesh, approximated with 6 circumferential vertices
 /// @param mesh the mesh to add the capsule to
 /// @param pos1 base centre of capsule
 /// @param pos2 end centre of capsule
 /// @param radius radius of capsule
 /// @param rgba colour of capsule
 void addCapsule(ray::Mesh &mesh, const Eigen::Vector3d &pos1, const Eigen::Vector3d &pos2, double radius,
-                 ray::RGBA rgba)
+                ray::RGBA rgba)
 {
   const int n = static_cast<int>(mesh.vertices().size());
   const Eigen::Vector3i N(n, n, n);
@@ -209,12 +211,11 @@ void addCapsule(ray::Mesh &mesh, const Eigen::Vector3d &pos1, const Eigen::Vecto
 }
 
 // add a single section of a capsule. Each one is like a node in the polyline with a radius.
-void addCapsulePiece(ray::Mesh &mesh, int wind, const Eigen::Vector3d &pos, 
-  const Eigen::Vector3d &side1, const Eigen::Vector3d &side2, double radius, const ray::RGBA &rgba,
-                 bool cap_start, bool cap_end)
+void addCapsulePiece(ray::Mesh &mesh, int wind, const Eigen::Vector3d &pos, const Eigen::Vector3d &side1,
+                     const Eigen::Vector3d &side2, double radius, const ray::RGBA &rgba, bool cap_start, bool cap_end)
 {
   const int start_index = static_cast<int>(mesh.vertices().size());
-  const Eigen::Vector3i start_indices(start_index, start_index, start_index); // start indices
+  const Eigen::Vector3i start_indices(start_index, start_index, start_index);  // start indices
   std::vector<Eigen::Vector3i> &indices = mesh.indexList();
   std::vector<Eigen::Vector3d> vertices;
   vertices.reserve(7);
@@ -232,12 +233,12 @@ void addCapsulePiece(ray::Mesh &mesh, int wind, const Eigen::Vector3d &pos,
     // the indexing is a bit more complicated, to connect the vertices with triangles
     if (cap_start)
     {
-      indices.push_back(start_indices + Eigen::Vector3i(0, 1+i, 1+((i + 1) % 6)));  
+      indices.push_back(start_indices + Eigen::Vector3i(0, 1 + i, 1 + ((i + 1) % 6)));
     }
     else
     {
-      indices.push_back(start_indices + Eigen::Vector3i(i-6, i, ((i + 1) % 6) - 6));
-      indices.push_back(start_indices + Eigen::Vector3i((i + 1) % 6, ((i + 1) % 6)-6, i));
+      indices.push_back(start_indices + Eigen::Vector3i(i - 6, i, ((i + 1) % 6) - 6));
+      indices.push_back(start_indices + Eigen::Vector3i((i + 1) % 6, ((i + 1) % 6) - 6, i));
     }
   }
   if (cap_end)
@@ -266,14 +267,14 @@ void addCapsulePiece(ray::Mesh &mesh, int wind, const Eigen::Vector3d &pos,
 /// @param red_scale scale on the red colour component
 /// @param green_scale scale on the green channel
 /// @param blue_scale scale on the blue channel
-void generateSmoothMesh(ray::Mesh &mesh, const ray::ForestStructure &forest, int red_id, 
-  double red_scale, double green_scale, double blue_scale)
+void generateSmoothMesh(ray::Mesh &mesh, const ray::ForestStructure &forest, int red_id, double red_scale,
+                        double green_scale, double blue_scale)
 {
   for (const auto &tree : forest.trees)
   {
     const auto &segments = tree.segments();
     // first generate the list of children for each segment
-    std::vector<std::vector<int> > children(segments.size());
+    std::vector<std::vector<int>> children(segments.size());
     for (size_t i = 0; i < segments.size(); i++)
     {
       const auto &segment = segments[i];
@@ -299,12 +300,13 @@ void generateSmoothMesh(ray::Mesh &mesh, const ray::ForestStructure &forest, int
     for (size_t i = 0; i < roots.size(); i++)
     {
       int root_id = roots[i];
-      Eigen::Vector3d normal(1,2,3); // unspecial 'up' direction for placing vertices along the circumference
+      Eigen::Vector3d normal(1, 2, 3);  // unspecial 'up' direction for placing vertices along the circumference
 
       // we iterate through this list and grow it at the same time
-      std::vector<int> childlist = {root_id};
-      int wind = 0; // this is what rotates the vertices half a triangle width at each segment, to keep the triangles isoceles
-      for (size_t j = 0; j<childlist.size(); j++)
+      std::vector<int> childlist = { root_id };
+      int wind =
+        0;  // this is what rotates the vertices half a triangle width at each segment, to keep the triangles isoceles
+      for (size_t j = 0; j < childlist.size(); j++)
       {
         int child_id = childlist[j];
         int par_id = segments[child_id].parent_id;
@@ -312,30 +314,31 @@ void generateSmoothMesh(ray::Mesh &mesh, const ray::ForestStructure &forest, int
         Eigen::Vector3d dir = (segments[child_id].tip - segments[par_id].tip).normalized();
         Eigen::Vector3d axis1 = normal.cross(dir).normalized();
         Eigen::Vector3d axis2 = axis1.cross(dir);
-        rgba = ray::RGBA::treetrunk(); // standardised colour in raycloudtools
-        if (red_id != -1) // use the per-segment colour if it exists (e.g. from treecolour)
+        rgba = ray::RGBA::treetrunk();  // standardised colour in raycloudtools
+        if (red_id != -1)               // use the per-segment colour if it exists (e.g. from treecolour)
         {
           rgba.red = uint8_t(std::min(red_scale * segments[child_id].attributes[red_id], 255.0));
           rgba.green = uint8_t(std::min(green_scale * segments[child_id].attributes[red_id + 1], 255.0));
           rgba.blue = uint8_t(std::min(blue_scale * segments[child_id].attributes[red_id + 2], 255.0));
         }
 
-        if (child_id == root_id) // add the base cap of the cylinder if we are at the root of the branch
+        if (child_id == root_id)  // add the base cap of the cylinder if we are at the root of the branch
         {
           addCapsulePiece(mesh, wind, segments[par_id].tip, axis1, axis2, segments[child_id].radius, rgba, true, false);
         }
 
         wind++;
         std::vector<int> kids = children[child_id];
-        if (kids.empty()) // add the end cap of the cylinder if we are at the end of the whole branch
+        if (kids.empty())  // add the end cap of the cylinder if we are at the end of the whole branch
         {
-          addCapsulePiece(mesh, wind, segments[child_id].tip, axis1, axis2, segments[child_id].radius, rgba, false, true);
+          addCapsulePiece(mesh, wind, segments[child_id].tip, axis1, axis2, segments[child_id].radius, rgba, false,
+                          true);
           break;
         }
         // now find the maximum radius subbranch
         double max_rad = 0.0;
         int max_k = 0;
-        for (int k = 0; k<static_cast<int>(kids.size()); k++)
+        for (int k = 0; k < static_cast<int>(kids.size()); k++)
         {
           double rad = segments[kids[k]].radius;
           if (rad > max_rad)
@@ -344,24 +347,25 @@ void generateSmoothMesh(ray::Mesh &mesh, const ray::ForestStructure &forest, int
             max_k = k;
           }
         }
-        for (int k = 0; k<static_cast<int>(kids.size()); k++)
+        for (int k = 0; k < static_cast<int>(kids.size()); k++)
         {
           if (k != max_k)
           {
-            roots.push_back(kids[k]); // all other subbranches get added to the list, to be iterated over on their turn
+            roots.push_back(kids[k]);  // all other subbranches get added to the list, to be iterated over on their turn
           }
         }
 
         int next_id = kids[max_k];
         Eigen::Vector3d dir2 = (segments[next_id].tip - segments[child_id].tip).normalized();
-        
-        Eigen::Vector3d top_dir = (dir2 + dir).normalized(); // here we average the directions of the two segments
+
+        Eigen::Vector3d top_dir = (dir2 + dir).normalized();  // here we average the directions of the two segments
         // and generate an orthogonal basis for the ring of points on the branch
         Eigen::Vector3d mid_axis1 = normal.cross(top_dir).normalized();
         Eigen::Vector3d mid_axis2 = mid_axis1.cross(top_dir);
         normal = -mid_axis2;
         // add the ring of points
-        addCapsulePiece(mesh, wind, segments[child_id].tip, mid_axis1, mid_axis2, segments[child_id].radius, rgba, false, false);
+        addCapsulePiece(mesh, wind, segments[child_id].tip, mid_axis1, mid_axis2, segments[child_id].radius, rgba,
+                        false, false);
         // add the biggest subbranch to the list, so we continue to build the branch
         childlist.push_back(kids[max_k]);
       }

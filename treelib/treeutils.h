@@ -6,8 +6,8 @@
 #ifndef TREELIB_TREEUTILS_H
 #define TREELIB_TREEUTILS_H
 
-#include <vector>
 #include <Eigen/Dense>
+#include <vector>
 #include "treelib/treelibconfig.h"
 
 namespace tree

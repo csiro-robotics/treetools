@@ -113,10 +113,10 @@ void calculatePowerLaw(std::vector<double> &xs, double &c, double &d, double &r2
   d = b;
 }
 
-/// @brief sets the trunk bend parameter in the tree. 
+/// @brief sets the trunk bend parameter in the tree.
 /// NOTE: this relies on segment 0's radius being accurate. If we allow linear interpolation of radii then this should
 /// always be tree rather than it being zero or undefined, or total radius or something
-/// @param tree the tree to analyse trunk bend on 
+/// @param tree the tree to analyse trunk bend on
 /// @param children the precalculated list of children for each segment
 /// @param bend_id the id of the parameter representing the trunk bend (to fill in)
 /// @param length_id the id of the parameter representing length (to fill in)
@@ -263,7 +263,7 @@ void setMonocotal(ray::TreeStructure &tree, const std::vector<std::vector<int>> 
 
     // 5. combine into a value for 'palmtree-ness'
     // this rewards a straight trunk with a small height from first branch point to peak
-    double monocotal = straight_distance / (path_length + dist_to_top);  
+    double monocotal = straight_distance / (path_length + dist_to_top);
     if (num_branches < 5)  // this is a long pole with little on top. We shouldn't consider this a signal of being
                            // monocotal, even though it could be a dead one
     {

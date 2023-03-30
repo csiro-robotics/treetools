@@ -25,8 +25,8 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
-/// This method smoothes the locations of the cylinders in the tree file, so that trunks and 
-/// thicker branches are proportionally straighter than the small branches. 
+/// This method smoothes the locations of the cylinders in the tree file, so that trunks and
+/// thicker branches are proportionally straighter than the small branches.
 int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file;
@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
         if (segment.parent_id == -1)
         {
           // 50% otherwise it is disproportionately pliant
-          root_shift += (segment.tip - new_tip) * 0.5 * rad_sqr;  
+          root_shift += (segment.tip - new_tip) * 0.5 * rad_sqr;
           root_weight += rad_sqr;
         }
         segment.tip = new_tip;

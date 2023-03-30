@@ -109,8 +109,8 @@ int main(int argc, char *argv[])
     return 0;
   }
   mean_overlap /= static_cast<double>(num_matches);
-  std::cout << 100.0 * static_cast<double>(num_matches) / static_cast<double>(trees2.size()) << "% of " << forest_file2.nameStub()
-            << " trees overlap the " << forest_file1.nameStub() << " trees" << std::endl;
+  std::cout << 100.0 * static_cast<double>(num_matches) / static_cast<double>(trees2.size()) << "% of "
+            << forest_file2.nameStub() << " trees overlap the " << forest_file1.nameStub() << " trees" << std::endl;
   std::cout << "#trees 1: " << trees1.size() << ", #trees 2: " << trees2.size() << ", #overlapping: " << num_matches
             << std::endl;
   std::cout << "mean trunk overlap: " << 1.0 - mean_overlap

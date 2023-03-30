@@ -28,8 +28,8 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
-/// This method splits the tree file into two files on a per-tree basis, according to the specified 
-/// criterion. 
+/// This method splits the tree file into two files on a per-tree basis, according to the specified
+/// criterion.
 int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file, attribute(false);
@@ -66,13 +66,14 @@ int main(int argc, char *argv[])
   // if splitting around an attribute in the tree file
   if (attribute_tree_format || attribute_trunk_format)
   {
-    auto &att = attribute_tree_format ? forest.trees[0].treeAttributeNames() : forest.trees[0].attributeNames();;
+    auto &att = attribute_tree_format ? forest.trees[0].treeAttributeNames() : forest.trees[0].attributeNames();
+    ;
     int attribute_id = -1;
     const auto &it = std::find(att.begin(), att.end(), attribute.name());
     if (it != att.end())
     {
       // we always assume that red is followed immediately by attributes green and blue
-      attribute_id = static_cast<int>(it - att.begin());  
+      attribute_id = static_cast<int>(it - att.begin());
     }
     else
     {
@@ -95,7 +96,7 @@ int main(int argc, char *argv[])
     }
   }
   // literally one file saved per tree
-  else if (split_per_tree) 
+  else if (split_per_tree)
   {
     int i = 0;
     for (auto &tree : forest.trees)
@@ -150,7 +151,7 @@ int main(int argc, char *argv[])
         const int red_index = static_cast<int>(it - tree.attributeNames().begin());
         auto &ats = tree.segments()[0].attributes;
         const Eigen::Vector3d col(ats[red_index], ats[red_index + 1],
-                            ats[red_index + 2]);  // we assume green, blue follow on consecutively
+                                  ats[red_index + 2]);  // we assume green, blue follow on consecutively
         if (col.dot(colour_vec) < 1.0)
         {
           forest_in.trees.push_back(tree);

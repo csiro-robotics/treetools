@@ -34,7 +34,8 @@ int main(int argc, char *argv[])
   ray::OptionalKeyValueArgument length_option("length_rate", 'l', &length_rate);
   ray::OptionalKeyValueArgument width_option("width_rate", 'w', &width_rate);
 
-  const bool parsed = ray::parseCommandLine(argc, argv, { &forest_file, &period, &years }, { &length_option, &width_option });
+  const bool parsed =
+    ray::parseCommandLine(argc, argv, { &forest_file, &period, &years }, { &length_option, &width_option });
   if (!parsed)
   {
     usage();

@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
   // rotate the tips, that is all that needs rotating
   for (auto &tree : forest.trees)
   {
-    for (auto &segment : tree.segments()) 
+    for (auto &segment : tree.segments())
     {
       segment.tip = rotation * segment.tip;
     }

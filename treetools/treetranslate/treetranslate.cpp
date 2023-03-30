@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
   // translation requires just the tip parameter to be updated
   for (auto &tree : forest.trees)
   {
-    for (auto &segment : tree.segments()) 
+    for (auto &segment : tree.segments())
     {
       segment.tip += translation;
     }
