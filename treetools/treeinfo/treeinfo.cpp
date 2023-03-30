@@ -45,6 +45,67 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
+void printAttributes(const ray::ForestStructure &forest, std::vector<std::string> &tree_att, int num_tree_attributes, 
+                     std::vector<std::string> &att, int num_attributes)
+{
+  if (num_tree_attributes > 0)
+  {
+    std::cout << "Additional tree attributes mean, min, max:" << std::endl;
+    for (int i = 0; i < num_tree_attributes; i++)
+    {
+      std::cout << "\t" << tree_att[i] << ":";
+      for (int j = 0; j < 30 - static_cast<int>(tree_att[i].length()); j++)
+      {
+        std::cout << " ";
+      }
+      double value = 0.0;
+      double num = 0.0;
+      double max_val = -1e10;
+      double min_val = 1e10;
+      for (auto &tree : forest.trees)
+      {
+        const double val = tree.treeAttributes()[i];
+        max_val = std::max(max_val, val);
+        min_val = std::min(min_val, val);
+        value += val;
+        num++;
+      }
+      std::cout << value / num << ",\t" << min_val << ",\t" << max_val << std::endl;
+    }
+    std::cout << std::endl;
+  }
+
+  if (num_attributes > 0)
+  {
+    std::cout << "Additional branch segment attributes mean, min, max:" << std::endl;
+    for (int i = 0; i < num_attributes; i++)
+    {
+      std::cout << "\t" << att[i] << ":";
+      for (int j = 0; j < 30 - static_cast<int>(att[i].length()); j++)
+      {
+        std::cout << " ";
+      }
+      double value = 0.0;
+      double num = 0.0;
+      double max_val = -1e10;
+      double min_val = 1e10;
+      for (auto &tree : forest.trees)
+      {
+        for (auto &segment : tree.segments())
+        {
+          const double val = segment.attributes[i];
+          max_val = std::max(max_val, val);
+          min_val = std::min(min_val, val);
+          value += val;
+          num++;
+        }
+      }
+      std::cout << value / num << ",\t" << min_val << ",\t" << max_val << std::endl;
+    }
+    std::cout << std::endl;
+  }
+}
+
 /// This method analayses and outputs statistical information on the specified tree file.
 /// This includes bulk measures for the whole file, and also outputs a tree file with attributes added
 /// which are measures on a per-section and per-tree basis. Treecolour can then be used to visualise these
@@ -117,62 +178,7 @@ int main(int argc, char *argv[])
     }
   }
 
-  if (num_tree_attributes > 0)
-  {
-    std::cout << "Additional tree attributes mean, min, max:" << std::endl;
-    for (int i = 0; i < num_tree_attributes; i++)
-    {
-      std::cout << "\t" << tree_att[i] << ":";
-      for (int j = 0; j < 30 - static_cast<int>(tree_att[i].length()); j++)
-      {
-        std::cout << " ";
-      }
-      double value = 0.0;
-      double num = 0.0;
-      double max_val = -1e10;
-      double min_val = 1e10;
-      for (auto &tree : forest.trees)
-      {
-        const double val = tree.treeAttributes()[i];
-        max_val = std::max(max_val, val);
-        min_val = std::min(min_val, val);
-        value += val;
-        num++;
-      }
-      std::cout << value / num << ",\t" << min_val << ",\t" << max_val << std::endl;
-    }
-    std::cout << std::endl;
-  }
-
-  if (num_attributes > 0)
-  {
-    std::cout << "Additional branch segment attributes mean, min, max:" << std::endl;
-    for (int i = 0; i < num_attributes; i++)
-    {
-      std::cout << "\t" << att[i] << ":";
-      for (int j = 0; j < 30 - static_cast<int>(att[i].length()); j++)
-      {
-        std::cout << " ";
-      }
-      double value = 0.0;
-      double num = 0.0;
-      double max_val = -1e10;
-      double min_val = 1e10;
-      for (auto &tree : forest.trees)
-      {
-        for (auto &segment : tree.segments())
-        {
-          const double val = segment.attributes[i];
-          max_val = std::max(max_val, val);
-          min_val = std::min(min_val, val);
-          value += val;
-          num++;
-        }
-      }
-      std::cout << value / num << ",\t" << min_val << ",\t" << max_val << std::endl;
-    }
-    std::cout << std::endl;
-  }
+  printAttributes(forest, tree_att, num_tree_attributes, att, num_attributes);
 
   // Fill in blank attributes across the whole structure
   double min_branch_radius = 1e10;
@@ -358,6 +364,7 @@ int main(int argc, char *argv[])
       num_stat_trees++;
     }
 
+    // update per-tree values
     if (total_weight > 0.0)
     {
       tree_dominance /= total_weight;
@@ -380,6 +387,7 @@ int main(int argc, char *argv[])
 
     double tree_volume = 0.0;
     double tree_diameter = 0.0;
+    // update the volume, diameter and strength values in the tree
     for (size_t i = 1; i < tree.segments().size(); i++)
     {
       auto &branch = tree.segments()[i];
@@ -392,6 +400,7 @@ int main(int argc, char *argv[])
       const double denom = std::max(1e-10, branch.attributes[length_id]);  // avoid a divide by 0
       branch.attributes[strength_id] = std::pow(branch.attributes[diameter_id], 3.0 / 4.0) / denom;
     }
+    // update whole-tree and tree root attributes
     tree.segments()[0].attributes[volume_id] = tree_volume;
     total_volume += tree_volume;
     min_volume = std::min(min_volume, tree_volume);
