@@ -52,10 +52,11 @@ cmake ..
 make
 ```
 
-To run the treeXXXX tools from anywhere, place in your ~/bashrc:
+To run the treeXXXX tools from anywhere, use sudo make install, or place in your ~/bashrc:
 ```console
   export PATH=$PATH:'source code path'/treetools/build/bin
 ```
+
 
 ## Examples:
 
@@ -83,3 +84,9 @@ rotate a tree file in-place, here by 30 degrees around the z (vertical) axis
 **treetranslate treefile.txt 0,0,1**
 translate the tree file in-place, here by 1m in the vertical axis
 
+
+## Unit Tests
+
+UTo build with unit tests, the CMake variable `TREE_BUILD_TESTS` must be `ON`. This can be done in the initial project configuration by running the following command from the `build` directory: `cmake  -DTREE_BUILD_TESTS=ON ..`
+
+Unit tests may then be run by entering the build/bin folder and typing ./treetest
