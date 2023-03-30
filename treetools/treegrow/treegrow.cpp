@@ -54,6 +54,7 @@ int main(int argc, char *argv[])
   const double diam_rate = width_option.isSet() ? width_rate.value() : 0.004;
   const double radius_growth = 0.5 * diam_rate * period.value();
   const double length_growth = len_rate * period.value();
+  // regardless of sign of the period, we scle the segment radii
   for (auto &tree : forest.trees)
   {
     for (auto &segment : tree.segments())
@@ -63,6 +64,7 @@ int main(int argc, char *argv[])
   }
 
   ray::ForestStructure grown_forest;
+  // if the period is positive then we add length to the leaf branches
   if (period.value() > 0.0)
   {
     grown_forest = forest;
@@ -96,6 +98,7 @@ int main(int argc, char *argv[])
       }
     }
   }
+  // otherwise we are going back in time, so prune the length
   else
   {
     ray::ForestStructure pruned_forest;

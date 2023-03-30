@@ -93,7 +93,9 @@ int main(int argc, char *argv[])
             const Eigen::Vector3d nearest = p1 + (p2 - p1) * d;
             const double distance = (nearest - pos).norm();
             if (distance > r)
+            {
               continue;
+            }
             const double density = grid.voxels()[grid.getIndex(Eigen::Vector3i(i, j, k))].density();
             max_density = std::max(max_density, density);
             total_density += density;

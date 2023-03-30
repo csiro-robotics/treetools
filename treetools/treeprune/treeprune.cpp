@@ -59,7 +59,6 @@ int main(int argc, char *argv[])
     tree::pruneLength(forest, length.value(), new_forest);
   }
 
-
   if (new_forest.trees.empty())
   {
     std::cout << "Warning: no trees left after pruning. No file saved." << std::endl;

@@ -244,7 +244,7 @@ int main(int argc, char *argv[])
 
     for (auto &tree : forest.trees)
     {
-      Eigen::Vector2d centre(tree.root()[0], tree.root()[1]);
+      const Eigen::Vector2d centre(tree.root()[0], tree.root()[1]);
       double rad = tree_radius_id == -1 ? tree.segments()[0].radius * trunk_to_tree_radius_scale :
                                           tree.segments()[0].attributes[tree_radius_id];
       // get the radius:
@@ -272,7 +272,7 @@ int main(int argc, char *argv[])
       {
         for (int j = std::max(0, boxmin[1]); j <= std::min(boxmax[1], height - 1); j++)
         {
-          Eigen::Vector2d pos = Eigen::Vector2d(i + 0.5, j + 0.5) * coord.value()[2] + coords;
+          const Eigen::Vector2d pos = Eigen::Vector2d(i + 0.5, j + 0.5) * coord.value()[2] + coords;
           if ((pos - centre).norm() > rad)
           {
             continue;

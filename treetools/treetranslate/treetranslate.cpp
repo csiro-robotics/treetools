@@ -35,6 +35,7 @@ int main(int argc, char *argv[])
 
   ray::ForestStructure forest;
   forest.load(tree_file.name());
+  // translation requires just the tip parameter to be updated
   for (auto &tree : forest.trees)
   {
     for (auto &segment : tree.segments()) 

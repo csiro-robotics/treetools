@@ -39,11 +39,7 @@ int main(int argc, char *argv[])
 
   ray::DoubleArgument max_brightness;
   ray::OptionalKeyValueArgument max_brightness_option("max_colour", 'm', &max_brightness);
-
-  ray::Vector3dArgument coord;
-  const bool tree_format = ray::parseCommandLine(argc, argv, { &forest_file, &cloud_file }, { &max_brightness_option });
-  const bool branch_format = ray::parseCommandLine(argc, argv, { &forest_file, &cloud_file }, { &max_brightness_option });
-  if (!tree_format && !branch_format)
+  if (!ray::parseCommandLine(argc, argv, { &forest_file, &cloud_file }, { &max_brightness_option }))
   {
     usage();
   }
@@ -54,6 +50,7 @@ int main(int argc, char *argv[])
     usage();
   }
 
+  // find the ids of the following attributes
   const std::string attributes[4] = { "red", "green", "blue", "section_id" };
   int att_ids[4];
   auto &att = forest.trees[0].attributeNames();
@@ -73,10 +70,12 @@ int main(int argc, char *argv[])
   }
   int segment_id = att_ids[3];
   double max_shade = 0.0;
+  // an option to specify a maximum brightness
   if (max_brightness_option.isSet())
   {
     max_shade = max_brightness.value();
   }
+  // otherwise auto-scale to the highest colour channel
   else
   {
     for (auto &tree : forest.trees)
@@ -92,11 +91,14 @@ int main(int argc, char *argv[])
   }
   std::string out_file = cloud_file.nameStub() + "_painted.ply";
 
-  // finally, we need a mappinig from segment id to the segment structures...
+  // finally, we need a mapping from segment id to the segment structures...
   int num_segments = 0;
   for (auto &tree : forest.trees)
   {
-    for (auto &segment : tree.segments()) num_segments = std::max(num_segments, (int)segment.attributes[segment_id]);
+    for (auto &segment : tree.segments()) 
+    {
+      num_segments = std::max(num_segments, (int)segment.attributes[segment_id]);
+    }
   }
   num_segments++;
   std::vector<ray::TreeStructure::Segment *> segments(num_segments, 0);
@@ -114,20 +116,27 @@ int main(int argc, char *argv[])
     }
   }
 
+  // now we can write out the coloured cloud using a lambda function
   ray::CloudWriter writer;
   if (!writer.begin(out_file))
   {
     usage();
   }
-
+  // this lambda function colours the cloud
   auto colour_rays = [&](std::vector<Eigen::Vector3d> &starts, std::vector<Eigen::Vector3d> &ends,
                          std::vector<double> &times, std::vector<ray::RGBA> &colours) {
     for (auto &colour : colours)
     {
+      // for each colour in the segmented cloud, it converts it to a segment ID
       int seg_id = ray::convertColourToInt(colour);
       if (seg_id == -1)
       {
         colour.red = colour.green = colour.blue = 0;
+      }
+      else if (seg_id > segments.size())
+      {
+        std::cerr << "Error: colours found in cloud are not segment IDs, make sure to use the segmented cloud" << std::endl;
+        usage();
       }
       else
       {
@@ -142,11 +151,11 @@ int main(int argc, char *argv[])
     }
     writer.writeChunk(starts, ends, times, colours);
   };
-
   if (!ray::Cloud::read(cloud_file.name(), colour_rays))
   {
     usage();
   }
   writer.end();
+  
   return 0;
 }

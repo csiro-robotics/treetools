@@ -46,7 +46,9 @@ int main(int argc, char *argv[])
   bool attribute_tree_format = false;
   if (!parsed && !split_per_tree)
   {
+    // split around an attribute defined on the trunk (the base segment)
     attribute_trunk_format = ray::parseCommandLine(argc, argv, { &forest_file, &attribute, &value });
+    // split around an attribute defined on the whole tree
     attribute_tree_format = ray::parseCommandLine(argc, argv, { &forest_file, &tree_text, &attribute, &value });
     if (!attribute_trunk_format && !attribute_tree_format)
     {
@@ -61,6 +63,7 @@ int main(int argc, char *argv[])
   }
 
   ray::ForestStructure forest_in, forest_out;
+  // if splitting around an attribute in the tree file
   if (attribute_tree_format || attribute_trunk_format)
   {
     auto &att = attribute_tree_format ? forest.trees[0].treeAttributeNames() : forest.trees[0].attributeNames();;
@@ -77,6 +80,7 @@ int main(int argc, char *argv[])
       usage();
     }
 
+    // do the split per-tree
     for (auto &tree : forest.trees)
     {
       if ((attribute_tree_format && tree.treeAttributes()[attribute_id] < value.value()) ||
@@ -90,7 +94,8 @@ int main(int argc, char *argv[])
       }
     }
   }
-  else if (split_per_tree)
+  // literally one file saved per tree
+  else if (split_per_tree) 
   {
     int i = 0;
     for (auto &tree : forest.trees)
@@ -102,6 +107,7 @@ int main(int argc, char *argv[])
     }
     return 0;
   }
+  // split based on a trunk radius threshold
   else if (choice.selectedKey() == "radius")
   {
     for (auto &tree : forest.trees)
@@ -116,6 +122,7 @@ int main(int argc, char *argv[])
       }
     }
   }
+  // split around a user-defined plane
   else if (choice.selectedKey() == "plane")
   {
     const Eigen::Vector3d plane_vec = plane.value() / plane.value().squaredNorm();
@@ -131,6 +138,7 @@ int main(int argc, char *argv[])
       }
     }
   }
+  // split around a plane in rgb space
   else if (choice.selectedKey() == "colour")
   {
     const Eigen::Vector3d colour_vec = colour.value() / colour.value().squaredNorm();
@@ -154,6 +162,7 @@ int main(int argc, char *argv[])
       }
     }
   }
+  // split inside/outside a box
   else if (choice.selectedKey() == "box")
   {
     for (auto &tree : forest.trees)

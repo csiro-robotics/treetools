@@ -33,6 +33,7 @@ int main(int argc, char *argv[])
     usage();
   }
 
+  // convert the rotation argument into a quaternion
   Eigen::Vector3d rot = rotation_arg.value();
   const double angle = rot.norm();
   rot /= angle;
@@ -40,6 +41,7 @@ int main(int argc, char *argv[])
 
   ray::ForestStructure forest;
   forest.load(tree_file.name());
+  // rotate the tips, that is all that needs rotating
   for (auto &tree : forest.trees)
   {
     for (auto &segment : tree.segments()) 

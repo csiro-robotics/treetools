@@ -21,6 +21,9 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
+/// @brief returns an approximation of the overlapping volume between two tree structures @c tree1 and @c tree2
+/// @param tree1_rad_scale the dilation of tree1
+/// @return overlapping volume
 double treeOverlapVolume(const ray::TreeStructure &tree1, const ray::TreeStructure &tree2, double tree1_rad_scale)
 {
   double volume = 0.0;
