@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
       std::vector<double> min_length_from_leaf(tree.segments().size(), 1e10);
       for (size_t i = 1; i < tree.segments().size(); i++)
       {
-        children[tree.segments()[i].parent_id].push_back((int)i);
+        children[tree.segments()[i].parent_id].push_back(static_cast<int>(i));
       }
       for (size_t i = 0; i < tree.segments().size(); i++)
       {
@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
             dir = (tree.segments()[i].tip - tree.segments()[par].tip).normalized();
           }
           segment.tip += dir * length_growth;
-          segment.parent_id = (int)i;
+          segment.parent_id = static_cast<int>(i);
           new_tree.segments().push_back(segment);
         }
       }

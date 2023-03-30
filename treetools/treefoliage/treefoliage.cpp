@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
     {
       if (tree.segments()[i].parent_id != -1)
       {
-        children[tree.segments()[i].parent_id].push_back((int)i);
+        children[tree.segments()[i].parent_id].push_back(static_cast<int>(i));
       }
     }
     std::vector<double> densities(tree.segments().size());

@@ -13,14 +13,14 @@ void pruneDiameter(ray::ForestStructure &forest, double diameter_value, ray::For
 {
   new_forest = forest;
 
-  for (int t = 0; t < (int)forest.trees.size(); t++)
+  for (int t = 0; t < static_cast<int>(forest.trees.size()); t++)
   {
     auto &tree = forest.trees[t];
     // temporarily get the children list, it helps
     std::vector<std::vector<int>> children(tree.segments().size());
     for (size_t i = 1; i < tree.segments().size(); i++) 
     {
-      children[tree.segments()[i].parent_id].push_back((int)i);
+      children[tree.segments()[i].parent_id].push_back(static_cast<int>(i));
     }
     // firstly, get the maximum diameter for each section to its end.
     // this data is monotonically decreasing, so easier to work with
@@ -30,7 +30,7 @@ void pruneDiameter(ray::ForestStructure &forest, double diameter_value, ray::For
       if (children[i].size() == 0)  // a leaf, so ...
       {
         int parent = tree.segments()[i].parent_id;
-        int child = (int)i;
+        int child = static_cast<int>(i);
         max_diameter[child] = 2.0 * tree.segments()[child].radius;
 
         while (parent != -1) // from the leaf, iterate through its parents
@@ -63,7 +63,7 @@ void pruneDiameter(ray::ForestStructure &forest, double diameter_value, ray::For
     {
       if (max_diameter[i] > 0.01 * diameter_value)
       {
-        new_index[i] = (int)new_tree.segments().size();
+        new_index[i] = static_cast<int>(new_tree.segments().size());
         new_tree.segments().push_back(tree.segments()[i]);
         new_tree.segments().back().parent_id = new_index[tree.segments()[i].parent_id];
       }
@@ -88,14 +88,14 @@ void pruneLength(ray::ForestStructure &forest, double length_value, ray::ForestS
 {
   new_forest = forest;
 
-  for (int t = 0; t < (int)forest.trees.size(); t++)
+  for (int t = 0; t < static_cast<int>(forest.trees.size()); t++)
   {
     auto &tree = forest.trees[t];
     // temporarily get the children list, it helps
     std::vector<std::vector<int>> children(tree.segments().size());
     for (size_t i = 1; i < tree.segments().size(); i++) 
     {
-      children[tree.segments()[i].parent_id].push_back((int)i);
+      children[tree.segments()[i].parent_id].push_back(static_cast<int>(i));
     }
     // find the minimum length from leaf for every branch segment
     std::vector<double> min_length_from_leaf(tree.segments().size(), 1e10);
@@ -104,7 +104,7 @@ void pruneLength(ray::ForestStructure &forest, double length_value, ray::ForestS
       if (children[i].size() == 0)  // a leaf, so ...
       {
         int parent = tree.segments()[i].parent_id;
-        int child = (int)i;
+        int child = static_cast<int>(i);
 
         min_length_from_leaf[i] = 0.0;
         while (parent != -1) // iterate through the parents
@@ -137,7 +137,7 @@ void pruneLength(ray::ForestStructure &forest, double length_value, ray::ForestS
     {
       if (min_length_from_leaf[i] > length_value)
       {
-        new_index[i] = (int)new_tree.segments().size();
+        new_index[i] = static_cast<int>(new_tree.segments().size());
         new_tree.segments().push_back(tree.segments()[i]);
         new_tree.segments().back().parent_id = new_index[tree.segments()[i].parent_id];
       }
@@ -152,7 +152,7 @@ void pruneLength(ray::ForestStructure &forest, double length_value, ray::ForestS
           ray::TreeStructure::Segment seg = tree.segments()[i];
           seg.tip = tree.segments()[par].tip + (seg.tip - tree.segments()[par].tip) * blend;
 
-          new_index[i] = (int)new_tree.segments().size();
+          new_index[i] = static_cast<int>(new_tree.segments().size());
           new_tree.segments().push_back(seg);
           new_tree.segments().back().parent_id = new_index[seg.parent_id];
         }

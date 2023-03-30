@@ -65,32 +65,32 @@ void calculatePowerLaw(std::vector<double> &xs, double &c, double &d, double &r2
 {
   std::sort(xs.begin(), xs.end());
   std::vector<Eigen::Vector2d> loglog;
-  for (int i = 0; i < (int)xs.size(); i++)
+  for (size_t i = 0; i < xs.size(); i++)
   {
     loglog.push_back(Eigen::Vector2d(std::log(xs[i]), std::log((double)(xs.size() - i))));
   }
   std::vector<double> weights(loglog.size());
   double total_weight = 1e-10;
-  for (int i = 0; i < (int)loglog.size(); i++)
+  for (int i = 0; i < static_cast<int>(loglog.size()); i++)
   {
     const int i0 = std::max(0, i - 1);
-    const int i2 = std::min(i + 1, (int)loglog.size() - 1);
+    const int i2 = std::min(i + 1, static_cast<int>(loglog.size()) - 1);
     weights[i] = loglog[i2][0] - loglog[i0][0];
-    if (i == 0 || i == (int)loglog.size() - 1)
+    if (i == 0 || i == static_cast<int>(loglog.size()) - 1)
     {
       weights[i] *= 2.0;  // because it is hampered by being on the end
     }
     total_weight += weights[i];
   }
   Eigen::Vector2d mean(0, 0);
-  for (int i = 0; i < (int)loglog.size(); i++)
+  for (size_t i = 0; i < loglog.size(); i++)
   {
     mean += weights[i] * loglog[i];
   }
   mean /= total_weight;
 
   double xx = 1e-10, xy = 0.0, yy = 0.0;
-  for (int i = 0; i < (int)loglog.size(); i++)
+  for (size_t i = 0; i < loglog.size(); i++)
   {
     Eigen::Vector2d p = loglog[i] - mean;
     xx += weights[i] * p[0] * p[0];
@@ -240,10 +240,10 @@ void setMonocotal(ray::TreeStructure &tree, const std::vector<std::vector<int>> 
     std::vector<int> list = { root };
     double max_height = tree.segments()[top_segment].tip[2];
     int num_branches = 0;
-    for (int i = 0; i < (int)list.size(); i++)
+    for (size_t i = 0; i < list.size(); i++)
     {
       max_height = std::max(max_height, tree.segments()[list[i]].tip[2]);
-      num_branches += children[list[i]].size() > 1 ? (int)children[list[i]].size() : 0;
+      num_branches += children[list[i]].size() > 1 ? static_cast<int>(children[list[i]].size()) : 0;
       list.insert(list.end(), children[list[i]].begin(), children[list[i]].end());
     }
     const double dist_to_top = max_height - tree.segments()[top_segment].tip[2];

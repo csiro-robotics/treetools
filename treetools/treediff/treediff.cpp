@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
       if (overlap < min_overlap && overlap < 1.0)
       {
         min_overlap = overlap;
-        trunk_matches[i] = (int)j;
+        trunk_matches[i] = static_cast<int>(j);
         min_overlap_rad = tree2.segments()[0].radius;
       }
     }
@@ -200,12 +200,12 @@ int main(int argc, char *argv[])
     if (removed_volume > max_removed_volume)
     {
       max_removed_volume = removed_volume;
-      max_removal_i = (int)i;
+      max_removal_i = static_cast<int>(i);
     }
     if (added_volume > max_added_volume)
     {
       max_added_volume = added_volume;
-      max_add_i = (int)i;
+      max_add_i = static_cast<int>(i);
     }
   }
 

@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
   std::cout << std::endl;
 
 
-  const int num_tree_attributes = (int)forest.trees[0].treeAttributeNames().size();
+  const int num_tree_attributes = static_cast<int>(forest.trees[0].treeAttributeNames().size());
   const std::vector<std::string> new_tree_attributes = { "height", "crown_radius", "dimension", "monocotal" };
   const int height_id = num_tree_attributes + 0;
   const int crown_radius_id = num_tree_attributes + 1;
@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
     }
   }  
 
-  const int num_attributes = (int)forest.trees[0].attributeNames().size();
+  const int num_attributes = static_cast<int>(forest.trees[0].attributeNames().size());
   const std::vector<std::string> new_attributes = { "volume",       "diameter",  "length",   "strength",
                                                     "min_strength", "dominance", "angle",    "bend",
                                                     "children"};
@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
     for (int i = 0; i < num_tree_attributes; i++)
     {
       std::cout << "\t" << tree_att[i] << ":";
-      for (int j = 0; j < 30 - (int)tree_att[i].length(); j++)
+      for (int j = 0; j < 30 - static_cast<int>(tree_att[i].length()); j++)
       {
         std::cout << " ";
       }
@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
     for (int i = 0; i < num_attributes; i++)
     {
       std::cout << "\t" << att[i] << ":";
-      for (int j = 0; j < 30 - (int)att[i].length(); j++) 
+      for (int j = 0; j < 30 - static_cast<int>(att[i].length()); j++) 
       {
         std::cout << " ";
       }
@@ -237,7 +237,7 @@ int main(int argc, char *argv[])
     std::vector<std::vector<int>> children(tree.segments().size());
     for (size_t i = 1; i < tree.segments().size(); i++) 
     {
-      children[tree.segments()[i].parent_id].push_back((int)i);
+      children[tree.segments()[i].parent_id].push_back(static_cast<int>(i));
     }
 
     Eigen::Vector3d min_bound = tree.segments()[0].tip;
@@ -255,7 +255,7 @@ int main(int argc, char *argv[])
       {
         const double extension =
           2.0 * tree.segments()[i].radius > broken_diameter ? 0.0 : (taper_ratio * tree.segments()[i].radius);
-        int I = (int)i;
+        int I = static_cast<int>(i);
         int j = tree.segments()[I].parent_id;
         tree.segments()[I].attributes[length_id] = extension;
         int child = I;
@@ -346,7 +346,7 @@ int main(int argc, char *argv[])
       }
     }
     const int min_branch_count = 6;  // can't do any reasonable stats with fewer than this number of branches
-    num_branches += num_leaves + (int)lengths.size();
+    num_branches += num_leaves + static_cast<int>(lengths.size());
     if (lengths.size() >= min_branch_count)
     {
       double c, d, r2;

@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
     const auto &it = std::find(att.begin(), att.end(), attributes[i]);
     if (it != att.end())
     {
-      att_ids[i] = (int)(it - att.begin());
+      att_ids[i] = static_cast<int>(it - att.begin());
     }
     else
     {
@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
   {
     for (auto &segment : tree.segments()) 
     {
-      num_segments = std::max(num_segments, (int)segment.attributes[segment_id]);
+      num_segments = std::max(num_segments, static_cast<int>(segment.attributes[segment_id]));
     }
   }
   num_segments++;
@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
   {
     for (auto &segment : tree.segments())
     {
-      int id = (int)segment.attributes[segment_id];
+      int id = static_cast<int>(segment.attributes[segment_id]);
       if (id < 0 || id >= num_segments)
       {
         std::cerr << "bad segment id: " << id << std::endl;

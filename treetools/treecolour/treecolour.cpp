@@ -70,11 +70,11 @@ int main(int argc, char *argv[])
 
   auto &input_attributes = tree_attribute_format ? forest.trees[0].treeAttributeNames() : forest.trees[0].attributeNames();
   auto &att = forest.trees[0].attributeNames();
-  int red_id = (int)att.size();
+  int red_id = static_cast<int>(att.size());
   const auto &it = std::find(att.begin(), att.end(), "red");
   if (it != att.end())
   {
-    red_id = (int)(it - att.begin());  // we always assume that red is followed immediately by attributes green and blue
+    red_id = static_cast<int>((it - att.begin()));  // we always assume that red is followed immediately by attributes green and blue
     std::cout << "colour attributes found, so replacing these in the output file" << std::endl;
   }
   else  // no colour found so lets add empty values across the whole structure
@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
         const auto &it = std::find(input_attributes.begin(), input_attributes.end(), field);
         if (it != input_attributes.end())
         {
-          attribute_ids[num_attributes] = (int)(it - input_attributes.begin());
+          attribute_ids[num_attributes] = static_cast<int>((it - input_attributes.begin()));
           std::cout << "found attribute " << field << " at index " << attribute_ids[num_attributes] << std::endl;
         }
         else
@@ -231,7 +231,7 @@ int main(int argc, char *argv[])
     {
       if (forest.trees[0].attributeNames()[i] == "subtree_radius")
       {
-        tree_radius_id = (int)i;
+        tree_radius_id = static_cast<int>(i);
       }
     }
     const double trunk_to_tree_radius_scale = 10.0;

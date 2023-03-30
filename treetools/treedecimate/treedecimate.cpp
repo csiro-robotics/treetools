@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
     std::vector<std::vector<int>> children(tree.segments().size());
     for (size_t i = 1; i < tree.segments().size(); i++) 
     {
-      children[tree.segments()[i].parent_id].push_back((int)i);
+      children[tree.segments()[i].parent_id].push_back(static_cast<int>(i));
     }
     std::vector<int> new_index(tree.segments().size());
     std::vector<int> counts(tree.segments().size());  // count up from each branch point
@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
       counts[i] = counts[tree.segments()[i].parent_id] + 1;
       if (counts[i] == decimation.value() || children[i].size() > 1 || children[i].size() == 0)
       {
-        new_index[i] = (int)new_tree.segments().size();
+        new_index[i] = static_cast<int>(new_tree.segments().size());
         new_tree.segments().push_back(tree.segments()[i]);
         new_tree.segments().back().parent_id = new_index[tree.segments()[i].parent_id];
         counts[i] = 0;

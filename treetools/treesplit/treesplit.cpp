@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
     if (it != att.end())
     {
       // we always assume that red is followed immediately by attributes green and blue
-      attribute_id = (int)(it - att.begin());  
+      attribute_id = static_cast<int>(it - att.begin());  
     }
     else
     {
@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
       const auto &it = std::find(tree.attributeNames().begin(), tree.attributeNames().end(), "red");
       if (it != tree.attributeNames().end())
       {
-        const int red_index = (int)(it - tree.attributeNames().begin());
+        const int red_index = static_cast<int>(it - tree.attributeNames().begin());
         auto &ats = tree.segments()[0].attributes;
         const Eigen::Vector3d col(ats[red_index], ats[red_index + 1],
                             ats[red_index + 2]);  // we assume green, blue follow on consecutively

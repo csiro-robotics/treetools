@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
     std::vector<std::vector<int>> children(tree.segments().size());
     for (size_t i = 1; i < tree.segments().size(); i++)
     {
-      children[tree.segments()[i].parent_id].push_back((int)i);
+      children[tree.segments()[i].parent_id].push_back(static_cast<int>(i));
     }
     const double full_rad_sqr = tree.segments()[0].radius * tree.segments()[0].radius;
 

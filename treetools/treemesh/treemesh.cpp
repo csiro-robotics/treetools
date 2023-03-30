@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
   const auto &it = std::find(att.begin(), att.end(), "red");
   if (it != att.end())
   {
-    red_id = (int)(it - att.begin());
+    red_id = static_cast<int>(it - att.begin());
   }
   double red_scale = 1.0;
   double green_scale = 1.0;
@@ -177,7 +177,7 @@ int main(int argc, char *argv[])
 void addCapsule(ray::Mesh &mesh, const Eigen::Vector3d &pos1, const Eigen::Vector3d &pos2, double radius,
                  ray::RGBA rgba)
 {
-  const int n = (int)mesh.vertices().size();
+  const int n = static_cast<int>(mesh.vertices().size());
   const Eigen::Vector3i N(n, n, n);
   std::vector<Eigen::Vector3i> &indices = mesh.indexList();
   std::vector<Eigen::Vector3d> vertices(14);
@@ -213,7 +213,7 @@ void addCapsulePiece(ray::Mesh &mesh, int wind, const Eigen::Vector3d &pos,
   const Eigen::Vector3d &side1, const Eigen::Vector3d &side2, double radius, const ray::RGBA &rgba,
                  bool cap_start, bool cap_end)
 {
-  const int start_index = (int)mesh.vertices().size();
+  const int start_index = static_cast<int>(mesh.vertices().size());
   const Eigen::Vector3i start_indices(start_index, start_index, start_index); // start indices
   std::vector<Eigen::Vector3i> &indices = mesh.indexList();
   std::vector<Eigen::Vector3d> vertices;
@@ -274,7 +274,7 @@ void generateSmoothMesh(ray::Mesh &mesh, const ray::ForestStructure &forest, int
     const auto &segments = tree.segments();
     // first generate the list of children for each segment
     std::vector<std::vector<int> > children(segments.size());
-    for (int i = 0; i < (int)segments.size(); i++)
+    for (size_t i = 0; i < segments.size(); i++)
     {
       const auto &segment = segments[i];
       int parent = segment.parent_id;
@@ -285,7 +285,7 @@ void generateSmoothMesh(ray::Mesh &mesh, const ray::ForestStructure &forest, int
     }
     // now generate the set of root segments
     std::vector<int> roots;
-    for (int i = 1; i < (int)segments.size(); i++)
+    for (int i = 1; i < static_cast<int>(segments.size()); i++)
     {
       if (segments[i].parent_id > 0)
       {
@@ -335,7 +335,7 @@ void generateSmoothMesh(ray::Mesh &mesh, const ray::ForestStructure &forest, int
         // now find the maximum radius subbranch
         double max_rad = 0.0;
         int max_k = 0;
-        for (int k = 0; k<(int)kids.size(); k++)
+        for (int k = 0; k<static_cast<int>(kids.size()); k++)
         {
           double rad = segments[kids[k]].radius;
           if (rad > max_rad)
@@ -344,7 +344,7 @@ void generateSmoothMesh(ray::Mesh &mesh, const ray::ForestStructure &forest, int
             max_k = k;
           }
         }
-        for (int k = 0; k<(int)kids.size(); k++)
+        for (int k = 0; k<static_cast<int>(kids.size()); k++)
         {
           if (k != max_k)
           {

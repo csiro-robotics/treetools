@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
           const auto &it = std::find(atts.begin(), atts.end(), forest.trees[0].treeAttributeNames()[j]);
           if (it != atts.end())
           {
-            att_locations[j] = (int)(it - atts.begin());
+            att_locations[j] = static_cast<int>((it - atts.begin()));
           }
         }
         for (size_t l = 0; l < att_locations.size(); l++)
@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
           const auto &it = std::find(atts.begin(), atts.end(), forest.trees[0].attributeNames()[j]);
           if (it != atts.end())
           {
-            att_locations[j] = (int)(it - atts.begin());
+            att_locations[j] = static_cast<int>((it - atts.begin()));
           }
         }
         for (size_t l = 0; l < att_locations.size(); l++)
