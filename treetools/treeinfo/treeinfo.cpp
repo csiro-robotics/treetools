@@ -341,7 +341,7 @@ int main(int argc, char *argv[])
     int num_leaves = 0;
     for (auto &seg : tree.segments())
     {
-      if (seg.attributes[children_id] > 1)
+      if (seg.attributes[children_id] > 1) // TODO: this is wrong!
       {
         lengths.push_back(seg.attributes[length_id]);
       }
