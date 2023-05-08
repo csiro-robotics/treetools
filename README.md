@@ -77,6 +77,14 @@ Convert the tree file into a polygon mesh (.ply file), using the red,green,blue 
 <img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/treetools/main/pics/treemesh.png?at=refs%2Fheads%2Fmaster"/>
 </p>
 
+**treeprune forest.txt 1 m long**
+Cut the end 1 m from all branches. It is also possible to prune by branch diameter.
+
+<p align="center">
+<img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/treetools/main/pics/treecreate.png?at=refs%2Fheads%2Fmaster"/>
+<img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/treetools/main/pics/treeprune.png?at=refs%2Fheads%2Fmaster"/>
+</p>
+
 **treedecimate cloud_trees.txt 2 segments**
 Reduce the tree to only every 2 segments, maintaining the junction points. So approximately half as detailed.
 
@@ -85,14 +93,19 @@ Reduce the tree to only every 2 segments, maintaining the junction points. So ap
 <img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/treetools/main/pics/treedecimate2.png?at=refs%2Fheads%2Fmaster"/>
 </p>
 
-**treediff forest1.txt forest2.txt**
-Compare a forest to a previous version of the forest. Outputs statistics including growth rate, and the volume of woody growth and removal between the dates.
-
 **treesplit cloud_trees.txt per-tree**
 Split trees into separate files based on a condition, such as its radius, height or a colour. In this case we split it into one file per tree. 
 
 <p align="center">
 <img img width="640" src="https://raw.githubusercontent.com/csiro-robotics/treetools/main/pics/treesplit.png?at=refs%2Fheads%2Fmaster"/>
+</p>
+
+**treesmooth cloud_trees.txt**
+Smooth the trees to have fewer sharp bends, preferentially smoothing the trunk more than the small branches. 
+
+<p align="center">
+<img img width="240" src="https://raw.githubusercontent.com/csiro-robotics/treetools/main/pics/treesmooth1.png?at=refs%2Fheads%2Fmaster"/>
+<img img width="240" src="https://raw.githubusercontent.com/csiro-robotics/treetools/main/pics/treesmooth2.png?at=refs%2Fheads%2Fmaster"/>
 </p>
 
 **treerotate treefile.txt 0,0,30**
@@ -101,6 +114,17 @@ rotate a tree file in-place, here by 30 degrees around the z (vertical) axis
 **treetranslate treefile.txt 0,0,1**
 translate the tree file in-place, here by 1m in the vertical axis
 
+**treediff forest1.txt forest2.txt**
+Compare a forest to a previous version of the forest. Outputs statistics including growth rate, and the volume of woody growth and removal between the dates.
+
+**treegrow treefile.txt 2 years**
+a simple linear growth model that extends (or retracts) the branch ends, and adjusts the branch radii according to the number of years specified. 
+
+**treefoliage treefile.txt original_raycloud.ply 0.2**
+Adds a per-branch foliage_density (and foliage_sparsity) parameter according to the calculated one-sided leaf area per cubic metre within the specified distance (0.2 m) of the branch. This is used to augment branch geometry with information about how foliated each branch is.
+
+**treepaint cloud_trees.txt cloud_segmented.ply**
+When the cloud_trees.txt file is generated from rayextract trees (in raycloudtools), a cloud_segmented.ply is also generated. Using treepaint then colours the tree branch information onto the point cloud, which means it colours that leaves that each branch serves according to the branch colour in the cloud_trees.txt file. This branch colour can be set according to per-branch attributes using treecolour.
 
 ## Unit Tests
 
