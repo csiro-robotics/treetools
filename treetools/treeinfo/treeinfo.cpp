@@ -338,20 +338,17 @@ int main(int argc, char *argv[])
     tree::setMonocotal(tree, children, monocotal_id);
 
     std::vector<double> lengths;
-    int num_leaves = 0;
-    for (auto &seg : tree.segments())
+    for (size_t j = 0; j<children.size(); j++)
     {
-      if (seg.attributes[children_id] > 1) // TODO: this is wrong!
+      auto &seg = tree.segments()[j];
+      int par = seg.parent_id;
+      if (par == -1 || children[par].size() > 1) 
       {
-        lengths.push_back(seg.attributes[length_id]);
-      }
-      else if (seg.attributes[children_id] == 0)
-      {
-        num_leaves++;
+        lengths.push_back(seg.attributes[length_id]); 
       }
     }
     const int min_branch_count = 6;  // can't do any reasonable stats with fewer than this number of branches
-    num_branches += num_leaves + static_cast<int>(lengths.size());
+    num_branches += static_cast<int>(lengths.size());
     if (lengths.size() >= min_branch_count)
     {
       double c, d, r2;
