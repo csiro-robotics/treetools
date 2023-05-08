@@ -1,7 +1,9 @@
 # Tree Tools
 A set of command line tools for processing tree files, together with an associated C++ library.
 
-Tree files are text files that can either store a tree trunk per tree, or a full Branch Structure Graph (connected cylinders) per tree. One line per tree.
+Tree files are text files that provide a geometric description of botanical trees. At their simplest they store just the trunk location and radius per-tree, but typically they store the full Branch Structure Graph, one line per tree. A Branch Structure Graph is a piecewise cylindrical approximation of each tree, where each branch is a connected chain of cylinders or, more specifically, capsules.
+
+The purpose of this library is to analyse and manipulate reconstructions of real trees and forests, such as from lidar-acquired points cloud reconstructions such as rayextract trees in raycloudtools (https://github.com/csiro-robotics/raycloudtools). See below for examples.
 
 ### File Format:
 ```console
@@ -37,14 +39,9 @@ Note that there are three types of data in each line of the text file. In order:
 ## Build:
 ```console
 git clone https://github.com/csiro-robotics/raycloudtools
-cd raycloudtools
-git checkout experimental
-mkdir build
-cd build
-cmake ..
-make
-sudo make install
-cd ../..
+```
+Now follow the build instructions to build and install raycloudtools
+```console
 git clone treetools from this repository
 mkdir build
 cd build
@@ -52,31 +49,51 @@ cmake ..
 make
 ```
 
-To run the treeXXXX tools from anywhere, use sudo make install, or place in your ~/bashrc:
-```console
-  export PATH=$PATH:'source code path'/treetools/build/bin
-```
-
+To run the treeXXXX tools from anywhere, use sudo make install
 
 ## Examples:
-
-**treecolour forest.txt LAI_image.hdr 10.3,-12.4,0.2** 
-Apply the mean colour within the tree radius (specified in subtree_radius field if trunks only) from the image startinig at world coord 10.3,-12.4 and with pixel width 0.2m. The colour is added as the red,green,blue fields in the file, it can be seen by running treemesh. This function is useful for mapping foliage density, NDVI or any other colour of false-colour onto the trees.
 
 **treecreate forest 1** 
 Generate a tree file of an artifical forest using random seed 1
 
-**treedecimate forest.txt 2 segments**
+<p align="center">
+<img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/treetools/main/pics/treecreate.png?at=refs%2Fheads%2Fmaster"/>
+</p>
+
+**treeinfo forest.txt**
+Output statistical information on the trees, such as total volume and number of branches. 
+
+**treecolour forest_info.txt diameter --gradient_rgb** 
+Colour the branches according to a per-branch parameter 'diameter'. Rather than greyscale, we use --gradient_rgb to colour using a red->green_blue palette. 
+
+<p align="center">
+<img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/treetools/main/pics/treecolour.png?at=refs%2Fheads%2Fmaster"/>
+</p>
+
+**treemesh tree.txt**
+Convert the tree file into a polygon mesh (.ply file), using the red,green,blue fields as mesh colour if available. The '-v' argument will auto-open it in meshlab if you have it installed. 
+
+<p align="center">
+<img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/treetools/main/pics/treemesh.png?at=refs%2Fheads%2Fmaster"/>
+</p>
+
+**treedecimate cloud_trees.txt 2 segments**
 Reduce the tree to only every 2 segments, maintaining the junction points. So approximately half as detailed.
+
+<p align="center">
+<img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/treetools/main/pics/treedecimate1.png?at=refs%2Fheads%2Fmaster"/>
+<img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/treetools/main/pics/treedecimate2.png?at=refs%2Fheads%2Fmaster"/>
+</p>
 
 **treediff forest1.txt forest2.txt**
 Compare a forest to a previous version of the forest. Outputs statistics including growth rate, and the volume of woody growth and removal between the dates.
 
-**treefoliage forest.txt forest.ply 0.2**
-Add the leaf area density (one-sided leaf area per cubic metre) within 0.2m of the branches onto the branch structure as a greyscale value in the red,green,blue fields.
+**treesplit cloud_trees.txt per-tree**
+Split trees into separate files based on a condition, such as its radius, height or a colour. In this case we split it into one file per tree. 
 
-**treemesh forest.txt**
-Convert the tree file into a polygon mesh (.ply file), using the red,green,blue fields as mesh colour if available. 
+<p align="center">
+<img img width="640" src="https://raw.githubusercontent.com/csiro-robotics/treetools/main/pics/treesplit.png?at=refs%2Fheads%2Fmaster"/>
+</p>
 
 **treerotate treefile.txt 0,0,30**
 rotate a tree file in-place, here by 30 degrees around the z (vertical) axis
