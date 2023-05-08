@@ -17,9 +17,10 @@ void usage(int exit_code = 1)
   // clang-format off
   std::cout << "Placeholder method to grow or shrink the tree from the tips, using a linear model. No branches are added." << std::endl;
   std::cout << "usage:" << std::endl;
-  std::cout << "treegrow forest.txt 1 years    - reduce the tree according to the rates, default values below." << std::endl;
+  std::cout << "treegrow forest.txt 1 years             - reduce the tree according to the rates, default values below." << std::endl;
   std::cout << "                    --length_rate 0.3   - expected branch length increase per year in m" << std::endl;
-  std::cout << "                    --shed     - shed branches annually to maintain branch length power law" << std::endl;
+  std::cout << "                    --shed              - shed branches annually to maintain branch length power law" << std::endl;
+  std::cout << "                    --prune_length 1    - length from tip that reconstructed trees are pruned to" << std::endl;
   // clang-format on
   exit(exit_code);
 }
@@ -35,7 +36,7 @@ void addSubTree(std::vector<ray::TreeStructure::Segment> &segments, int root_id,
     std::cout << "weird, this shouldn't happen" << std::endl;
     return;
   }
-  if ((new_branch_length - prune_length) < bifurcate_distance)
+  if (new_branch_length*k2 < prune_length)
   {
     segments[root_id].tip = segments[par_id].tip + dir * (new_branch_length - prune_length);
     return;
@@ -51,6 +52,7 @@ void addSubTree(std::vector<ray::TreeStructure::Segment> &segments, int root_id,
   Eigen::Vector3d rand_dir1(ray::randUniformDouble()-0.5, ray::randUniformDouble()-0.5, ray::randUniformDouble()-0.5);
   Eigen::Vector3d side_dir1 = rand_dir1.cross(dir1).normalized();
   child1.tip = segments[root_id].tip + dir1 * k1;
+  child1.attributes = segments[root_id].attributes;
   segments.push_back(child1);
   addSubTree(segments, (int)segments.size()-1, dir1, side_dir1, new_branch_length*k1,
     k1, k2, angle1, branch_angle, prune_length);
@@ -59,10 +61,11 @@ void addSubTree(std::vector<ray::TreeStructure::Segment> &segments, int root_id,
   child2.parent_id = root_id;
   child2.radius = segments[root_id].radius * k2;
   double angle2 = branch_angle - angle1;
-  Eigen::Vector3d dir2 = dir * std::cos(angle2) + side_dir * std::sin(angle2);
+  Eigen::Vector3d dir2 = dir * std::cos(angle2) - side_dir * std::sin(angle2);
   Eigen::Vector3d rand_dir2(ray::randUniformDouble()-0.5, ray::randUniformDouble()-0.5, ray::randUniformDouble()-0.5);
   Eigen::Vector3d side_dir2 = rand_dir2.cross(dir2).normalized();
   child2.tip = segments[root_id].tip + dir2 * k2;
+  child2.attributes = segments[root_id].attributes;
   segments.push_back(child2);
   addSubTree(segments, (int)segments.size()-1, dir2, side_dir2, new_branch_length*k2,
     k1, k2, angle1, branch_angle, prune_length);
@@ -74,13 +77,14 @@ void addSubTree(std::vector<ray::TreeStructure::Segment> &segments, int root_id,
 int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file;
-  ray::DoubleArgument period(-1000, 3), length_rate(0.0001, 1000.0), width_rate(0.001, 10.0);
+  ray::DoubleArgument period(-1000, 3), length_rate(0.0001, 1000.0), width_rate(0.001, 10.0), prune_length_argument(0.001, 100.0);
   ray::TextArgument years("years");
   ray::OptionalFlagArgument shed_option("shed", 's');
   ray::OptionalKeyValueArgument length_option("length_rate", 'l', &length_rate);
+  ray::OptionalKeyValueArgument prune_length_option("prune_length", 'l', &prune_length_argument);
 
   const bool parsed =
-    ray::parseCommandLine(argc, argv, { &forest_file, &period, &years }, { &length_option, &shed_option });
+    ray::parseCommandLine(argc, argv, { &forest_file, &period, &years }, { &length_option, &shed_option, &prune_length_option });
   if (!parsed)
   {
     usage();
@@ -115,9 +119,8 @@ int main(int argc, char *argv[])
     const int angle_id = static_cast<int>(std::find(root_at_names.begin(), root_at_names.end(), "angle") - root_at_names.begin());
     const int length_id = static_cast<int>(std::find(root_at_names.begin(), root_at_names.end(), "length") - root_at_names.begin());
     const int dominance_id = static_cast<int>(std::find(root_at_names.begin(), root_at_names.end(), "dominance") - root_at_names.begin());
-    const int children_id = static_cast<int>(std::find(root_at_names.begin(), root_at_names.end(), "children") - root_at_names.begin());
     if (dimension_id == (int)at_names.size() || angle_id == (int)root_at_names.size() || 
-        length_id == (int)root_at_names.size() || dominance_id == (int)root_at_names.size() || children_id == (int)root_at_names.size())
+        length_id == (int)root_at_names.size() || dominance_id == (int)root_at_names.size())
     {
       std::cout << "Error: cannot find required fields in file. Make sure to use the _info.txt file from the treeinfo command" << std::endl;
       usage();
@@ -129,14 +132,21 @@ int main(int argc, char *argv[])
     // 4. after this, drop off all the excess branches
     // 5. now grow the radius
     // 6. finally, re-adjust the segment lengths to have the same rough ratio of radius to length. Don't move the branch points
-
-    const double prune_length = 1.0;
-
+    const double prune_length = prune_length_option.isSet() ? prune_length_argument.value() : 1.0;
 
   //  for (int i = 0; i<static_cast<int>(period.value()); i++)
     {
       for (auto &tree : forest.trees)
       {
+        std::vector<int> children(tree.segments().size(), 0);
+        for (size_t j = 0; j<tree.segments().size(); j++)
+        {
+          int par = tree.segments()[j].parent_id;
+          if (par != -1)
+          {
+            children[par]++;
+          }
+        }
         auto &root = tree.segments()[0];
         double dimension = tree.treeAttributes()[dimension_id];
         double branch_angle = root.attributes[angle_id] * ray::kPi/180.0;
@@ -177,15 +187,13 @@ int main(int argc, char *argv[])
         {
           auto &segments = tree.segments();
           auto &segment = segments[i];
-          if (segment.attributes[children_id] == 0) // a leaf
+          if (children[i] == 0) // a leaf
           {
             // extend the branch
-            int root_id = segment.parent_id;
-            Eigen::Vector3d dir = segment.tip - segments[root_id].tip;
+            Eigen::Vector3d dir = segment.tip - segments[segment.parent_id].tip;
             double tip_length = dir.norm();
             dir /= tip_length;
             
-            auto &root = segments[root_id];
             // now add a subtree here
             double initial_branch_length = tip_length;
             // b. new branch length
@@ -194,7 +202,7 @@ int main(int argc, char *argv[])
             Eigen::Vector3d random_dir(ray::randUniformDouble()-0.5, ray::randUniformDouble()-0.5, ray::randUniformDouble()-0.5);
             Eigen::Vector3d side_dir = dir.cross(random_dir).normalized();
 
-            addSubTree(segments, root_id, dir, side_dir, new_branch_length,
+            addSubTree(segments, i, dir, side_dir, new_branch_length,
               k1, k2, angle1, branch_angle, prune_length);          
           }
         }
@@ -213,7 +221,7 @@ int main(int argc, char *argv[])
           {
             auto &segment = tree.segments()[i];
             int parent = segment.parent_id;
-            if (parent == -1 || tree.segments()[parent].attributes[children_id] > 1) // condition for a sub-branch root
+            if (parent == -1 || children[parent] > 1) // condition for a sub-branch root
             {
               ListNode node;
               node.segment_id = (int)i;
