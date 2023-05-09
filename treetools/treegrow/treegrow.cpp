@@ -11,6 +11,7 @@
 #include "raylib/raytreegen.h"
 #include "treelib/treepruner.h"
 #include "treelib/treeutils.h"
+#include "treelib/treeinformation.h"
 
 void usage(int exit_code = 1)
 {
@@ -43,8 +44,6 @@ void addSubTree(std::vector<ray::TreeStructure::Segment> &segments, int root_id,
   }
   segments[root_id].tip = segments[par_id].tip + dir * bifurcate_distance;
   
-  // now: how do we end this escapade? We need to cut off at the prune length actually...
-
   ray::TreeStructure::Segment child1;
   child1.parent_id = root_id;
   child1.radius = segments[root_id].radius * k1;
@@ -106,25 +105,6 @@ int main(int argc, char *argv[])
 
   if (period.value() > 0.0)
   {
-
-    /// Information we need, per-tree:
-    // 1. taper  (get length of tree, and radius at base)
-    // 2. branch angle
-    // 3. branch count to length exponent
-    // 4. dominance
-    auto &at_names = forest.trees[0].treeAttributeNames();
-    auto &root_at_names = forest.trees[0].attributeNames();
-    const int dimension_id = static_cast<int>(std::find(at_names.begin(), at_names.end(), "dimension") - at_names.begin());
-    const int angle_id = static_cast<int>(std::find(root_at_names.begin(), root_at_names.end(), "angle") - root_at_names.begin());
-    const int length_id = static_cast<int>(std::find(root_at_names.begin(), root_at_names.end(), "length") - root_at_names.begin());
-    const int dominance_id = static_cast<int>(std::find(root_at_names.begin(), root_at_names.end(), "dominance") - root_at_names.begin());
-    if (dimension_id == (int)at_names.size() || angle_id == (int)root_at_names.size() || 
-        length_id == (int)root_at_names.size() || dominance_id == (int)root_at_names.size())
-    {
-      std::cout << "Error: cannot find required fields in file. Make sure to use the _info.txt file from the treeinfo command" << std::endl;
-      usage();
-    }
-
     // 1. store and retrieve prune_length from file
     // 2. for each singular branch, look at the perfect procedural tree at +growth, also pruned to prune_length. This uses dimension and dominance to work out split ratio up length
     // 3. split this branch at exact location based on linear interpolation of segments
@@ -141,17 +121,41 @@ int main(int argc, char *argv[])
         int par = tree.segments()[j].parent_id;
         if (par != -1)
         {
-          children[par].push_back(j);
+          children[par].push_back((int)j);
         }
       }
-      auto &root = tree.segments()[0];
-      double dimension = tree.treeAttributes()[dimension_id];
-      double branch_angle = root.attributes[angle_id] * ray::kPi/180.0;
-      double radius = root.radius;
-      double length = root.attributes[length_id];
-      double dominance = root.attributes[dominance_id];
+      /// Information we need, per-tree:
+      // 1. taper  (get length of tree, and radius at base)
+      // 2. branch angle
+      // 3. dominance
+      // 4. dimension
+      std::vector<double> angles, num_children, dominances, all_lengths;
+      // all_lengths are from segment start to end, including prune_length
+      tree::getBranchLengths(tree, children, all_lengths, prune_length); 
+      double total_dominance, total_angle, total_children, total_weight;
+      tree::getBifurcationProperties(tree, children, angles, dominances, num_children, 
+        total_dominance, total_angle, total_children, total_weight);
+      std::vector<double> branch_lengths; // just the branches, not the segments
+      for (size_t j = 0; j<children.size(); j++)
+      {
+        if (tree.segments()[j].parent_id == -1 || children[tree.segments()[j].parent_id].size() > 1) 
+        {
+          branch_lengths.push_back(all_lengths[j]); // is the length even being set on this exact segment??
+        }
+      }
+      double power_c, power_D, r2; // rank = c * length^-D
+      tree::calculatePowerLaw(branch_lengths, power_c, power_D, r2); 
+      std::cout << branch_lengths.size() << " branches, with rank = " << power_c << " * L^" << power_D << " with confidence: " << r2 << std::endl;
 
-      const double radius_growth = length_growth * radius / length;
+      // The key analytics here:
+      const double dimension = std::min(-power_D, 3.0);
+      const double dominance = total_dominance / total_weight;
+      const double branch_angle = (total_angle / total_weight) * ray::kPi/180.0;
+      const double trunk_radius = tree.segments()[0].radius;
+      const double tree_length = all_lengths[0];
+      std::cout << "dimension: " << dimension << ", dominance: " << dominance << ", branch angle rads: " << branch_angle << ", trunk radius: " << trunk_radius << ", tree length: " << tree_length << std::endl;
+
+      const double radius_growth = length_growth * trunk_radius / tree_length;
 
       // convet dimension to the average downscale at each branch point
       const double k = std::pow(2.0, -1.0/dimension);
@@ -223,9 +227,9 @@ int main(int argc, char *argv[])
           {
             ListNode node;
             node.segment_id = (int)i;
-            node.distance_to_end = segment.attributes[length_id] + prune_length + length_growth;
+            node.distance_to_end = all_lengths[i] + length_growth;
             node.total_branches = 1;
-            std::vector<int> child_list = {i};
+            std::vector<int> child_list = {(int)i};
             for (size_t j = 0; j<child_list.size(); j++)
             {
               auto &kids = children[child_list[j]];
@@ -243,7 +247,9 @@ int main(int argc, char *argv[])
         }
         std::sort(nodes.begin(), nodes.end(), [](const ListNode &n1, const ListNode &n2) -> bool { return n1.distance_to_end > n2.distance_to_end; });
         // 3. calculate how much pruning should be done based on dimension
-        const double L0 = tree.segments()[0].attributes[length_id] + prune_length; // TODO: this should probably be the D'th root of estimated k (in rank = kL^-D)
+//        const double L0 = tree_length; // TODO: this should probably be the D'th root of estimated k (in rank = kL^-D)
+        const double L0 = std::pow(power_c, 1.0/dimension); // TODO: this should probably be the D'th root of estimated k (in rank = kL^-D)
+        std::cout << "main tree length: " << tree_length << ", mean tree length: " << L0 << std::endl;
         // old law:          rank = L0^D * L^-D   // so L0 (full tree length) is rank 1
         // now grow L...
         // grown reality:    rank = L0^D * (L-length_growth)^-D
@@ -258,7 +264,7 @@ int main(int argc, char *argv[])
 
         for (int i = 1; i<(int)nodes.size(); i++) // start at 1 because I don't want it chopping the whole tree down
         {
-          // problems:
+          // problems: TODO:
           // 1. final drop could be wrong, what about clipping, and what about the difference between real rank and expected new rank?
           // 2. what if the next node up is also a subtree? I think it'll be OK
 

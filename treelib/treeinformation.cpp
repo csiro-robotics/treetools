@@ -276,4 +276,94 @@ void setMonocotal(ray::TreeStructure &tree, const std::vector<std::vector<int>> 
   tree.treeAttributes()[monocotal_id] = max_monocotal;
 }
 
+void getBranchLengths(ray::TreeStructure &tree, const std::vector<std::vector<int>> &children, std::vector<double> &lengths, double prune_length)
+{
+  lengths.resize(tree.segments().size(), 0);
+  for (size_t i = 1; i < tree.segments().size(); i++)
+  {
+    // for each leaf, iterate to trunk updating the maximum length...
+    if (children[i].empty())  // so it is a leaf
+    {
+      int I = static_cast<int>(i);
+      int j = tree.segments()[I].parent_id;
+      lengths[I] = prune_length;
+      int child = I;
+      while (j != -1)
+      {
+        const double dist =
+          lengths[child] + (tree.segments()[I].tip - tree.segments()[j].tip).norm();
+        double &length = lengths[I];
+        if (dist > length)
+        {
+          length = dist;
+        }
+        else
+        {
+          break;
+        }
+        child = I;
+        I = j;
+        j = tree.segments()[I].parent_id;
+      }
+    }
+  }
+  for (auto &child : children[0])
+  {
+    lengths[0] = std::max(lengths[0], lengths[child]);
+  }  
+}
+
+void getBifurcationProperties(ray::TreeStructure &tree, const std::vector<std::vector<int>> &children, std::vector<double> &angles, std::vector<double> &dominances, std::vector<double> &num_children, 
+  double &tree_dominance, double &tree_angle, double &tree_children, double &total_weight)
+{
+  angles.resize(tree.segments().size(), 0);
+  dominances.resize(tree.segments().size(), 0);
+  num_children.resize(tree.segments().size(), 0);
+  for (size_t i = 1; i < tree.segments().size(); i++)
+  {
+    // if its a branch point then record how dominant the branching is
+    if (children[i].size() > 1)
+    {
+      double max_rad = -1.0;
+      double second_max = -1.0;
+      Eigen::Vector3d dir1(0, 0, 0), dir2(0, 0, 0);
+      for (auto &child : children[i])
+      {
+        double rad = tree.segments()[child].radius;
+        Eigen::Vector3d dir = tree.segments()[child].tip - tree.segments()[i].tip;
+        // we go up a segment if we can, as the radius and angle will have settled better here
+        if (children[child].size() == 1)
+        {
+          rad = tree.segments()[children[child][0]].radius;
+          dir = tree.segments()[children[child][0]].tip - tree.segments()[child].tip;
+        }
+        if (rad > max_rad)
+        {
+          second_max = max_rad;
+          max_rad = rad;
+          dir2 = dir1;
+          dir1 = dir;
+        }
+        else if (rad > second_max)
+        {
+          second_max = rad;
+          dir2 = dir;
+        }
+      }
+      const double weight = sqr(max_rad) + sqr(second_max);
+      const double dominance = -1.0 + 2.0 * sqr(max_rad) / weight;
+      dominances[i] = dominance;
+      // now where do we spread this to?
+      // if we spread to leaves then base will be empty, if we spread to parent then leave will be empty...
+      tree_dominance += weight * dominance;
+      total_weight += weight;
+
+      const double branch_angle = (180.0 / ray::kPi) * std::atan2(dir1.cross(dir2).norm(), dir1.dot(dir2));
+      angles[i] = branch_angle;
+      tree_angle += weight * branch_angle;
+      num_children[i] = static_cast<double>(children[i].size());
+      tree_children += weight * static_cast<double>(children[i].size());
+    }
+  }    
+}
 }  // namespace tree

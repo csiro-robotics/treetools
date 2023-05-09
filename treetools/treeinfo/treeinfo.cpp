@@ -208,8 +208,7 @@ int main(int argc, char *argv[])
       }
     }
   }
-  const double broken_diameter = 0.6;  // larger than this is considered a broken branch and not extended
-  const double taper_ratio = 140.0;
+  const double prune_length = 1.0;  // TODO: read this from file
 
   double total_volume = 0.0;
   double min_volume = std::numeric_limits<double>::max(), max_volume = std::numeric_limits<double>::lowest();
@@ -247,88 +246,28 @@ int main(int argc, char *argv[])
 
     Eigen::Vector3d min_bound = tree.segments()[0].tip;
     Eigen::Vector3d max_bound = tree.segments()[0].tip;
-    double tree_dominance = 0.0;
-    double tree_angle = 0.0;
-    double total_weight = 0.0;
-    double tree_children = 0.0;
     for (size_t i = 1; i < tree.segments().size(); i++)
     {
       min_bound = ray::minVector(min_bound, tree.segments()[i].tip);
       max_bound = ray::maxVector(max_bound, tree.segments()[i].tip);
-      // for each leaf, iterate to trunk updating the maximum length...
-      if (children[i].empty())  // so it is a leaf
-      {
-        const double extension =
-          2.0 * tree.segments()[i].radius > broken_diameter ? 0.0 : (taper_ratio * tree.segments()[i].radius);
-        int I = static_cast<int>(i);
-        int j = tree.segments()[I].parent_id;
-        tree.segments()[I].attributes[length_id] = extension;
-        int child = I;
-        while (j != -1)
-        {
-          const double dist =
-            tree.segments()[child].attributes[length_id] + (tree.segments()[I].tip - tree.segments()[j].tip).norm();
-          double &length = tree.segments()[I].attributes[length_id];
-          if (dist > length)
-          {
-            length = dist;
-          }
-          else
-          {
-            break;
-          }
-          child = I;
-          I = j;
-          j = tree.segments()[I].parent_id;
-        }
-      }
-      // if its a branch point then record how dominant the branching is
-      else if (children[i].size() > 1)
-      {
-        double max_rad = -1.0;
-        double second_max = -1.0;
-        Eigen::Vector3d dir1(0, 0, 0), dir2(0, 0, 0);
-        for (auto &child : children[i])
-        {
-          double rad = tree.segments()[child].radius;
-          Eigen::Vector3d dir = tree.segments()[child].tip - tree.segments()[i].tip;
-          // we go up a segment if we can, as the radius and angle will have settled better here
-          if (children[child].size() == 1)
-          {
-            rad = tree.segments()[children[child][0]].radius;
-            dir = tree.segments()[children[child][0]].tip - tree.segments()[child].tip;
-          }
-          if (rad > max_rad)
-          {
-            second_max = max_rad;
-            max_rad = rad;
-            dir2 = dir1;
-            dir1 = dir;
-          }
-          else if (rad > second_max)
-          {
-            second_max = rad;
-            dir2 = dir;
-          }
-        }
-        const double weight = sqr(max_rad) + sqr(second_max);
-        const double dominance = -1.0 + 2.0 * sqr(max_rad) / weight;
-        tree.segments()[i].attributes[dominance_id] = dominance;
-        // now where do we spread this to?
-        // if we spread to leaves then base will be empty, if we spread to parent then leave will be empty...
-        tree_dominance += weight * dominance;
-        total_weight += weight;
-        const double branch_angle = (180.0 / ray::kPi) * std::atan2(dir1.cross(dir2).norm(), dir1.dot(dir2));
-        tree.segments()[i].attributes[angle_id] = branch_angle;
-        tree_angle += weight * branch_angle;
-        tree.segments()[i].attributes[children_id] = static_cast<double>(children[i].size());
-        tree_children += weight * static_cast<double>(children[i].size());
-      }
     }
-    for (auto &child : children[0])
+    std::vector<double> branch_lengths;
+    tree::getBranchLengths(tree, children, branch_lengths, prune_length);
+    for (size_t j = 0; j<branch_lengths.size(); j++)
     {
-      tree.segments()[0].attributes[length_id] =
-        std::max(tree.segments()[0].attributes[length_id], tree.segments()[child].attributes[length_id]);
+      tree.segments()[j].attributes[length_id] = branch_lengths[j];
+    }
+    double tree_dominance = 0.0;
+    double tree_angle = 0.0;
+    double total_weight = 0.0;
+    double tree_children = 0.0;
+    std::vector<double> branch_angles, branch_dominances, branch_children;
+    tree::getBifurcationProperties(tree, children, branch_angles, branch_dominances, branch_children, tree_dominance, tree_angle, tree_children, total_weight);    
+    for (size_t j = 0; j<branch_lengths.size(); j++)
+    {
+      tree.segments()[j].attributes[angle_id] = branch_angles[j];
+      tree.segments()[j].attributes[dominance_id] = branch_dominances[j];
+      tree.segments()[j].attributes[children_id] = branch_children[j];
     }
     if (children[0].size() > 0)
     {
@@ -344,7 +283,7 @@ int main(int argc, char *argv[])
       int par = seg.parent_id;
       if (par == -1 || children[par].size() > 1) 
       {
-        lengths.push_back(seg.attributes[length_id]); 
+        lengths.push_back(seg.attributes[length_id]); // is the length even being set on this exact segment??
       }
     }
     const int min_branch_count = 6;  // can't do any reasonable stats with fewer than this number of branches
