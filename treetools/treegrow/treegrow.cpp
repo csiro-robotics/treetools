@@ -16,7 +16,7 @@
 void usage(int exit_code = 1)
 {
   // clang-format off
-  std::cout << "Placeholder method to grow or shrink the tree from the tips, using a linear model. No branches are added." << std::endl;
+  std::cout << "Placeholder method to grow or shrink the tree from the tips, using a linear model." << std::endl;
   std::cout << "usage:" << std::endl;
   std::cout << "treegrow forest.txt 1 years             - reduce the tree according to the rates, default values below." << std::endl;
   std::cout << "                    --length_rate 0.3   - expected branch length increase per year in m" << std::endl;
@@ -76,7 +76,7 @@ void addSubTree(std::vector<ray::TreeStructure::Segment> &segments, int root_id,
 int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file;
-  ray::DoubleArgument period(-1000, 3), length_rate(0.0001, 1000.0, 0.3), prune_length_argument(0.001, 100.0, 1.0);
+  ray::DoubleArgument period(-100, 100), length_rate(0.0001, 1000.0, 0.3), prune_length_argument(0.001, 100.0, 1.0);
   ray::TextArgument years("years");
   ray::OptionalFlagArgument shed_option("shed", 's');
   ray::OptionalKeyValueArgument length_option("length_rate", 'l', &length_rate);
