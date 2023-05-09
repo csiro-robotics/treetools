@@ -267,8 +267,9 @@ int main(int argc, char *argv[])
         // expected new law: rank = (L0+length_growth)^D * L^-D 
         const double kexp = std::pow(L0 + length_growth, dimension);
         // final drop is rank of the smallest branch minus rankof this branch after growth....
-        const double smallest_branch_rank = 1.0 + (double)nodes.size();
         const double smallest_branch_length = nodes.back().distance_to_end;
+   //     const double smallest_branch_rank = 1.0 + (double)nodes.size();
+        const double smallest_branch_rank = kexp * std::pow(smallest_branch_length - length_growth, -dimension);
         const double smallest_branch_new_rank = kexp * std::pow(smallest_branch_length, -dimension);
         std::cout << "smallest branch rank: " << smallest_branch_rank << " new expected rank: " << smallest_branch_new_rank << ", drop: " << smallest_branch_rank - smallest_branch_new_rank << std::endl;
         const int final_drop = std::max(0, (int)(smallest_branch_rank - smallest_branch_new_rank));
@@ -280,8 +281,9 @@ int main(int argc, char *argv[])
           // 2. what if the next node up is also a subtree? I think it'll be OK
 
           int j = i+1; // look at what happens if the next one up slides down
-          double rank = 1.0 + (double)j;
           double length = nodes[j].distance_to_end;
+//          double rank = 1.0 + (double)j;
+          double rank = kexp * std::pow(length-length_growth, -dimension);
           double expected_rank = kexp * std::pow(length, -dimension);
           if (expected_rank < rank-0.5) // better to drop down
           {
