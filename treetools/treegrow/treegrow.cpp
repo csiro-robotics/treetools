@@ -228,6 +228,9 @@ int main(int argc, char *argv[])
       // 2. get length to end for each sub-branch, and add to a list in order to sort
       if (shed_option.isSet())
       {
+        // TODO: the remaining question here is whether we need to update children/lengths/branch_ids etc
+        // from the added branches above, before shedding. 
+
         struct ListNode
         {
           int segment_id;
@@ -276,16 +279,12 @@ int main(int argc, char *argv[])
 
         for (int i = 1; i<(int)nodes.size()-1; i++) // start at 1 because I don't want it chopping the whole tree down
         {
-          // problems: TODO:
-          // 1. final drop could be wrong, what about clipping, and what about the difference between real rank and expected new rank?
-          // 2. what if the next node up is also a subtree? I think it'll be OK
-
           int j = i+1; // look at what happens if the next one up slides down
           double length = nodes[j].distance_to_end;
 //          double rank = 1.0 + (double)j;
           double rank = kexp * std::pow(length-length_growth, -dimension);
           double expected_rank = kexp * std::pow(length, -dimension);
-          if (expected_rank < rank-0.5) // better to drop down
+          if (expected_rank < rank-1.0) // 0.5) // - 0.5 chooses the closest (could go below the line) but -1 is more conservative and keeps the ranks above the expected line
           {
             bool remove_this_node = false;
             if (nodes[i].total_branches < final_drop && nodes[j].total_branches < final_drop)
