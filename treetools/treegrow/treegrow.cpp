@@ -32,11 +32,6 @@ void addSubTree(std::vector<ray::TreeStructure::Segment> &segments, int root_id,
 {
   double bifurcate_distance = new_branch_length*(1.0 - k1);
   int par_id = segments[root_id].parent_id;
-  if (new_branch_length < prune_length)
-  {
-    std::cout << "weird, this shouldn't happen" << std::endl;
-    return;
-  }
   if (new_branch_length*k2 < prune_length)
   {
     segments[root_id].tip = segments[par_id].tip + dir * (new_branch_length - prune_length);
@@ -161,7 +156,7 @@ int main(int argc, char *argv[])
       }
       double power_c, power_D, r2; // rank = c * length^-D
       tree::calculatePowerLaw(branch_lengths, power_c, power_D, r2); 
-      std::cout << branch_lengths.size() << " branches, with rank = " << power_c << " * L^" << power_D << " with confidence: " << r2 << std::endl;
+      // std::cout << branch_lengths.size() << " branches, with rank = " << power_c << " * L^" << power_D << " with confidence: " << r2 << std::endl;
 
       // The key analytics here:
       const double dimension = std::min(-power_D, 3.0);
@@ -169,7 +164,7 @@ int main(int argc, char *argv[])
       const double branch_angle = (total_angle / total_weight) * ray::kPi/180.0;
       const double trunk_radius = tree.segments()[0].radius;
       const double tree_length = all_lengths[0];
-      std::cout << "dimension: " << dimension << ", dominance: " << dominance << ", branch angle rads: " << branch_angle << ", trunk radius: " << trunk_radius << ", tree length: " << tree_length << std::endl;
+      // std::cout << "dimension: " << dimension << ", dominance: " << dominance << ", branch angle rads: " << branch_angle << ", trunk radius: " << trunk_radius << ", tree length: " << tree_length << std::endl;
 
       const double radius_growth = length_growth * trunk_radius / tree_length;
 
@@ -183,7 +178,7 @@ int main(int argc, char *argv[])
       double d2 = std::sqrt(1.0 - area_ratio); // small child radius for unit parent radius
       // if c^2 d1 d2 = k^2
       double d_scale = k / std::sqrt(d1 * d2);
-      std::cout << "d1: " << d1 << ", d2: " << d2 << ", d_scale: " << d_scale << std::endl;
+      // std::cout << "d1: " << d1 << ", d2: " << d2 << ", d_scale: " << d_scale << std::endl;
       double k1 = d1 * d_scale;
       double k2 = d2 * d_scale;
 
@@ -196,7 +191,7 @@ int main(int argc, char *argv[])
       {
         angle1 = std::atan( std::tan(branch_angle - angle1) * ray::sqr(k2/k1));
       }  
-      std::cout << "dominant angle: " << angle1 << ", total angle: " << branch_angle << std::endl;
+      // std::cout << "dominant angle: " << angle1 << ", total angle: " << branch_angle << std::endl;
 
       // 1. add subtrees at each leaf point....
       size_t num_segs = tree.segments().size();
@@ -224,13 +219,11 @@ int main(int argc, char *argv[])
         }
       }
 
-
       // 2. get length to end for each sub-branch, and add to a list in order to sort
       if (shed_option.isSet())
       {
-        // TODO: the remaining question here is whether we need to update children/lengths/branch_ids etc
-        // from the added branches above, before shedding. 
-
+        // TODO: an improvement might be to update the branch_ids, children etc so the new branches are also shed. Or to grow the new branches afterwards,
+        // with a k value adjusted by the number of leaf points.
         struct ListNode
         {
           int segment_id;
@@ -268,7 +261,7 @@ int main(int argc, char *argv[])
         // 3. calculate how much pruning should be done based on dimension
 //        const double L0 = tree_length; // TODO: this should probably be the D'th root of estimated k (in rank = kL^-D)
         const double L0 = std::pow(power_c, 1.0/dimension); // TODO: this should probably be the D'th root of estimated k (in rank = kL^-D)
-        std::cout << "main tree length: " << tree_length << ", mean tree length: " << L0 << std::endl;
+        // std::cout << "main tree length: " << tree_length << ", mean tree length: " << L0 << std::endl;
         // old law:          rank = L0^D * L^-D   // so L0 (full tree length) is rank 1
         // now grow L...
         // grown reality:    rank = L0^D * (L-length_growth)^-D
@@ -279,7 +272,7 @@ int main(int argc, char *argv[])
    //     const double smallest_branch_rank = 1.0 + (double)nodes.size();
         const double smallest_branch_rank = kexp * std::pow(smallest_branch_length - length_growth, -dimension);
         const double smallest_branch_new_rank = kexp * std::pow(smallest_branch_length, -dimension);
-        std::cout << "smallest branch rank: " << smallest_branch_rank << " new expected rank: " << smallest_branch_new_rank << ", drop: " << smallest_branch_rank - smallest_branch_new_rank << std::endl;
+        // std::cout << "smallest branch rank: " << smallest_branch_rank << " new expected rank: " << smallest_branch_new_rank << ", drop: " << smallest_branch_rank - smallest_branch_new_rank << std::endl;
         const int final_drop = std::max(0, (int)(smallest_branch_rank - smallest_branch_new_rank));
 
         for (int i = 1; i<(int)nodes.size()-1; i++) // start at 1 because I don't want it chopping the whole tree down
@@ -351,13 +344,6 @@ int main(int argc, char *argv[])
     tree::pruneDiameter(pruned_forest, minimum_branch_diameter, grown_forest);
   }
 
-  if (grown_forest.trees.empty())
-  {
-    std::cout << "Warning: no trees left after pruning. No file saved." << std::endl;
-  }
-  else
-  {
-    grown_forest.save(forest_file.nameStub() + "_grown.txt");
-  }
+  grown_forest.save(forest_file.nameStub() + "_grown.txt");
   return 0;
 }
