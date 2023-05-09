@@ -136,11 +136,27 @@ int main(int argc, char *argv[])
       tree::getBifurcationProperties(tree, children, angles, dominances, num_children, 
         total_dominance, total_angle, total_children, total_weight);
       std::vector<double> branch_lengths; // just the branches, not the segments
+      std::vector<int> branch_ids;
       for (size_t j = 0; j<children.size(); j++)
       {
-        if (tree.segments()[j].parent_id == -1 || children[tree.segments()[j].parent_id].size() > 1) 
+        auto &segs = tree.segments();
+        if (segs[j].parent_id == -1 || children[segs[j].parent_id].size() > 1) 
         {
-          branch_lengths.push_back(all_lengths[j]); // is the length even being set on this exact segment??
+          bool secondary = true;
+          if (segs[j].parent_id > -1)
+          {
+            double max_rad = 0.0;
+            for (auto &child_id: children[segs[j].parent_id])
+            {
+              max_rad = std::max(max_rad, segs[child_id].radius);
+            }
+            secondary = segs[j].radius < max_rad; // only include non-dominant branches
+          }
+          if (secondary) // only include non-dominant branches
+          {
+            branch_ids.push_back((int)j);
+            branch_lengths.push_back(all_lengths[j]); 
+          }
         }
       }
       double power_c, power_D, r2; // rank = c * length^-D
@@ -219,31 +235,26 @@ int main(int argc, char *argv[])
           int total_branches; // number of subbranches including itself
         };
         std::vector<ListNode> nodes;
-        for (size_t i = 0; i<num_segs; i++)
+        for (auto &i: branch_ids)
         {
-          auto &segment = tree.segments()[i];
-          int parent = segment.parent_id;
-          if (parent == -1 || children[parent].size() > 1) // condition for a sub-branch root
+          ListNode node;
+          node.segment_id = (int)i;
+          node.distance_to_end = all_lengths[i] + length_growth;
+          node.total_branches = 1;
+          std::vector<int> child_list = {(int)i};
+          for (size_t j = 0; j<child_list.size(); j++)
           {
-            ListNode node;
-            node.segment_id = (int)i;
-            node.distance_to_end = all_lengths[i] + length_growth;
-            node.total_branches = 1;
-            std::vector<int> child_list = {(int)i};
-            for (size_t j = 0; j<child_list.size(); j++)
+            auto &kids = children[child_list[j]];
+            if (kids.size() > 1)
             {
-              auto &kids = children[child_list[j]];
-              if (kids.size() > 1)
-              {
-                node.total_branches += (int)kids.size();
-              }
-              if (kids.size() > 0)
-              {
-                child_list.insert(child_list.end(), kids.begin(), kids.end());
-              }
+              node.total_branches += (int)kids.size();
             }
-            nodes.push_back(node);
+            if (kids.size() > 0)
+            {
+              child_list.insert(child_list.end(), kids.begin(), kids.end());
+            }
           }
+          nodes.push_back(node);
         }
         std::sort(nodes.begin(), nodes.end(), [](const ListNode &n1, const ListNode &n2) -> bool { return n1.distance_to_end > n2.distance_to_end; });
         // 3. calculate how much pruning should be done based on dimension
