@@ -236,6 +236,7 @@ int main(int argc, char *argv[])
           int segment_id;
           double distance_to_end;
           int total_branches; // number of subbranches including itself
+          int order;
         };
         std::vector<ListNode> nodes;
         for (auto &i: branch_ids)
@@ -260,6 +261,10 @@ int main(int argc, char *argv[])
           nodes.push_back(node);
         }
         std::sort(nodes.begin(), nodes.end(), [](const ListNode &n1, const ListNode &n2) -> bool { return n1.distance_to_end > n2.distance_to_end; });
+        for (int i = 0; i<(int)nodes.size(); i++)
+        {
+          nodes[i].order = i;
+        }
         // 3. calculate how much pruning should be done based on dimension
 //        const double L0 = tree_length; // TODO: this should probably be the D'th root of estimated k (in rank = kL^-D)
         const double L0 = std::pow(power_c, 1.0/dimension); // TODO: this should probably be the D'th root of estimated k (in rank = kL^-D)
@@ -282,7 +287,7 @@ int main(int argc, char *argv[])
           int j = i+1; // look at what happens if the next one up slides down
           double length = nodes[j].distance_to_end;
 //          double rank = 1.0 + (double)j;
-          double rank = kexp * std::pow(length-length_growth, -dimension);
+          double rank = kexp * std::pow(length-length_growth, -dimension) + (double)(j - nodes[j].order);
           double expected_rank = kexp * std::pow(length, -dimension);
           if (expected_rank < rank-1.0) // 0.5) // - 0.5 chooses the closest (could go below the line) but -1 is more conservative and keeps the ranks above the expected line
           {
@@ -316,6 +321,7 @@ int main(int argc, char *argv[])
                 }
               }
               tree.segments()[node_seg_id].parent_id = -1; // that's all we need to do for segments, as reindex will do the rest
+              i--; // if we are removing this node then we need to decrement i
             }
           }
         }
