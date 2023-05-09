@@ -281,7 +281,7 @@ void generateSmoothMesh(ray::Mesh &mesh, const ray::ForestStructure &forest, int
       int parent = segment.parent_id;
       if (parent != -1)
       {
-        children[parent].push_back(i);
+        children[parent].push_back((int)i);
       }
     }
     // now generate the set of root segments

@@ -77,7 +77,7 @@ void addSubTree(std::vector<ray::TreeStructure::Segment> &segments, int root_id,
 int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file;
-  ray::DoubleArgument period(-1000, 3), length_rate(0.0001, 1000.0), width_rate(0.001, 10.0), prune_length_argument(0.001, 100.0);
+  ray::DoubleArgument period(-1000, 3), length_rate(0.0001, 1000.0, 0.3), prune_length_argument(0.001, 100.0, 1.0);
   ray::TextArgument years("years");
   ray::OptionalFlagArgument shed_option("shed", 's');
   ray::OptionalKeyValueArgument length_option("length_rate", 'l', &length_rate);
@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
     usage();
   }
   ray::ForestStructure grown_forest;
-  const double len_rate = length_option.isSet() ? length_rate.value() : 0.3;
+  const double len_rate = length_rate.value();
   const double length_growth = len_rate * period.value();
 
   if (period.value() > 0.0)
@@ -131,17 +131,17 @@ int main(int argc, char *argv[])
     // 4. after this, drop off all the excess branches
     // 5. now grow the radius
     // 6. finally, re-adjust the segment lengths to have the same rough ratio of radius to length. Don't move the branch points
-    const double prune_length = prune_length_option.isSet() ? prune_length_argument.value() : 1.0;
+    const double prune_length = prune_length_argument.value();
 
     for (auto &tree : forest.trees)
     {
-      std::vector<int> children(tree.segments().size(), 0);
+      std::vector<std::vector<int> > children(tree.segments().size());
       for (size_t j = 0; j<tree.segments().size(); j++)
       {
         int par = tree.segments()[j].parent_id;
         if (par != -1)
         {
-          children[par]++;
+          children[par].push_back(j);
         }
       }
       auto &root = tree.segments()[0];
@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
       {
         auto &segments = tree.segments();
         auto &segment = segments[i];
-        if (children[i] == 0) // a leaf
+        if (children[i].empty()) // a leaf
         {
           // extend the branch
           Eigen::Vector3d dir = segment.tip - segments[segment.parent_id].tip;
@@ -199,7 +199,7 @@ int main(int argc, char *argv[])
           Eigen::Vector3d random_dir(ray::randUniformDouble()-0.5, ray::randUniformDouble()-0.5, ray::randUniformDouble()-0.5);
           Eigen::Vector3d side_dir = dir.cross(random_dir).normalized();
 
-          addSubTree(segments, i, dir, side_dir, new_branch_length,
+          addSubTree(segments, (int)i, dir, side_dir, new_branch_length,
             k1, k2, angle1, branch_angle, prune_length);          
         }
       }
@@ -212,24 +212,89 @@ int main(int argc, char *argv[])
         {
           int segment_id;
           double distance_to_end;
+          int total_branches; // number of subbranches including itself
         };
         std::vector<ListNode> nodes;
         for (size_t i = 0; i<num_segs; i++)
         {
           auto &segment = tree.segments()[i];
           int parent = segment.parent_id;
-          if (parent == -1 || children[parent] > 1) // condition for a sub-branch root
+          if (parent == -1 || children[parent].size() > 1) // condition for a sub-branch root
           {
             ListNode node;
             node.segment_id = (int)i;
-            node.distance_to_end = segment.attributes[length_id];
+            node.distance_to_end = segment.attributes[length_id] + prune_length + length_growth;
+            node.total_branches = 1;
+            std::vector<int> child_list = {i};
+            for (size_t j = 0; j<child_list.size(); j++)
+            {
+              auto &kids = children[child_list[j]];
+              if (kids.size() > 1)
+              {
+                node.total_branches += (int)kids.size();
+              }
+              if (kids.size() > 0)
+              {
+                child_list.insert(child_list.end(), kids.begin(), kids.end());
+              }
+            }
             nodes.push_back(node);
           }
         }
         std::sort(nodes.begin(), nodes.end(), [](const ListNode &n1, const ListNode &n2) -> bool { return n1.distance_to_end > n2.distance_to_end; });
         // 3. calculate how much pruning should be done based on dimension
+        const double L0 = tree.segments()[0].attributes[length_id] + prune_length; // TODO: this should probably be the D'th root of estimated k (in rank = kL^-D)
+        // old law:          rank = L0^D * L^-D   // so L0 (full tree length) is rank 1
+        // now grow L...
+        // grown reality:    rank = L0^D * (L-length_growth)^-D
+        // expected new law: rank = (L0+length_growth)^D * L^-D 
+        const double kexp = std::pow(L0 + length_growth, dimension);
+        // final drop is rank of the smallest branch minus rankof this branch after growth....
+        const double smallest_branch_rank = 1.0 + (double)nodes.size();
+        const double smallest_branch_length = nodes.back().distance_to_end;
+        const double smallest_branch_new_rank = kexp * std::pow(smallest_branch_length, -dimension);
+        std::cout << "smallest branch rank: " << smallest_branch_rank << " new expected rank: " << smallest_branch_new_rank << ", drop: " << smallest_branch_rank - smallest_branch_new_rank << std::endl;
+        const int final_drop = std::max(0, (int)(smallest_branch_rank - smallest_branch_new_rank));
+
+        for (int i = 1; i<(int)nodes.size(); i++) // start at 1 because I don't want it chopping the whole tree down
+        {
+          // problems:
+          // 1. final drop could be wrong, what about clipping, and what about the difference between real rank and expected new rank?
+          // 2. what if the next node up is also a subtree? I think it'll be OK
+
+          int j = i+1; // look at what happens if the next one up slides down
+          double rank = 1.0 + (double)j;
+          double length = nodes[j].distance_to_end;
+          double expected_rank = kexp * std::pow(length, -dimension);
+          if (expected_rank < rank-0.5) // better to drop down
+          {
+            // we want to remove branch i here, but we need to check if the number of branches in branch i is 
+            // less than the final drop
+            if (nodes[i].total_branches < final_drop)
+            {
+              int node_seg_id = nodes[i].segment_id;
+              // now we remove not only node i, but also all the other subbranch nodes
+              for (int l = (int)nodes.size()-1; l>=i; l--) // TODO: this is O(n^3), find a more efficient way to do this
+              {
+                // for each node, follow the parent down, and if it reaches i then remove this node...
+                int id = nodes[l].segment_id;
+                while (id != -1 && id != node_seg_id)
+                {
+                  id = tree.segments()[id].parent_id;
+                }
+                if (id == node_seg_id)
+                {
+                  // remove node
+                  nodes.erase(nodes.begin() + l);
+                }
+              }
+              tree.segments()[i].parent_id = -1; // that's all we need to do for segments, as reindex will do the rest
+            }
+          }
+        }
 
         // 4. go through nodes from longest to shortest, pruning out segments that don't fit the required power law 
+        tree.reindex();
       }
       for (auto &segment : tree.segments())
       {
