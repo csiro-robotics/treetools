@@ -288,7 +288,7 @@ int main(int argc, char *argv[])
                   nodes.erase(nodes.begin() + l);
                 }
               }
-              tree.segments()[i].parent_id = -1; // that's all we need to do for segments, as reindex will do the rest
+              tree.segments()[node_seg_id].parent_id = -1; // that's all we need to do for segments, as reindex will do the rest
             }
           }
         }
