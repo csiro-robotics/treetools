@@ -274,7 +274,7 @@ int main(int argc, char *argv[])
         std::cout << "smallest branch rank: " << smallest_branch_rank << " new expected rank: " << smallest_branch_new_rank << ", drop: " << smallest_branch_rank - smallest_branch_new_rank << std::endl;
         const int final_drop = std::max(0, (int)(smallest_branch_rank - smallest_branch_new_rank));
 
-        for (int i = 1; i<(int)nodes.size(); i++) // start at 1 because I don't want it chopping the whole tree down
+        for (int i = 1; i<(int)nodes.size()-1; i++) // start at 1 because I don't want it chopping the whole tree down
         {
           // problems: TODO:
           // 1. final drop could be wrong, what about clipping, and what about the difference between real rank and expected new rank?
@@ -287,9 +287,18 @@ int main(int argc, char *argv[])
           double expected_rank = kexp * std::pow(length, -dimension);
           if (expected_rank < rank-0.5) // better to drop down
           {
+            bool remove_this_node = false;
+            if (nodes[i].total_branches < final_drop && nodes[j].total_branches < final_drop)
+            {
+              remove_this_node = tree.segments()[nodes[i].segment_id].tip[2] < tree.segments()[nodes[j].segment_id].tip[2];
+            }
+            else
+            {
+              remove_this_node = nodes[i].total_branches < final_drop;
+            }
             // we want to remove branch i here, but we need to check if the number of branches in branch i is 
             // less than the final drop
-            if (nodes[i].total_branches < final_drop)
+            if (remove_this_node)
             {
               int node_seg_id = nodes[i].segment_id;
               // now we remove not only node i, but also all the other subbranch nodes
