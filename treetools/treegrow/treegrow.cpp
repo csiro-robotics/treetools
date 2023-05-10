@@ -163,7 +163,7 @@ int main(int argc, char *argv[])
     const double tree_length = all_lengths[0];
     // std::cout << "dimension: " << dimension << ", dominance: " << dominance << ", branch angle rads: " << branch_angle << ", trunk radius: " << trunk_radius << ", tree length: " << tree_length << std::endl;
 
-    const double radius_growth = length_growth * trunk_radius / tree_length;
+    const double radius_growth = radius_growth_scale.value() * length_growth * trunk_radius / tree_length;
 
     if (period.value() > 0.0)
     {
@@ -193,9 +193,8 @@ int main(int argc, char *argv[])
         angle1 = std::atan( std::tan(branch_angle - angle1) * ray::sqr(k2/k1));
       }  
       // std::cout << "dominant angle: " << angle1 << ", total angle: " << branch_angle << std::endl;
-
-      // 1. add subtrees at each leaf point....
       size_t num_segs = tree.segments().size();
+      // 1. add subtrees at each leaf point....
       for (size_t i = 0; i<num_segs; i++)
       {
         auto &segments = tree.segments();
@@ -211,6 +210,7 @@ int main(int argc, char *argv[])
           double initial_branch_length = tip_length;
           // b. new branch length
           double new_branch_length = initial_branch_length + prune_length + length_growth;
+          segment.radius += radius_growth;
 
           Eigen::Vector3d random_dir(ray::randUniformDouble()-0.5, ray::randUniformDouble()-0.5, ray::randUniformDouble()-0.5);
           Eigen::Vector3d side_dir = dir.cross(random_dir).normalized();
@@ -319,14 +319,36 @@ int main(int argc, char *argv[])
             }
           }
         }
+      }
+      // updating the radius isn't trivial... 
+      for (size_t i = 0; i<num_segs; i++)
+      {
+        auto &segment = tree.segments()[i];
+        if (children[i].empty()) // a leaf
+        {
+          double old_radius = segment.radius - radius_growth;
+          if (old_radius < 0.0)
+            std::cout << "bad! " << i << std::endl;
+          double area_addition = ray::sqr(segment.radius) - ray::sqr(old_radius);
+          for (int j = segment.parent_id; j != -1; j = tree.segments()[j].parent_id)
+          {
+            tree.segments()[j].radius = std::sqrt(ray::sqr(tree.segments()[j].radius) + area_addition); 
+          }
+        }
+      }  
+      if (shed_option.isSet())
+      {
         // 4. go through nodes from longest to shortest, pruning out segments that don't fit the required power law 
         tree.reindex();
       }
       // Lastly, we need to iterate through the segments and return them to roughly the original cylinder width to length ratio. Otherwise we'll get lots of short fat cylinders
     }
-    for (auto &segment : tree.segments())
+    else
     {
-      segment.radius = segment.radius + radius_growth*radius_growth_scale.value();
+      for (auto &segment : tree.segments())
+      {
+        segment.radius = segment.radius + radius_growth;
+      }
     }
   }
   grown_forest = forest;
