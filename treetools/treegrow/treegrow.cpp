@@ -18,10 +18,10 @@ void usage(int exit_code = 1)
   // clang-format off
   std::cout << "Placeholder method to grow or shrink the tree from the tips, using a linear model." << std::endl;
   std::cout << "usage:" << std::endl;
-  std::cout << "treegrow forest.txt 1 years                 - reduce the tree according to the rates, default values below." << std::endl;
+  std::cout << "treegrow forest.txt 1 years                 - age the tree by one year according to the length_rate" << std::endl;
   std::cout << "                    --length_rate 0.3       - expected branch length increase per year in m" << std::endl;
   std::cout << "                    --shed                  - shed branches to maintain branch length power law" << std::endl;
-  std::cout << "                    --prune_length 1        - length from tip that reconstructed trees are pruned to" << std::endl;
+  std::cout << "                    --prune_length 1        - length from tip that reconstructed trees are pruned to, in m" << std::endl;
   std::cout << "                    --updraft 0.1           - vertical lift on direction vectors per junction" << std::endl;
   std::cout << "                    --radius_growth_scale 1 - scale on the rate of radial growth" << std::endl;
   // clang-format on
