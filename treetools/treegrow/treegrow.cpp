@@ -183,6 +183,13 @@ int main(int argc, char *argv[])
       k1 = std::min(k1, 0.9); // stop them getting too extreme
       k2 = std::min(k2, 0.9);
 
+      if (!shed_option.isSet()) // we grow the radius differently if not shedding, otherwise radius gets too thick
+      {
+        for (auto &segment: tree.segments())
+        {
+          segment.radius += radius_growth;
+        }
+      }
       // what are branch angles 1 and 2? We know the dominance and overall branch angle...
       // angle1 + angle2 = branch_angle
       // tan(angle1)/rad2^2 = tan(angle2)/rad1^2
@@ -210,7 +217,10 @@ int main(int argc, char *argv[])
           double initial_branch_length = tip_length;
           // b. new branch length
           double new_branch_length = initial_branch_length + prune_length + length_growth;
-          segment.radius += radius_growth;
+          if (shed_option.isSet())
+          {
+            segment.radius += radius_growth;
+          }
 
           Eigen::Vector3d random_dir(ray::randUniformDouble()-0.5, ray::randUniformDouble()-0.5, ray::randUniformDouble()-0.5);
           Eigen::Vector3d side_dir = dir.cross(random_dir).normalized();
@@ -319,25 +329,22 @@ int main(int argc, char *argv[])
             }
           }
         }
-      }
-      // updating the radius isn't trivial... 
-      for (size_t i = 0; i<num_segs; i++)
-      {
-        auto &segment = tree.segments()[i];
-        if (children[i].empty()) // a leaf
+        // updating the radius isn't trivial... 
+        for (size_t i = 0; i<num_segs; i++)
         {
-          double old_radius = segment.radius - radius_growth;
-          if (old_radius < 0.0)
-            std::cout << "bad! " << i << std::endl;
-          double area_addition = ray::sqr(segment.radius) - ray::sqr(old_radius);
-          for (int j = segment.parent_id; j != -1; j = tree.segments()[j].parent_id)
+          auto &segment = tree.segments()[i];
+          if (children[i].empty()) // a leaf
           {
-            tree.segments()[j].radius = std::sqrt(ray::sqr(tree.segments()[j].radius) + area_addition); 
+            double old_radius = segment.radius - radius_growth;
+            if (old_radius < 0.0)
+              std::cout << "bad! " << i << std::endl;
+            double area_addition = ray::sqr(segment.radius) - ray::sqr(old_radius);
+            for (int j = segment.parent_id; j != -1; j = tree.segments()[j].parent_id)
+            {
+              tree.segments()[j].radius = std::sqrt(ray::sqr(tree.segments()[j].radius) + area_addition); 
+            }
           }
-        }
-      }  
-      if (shed_option.isSet())
-      {
+        }  
         // 4. go through nodes from longest to shortest, pruning out segments that don't fit the required power law 
         tree.reindex();
       }
