@@ -22,14 +22,16 @@ void usage(int exit_code = 1)
   std::cout << "                    --length_rate 0.3   - expected branch length increase per year in m" << std::endl;
   std::cout << "                    --shed              - shed branches to maintain branch length power law" << std::endl;
   std::cout << "                    --prune_length 1    - length from tip that reconstructed trees are pruned to" << std::endl;
+  std::cout << "                    --updraft 0.1       - vertical lift on direction vectors per junction" << std::endl;
   // clang-format on
   exit(exit_code);
 }
 
 void addSubTree(std::vector<ray::TreeStructure::Segment> &segments, int root_id, 
-  const Eigen::Vector3d &dir, const Eigen::Vector3d &side_dir, double new_branch_length,
-  double k1, double k2, double angle1, double branch_angle, double prune_length)
+  Eigen::Vector3d dir, const Eigen::Vector3d &side_dir, double new_branch_length,
+  double k1, double k2, double angle1, double branch_angle, double prune_length, double updraft)
 {
+  dir = (dir + Eigen::Vector3d(0,0,updraft)).normalized();
   double bifurcate_distance = new_branch_length*(1.0 - k1);
   int par_id = segments[root_id].parent_id;
   if (new_branch_length*k2 < prune_length)
@@ -49,7 +51,7 @@ void addSubTree(std::vector<ray::TreeStructure::Segment> &segments, int root_id,
   child1.attributes = segments[root_id].attributes;
   segments.push_back(child1);
   addSubTree(segments, (int)segments.size()-1, dir1, side_dir1, new_branch_length*k1,
-    k1, k2, angle1, branch_angle, prune_length);
+    k1, k2, angle1, branch_angle, prune_length, updraft);
 
   ray::TreeStructure::Segment child2;
   child2.parent_id = root_id;
@@ -62,7 +64,7 @@ void addSubTree(std::vector<ray::TreeStructure::Segment> &segments, int root_id,
   child2.attributes = segments[root_id].attributes;
   segments.push_back(child2);
   addSubTree(segments, (int)segments.size()-1, dir2, side_dir2, new_branch_length*k2,
-    k1, k2, angle1, branch_angle, prune_length);
+    k1, k2, angle1, branch_angle, prune_length, updraft);
 }
 
 
@@ -71,14 +73,15 @@ void addSubTree(std::vector<ray::TreeStructure::Segment> &segments, int root_id,
 int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file;
-  ray::DoubleArgument period(-100, 100), length_rate(0.0001, 1000.0, 0.3), prune_length_argument(0.001, 100.0, 1.0);
+  ray::DoubleArgument period(-100, 100), length_rate(0.0001, 1000.0, 0.3), prune_length_argument(0.001, 100.0, 1.0), updraft(-1.0, 1.0, 0.1);
   ray::TextArgument years("years");
   ray::OptionalFlagArgument shed_option("shed", 's');
   ray::OptionalKeyValueArgument length_option("length_rate", 'l', &length_rate);
+  ray::OptionalKeyValueArgument updraft_option("updraft", 'u', &updraft);
   ray::OptionalKeyValueArgument prune_length_option("prune_length", 'l', &prune_length_argument);
 
   const bool parsed =
-    ray::parseCommandLine(argc, argv, { &forest_file, &period, &years }, { &length_option, &shed_option, &prune_length_option });
+    ray::parseCommandLine(argc, argv, { &forest_file, &period, &years }, { &length_option, &shed_option, &prune_length_option, &updraft_option });
   if (!parsed)
   {
     usage();
@@ -160,7 +163,8 @@ int main(int argc, char *argv[])
 
       // The key analytics here:
       const double dimension = std::max(0.5, std::min(-power_D, 3.0));
-      const double dominance = total_dominance / total_weight;
+      double dominance = total_dominance / total_weight;
+      dominance *= 0.5; // because it looks bad it we don't reduce it!
       const double branch_angle = (total_angle / total_weight) * ray::kPi/180.0;
       const double trunk_radius = tree.segments()[0].radius;
       const double tree_length = all_lengths[0];
@@ -181,12 +185,8 @@ int main(int argc, char *argv[])
       // std::cout << "d1: " << d1 << ", d2: " << d2 << ", d_scale: " << d_scale << std::endl;
       double k1 = d1 * d_scale;
       double k2 = d2 * d_scale;
-      if (k1 > 0.9 || k2 > 0.9)
-      {
-        std::cout << "major problem, these should be less than 0.9" << std::endl;
-        k1 = std::min(k1, 0.9);
-        k2 = std::min(k2, 0.9);
-      }
+      k1 = std::min(k1, 0.9); // stop them getting too extreme
+      k2 = std::min(k2, 0.9);
 
       // what are branch angles 1 and 2? We know the dominance and overall branch angle...
       // angle1 + angle2 = branch_angle
@@ -221,7 +221,7 @@ int main(int argc, char *argv[])
           Eigen::Vector3d side_dir = dir.cross(random_dir).normalized();
 
           addSubTree(segments, (int)i, dir, side_dir, new_branch_length,
-            k1, k2, angle1, branch_angle, prune_length);          
+            k1, k2, angle1, branch_angle, prune_length, updraft.value());          
         }
       }
 

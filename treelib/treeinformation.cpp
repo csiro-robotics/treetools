@@ -354,8 +354,9 @@ void getBifurcationProperties(ray::TreeStructure &tree, const std::vector<std::v
           dir2 = dir;
         }
       }
-      const double weight = sqr(max_rad) + sqr(second_max);
+      double weight = sqr(max_rad) + sqr(second_max);
       const double dominance = -1.0 + 2.0 * sqr(max_rad) / weight;
+      weight = std::sqrt(weight); // so we don't over bias towards values on the thick trunk
       dominances[i] = dominance;
       // now where do we spread this to?
       // if we spread to leaves then base will be empty, if we spread to parent then leave will be empty...
