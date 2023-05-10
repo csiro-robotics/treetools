@@ -18,11 +18,12 @@ void usage(int exit_code = 1)
   // clang-format off
   std::cout << "Placeholder method to grow or shrink the tree from the tips, using a linear model." << std::endl;
   std::cout << "usage:" << std::endl;
-  std::cout << "treegrow forest.txt 1 years             - reduce the tree according to the rates, default values below." << std::endl;
-  std::cout << "                    --length_rate 0.3   - expected branch length increase per year in m" << std::endl;
-  std::cout << "                    --shed              - shed branches to maintain branch length power law" << std::endl;
-  std::cout << "                    --prune_length 1    - length from tip that reconstructed trees are pruned to" << std::endl;
-  std::cout << "                    --updraft 0.1       - vertical lift on direction vectors per junction" << std::endl;
+  std::cout << "treegrow forest.txt 1 years                 - reduce the tree according to the rates, default values below." << std::endl;
+  std::cout << "                    --length_rate 0.3       - expected branch length increase per year in m" << std::endl;
+  std::cout << "                    --shed                  - shed branches to maintain branch length power law" << std::endl;
+  std::cout << "                    --prune_length 1        - length from tip that reconstructed trees are pruned to" << std::endl;
+  std::cout << "                    --updraft 0.1           - vertical lift on direction vectors per junction" << std::endl;
+  std::cout << "                    --radius_growth_scale 1 - scale on the rate of radial growth" << std::endl;
   // clang-format on
   exit(exit_code);
 }
@@ -74,14 +75,16 @@ int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file;
   ray::DoubleArgument period(-100, 100), length_rate(0.0001, 1000.0, 0.3), prune_length_argument(0.001, 100.0, 1.0), updraft(-1.0, 1.0, 0.1);
+  ray::DoubleArgument radius_growth_scale(0.0, 100.0, 1.0);
   ray::TextArgument years("years");
   ray::OptionalFlagArgument shed_option("shed", 's');
   ray::OptionalKeyValueArgument length_option("length_rate", 'l', &length_rate);
   ray::OptionalKeyValueArgument updraft_option("updraft", 'u', &updraft);
   ray::OptionalKeyValueArgument prune_length_option("prune_length", 'p', &prune_length_argument);
+  ray::OptionalKeyValueArgument radius_growth_scale_option("radius_growth_scale", 'r', &radius_growth_scale);
 
   const bool parsed =
-    ray::parseCommandLine(argc, argv, { &forest_file, &period, &years }, { &length_option, &shed_option, &prune_length_option, &updraft_option });
+    ray::parseCommandLine(argc, argv, { &forest_file, &period, &years }, { &length_option, &shed_option, &prune_length_option, &updraft_option, &radius_growth_scale_option });
   if (!parsed)
   {
     usage();
@@ -330,7 +333,7 @@ int main(int argc, char *argv[])
       }
       for (auto &segment : tree.segments())
       {
-        segment.radius = segment.radius + radius_growth;
+        segment.radius = segment.radius + radius_growth*radius_growth_scale.value();
       }
       // Lastly, we need to iterate through the segments and return them to roughly the original cylinder width to length ratio. Otherwise we'll get lots of short fat cylinders
     }
