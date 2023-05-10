@@ -159,7 +159,7 @@ int main(int argc, char *argv[])
       // std::cout << branch_lengths.size() << " branches, with rank = " << power_c << " * L^" << power_D << " with confidence: " << r2 << std::endl;
 
       // The key analytics here:
-      const double dimension = std::min(-power_D, 3.0);
+      const double dimension = std::max(0.5, std::min(-power_D, 3.0));
       const double dominance = total_dominance / total_weight;
       const double branch_angle = (total_angle / total_weight) * ray::kPi/180.0;
       const double trunk_radius = tree.segments()[0].radius;
@@ -181,6 +181,12 @@ int main(int argc, char *argv[])
       // std::cout << "d1: " << d1 << ", d2: " << d2 << ", d_scale: " << d_scale << std::endl;
       double k1 = d1 * d_scale;
       double k2 = d2 * d_scale;
+      if (k1 > 0.9 || k2 > 0.9)
+      {
+        std::cout << "major problem, these should be less than 0.9" << std::endl;
+        k1 = std::min(k1, 0.9);
+        k2 = std::min(k2, 0.9);
+      }
 
       // what are branch angles 1 and 2? We know the dominance and overall branch angle...
       // angle1 + angle2 = branch_angle

@@ -319,6 +319,10 @@ void getBifurcationProperties(ray::TreeStructure &tree, const std::vector<std::v
   angles.resize(tree.segments().size(), 0);
   dominances.resize(tree.segments().size(), 0);
   num_children.resize(tree.segments().size(), 0);
+  tree_dominance = 0.0;
+  tree_angle = 0.0;
+  tree_children = 0.0;
+  total_weight = 1e-10;
   for (size_t i = 1; i < tree.segments().size(); i++)
   {
     // if its a branch point then record how dominant the branching is
