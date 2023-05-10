@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
   ray::OptionalFlagArgument shed_option("shed", 's');
   ray::OptionalKeyValueArgument length_option("length_rate", 'l', &length_rate);
   ray::OptionalKeyValueArgument updraft_option("updraft", 'u', &updraft);
-  ray::OptionalKeyValueArgument prune_length_option("prune_length", 'l', &prune_length_argument);
+  ray::OptionalKeyValueArgument prune_length_option("prune_length", 'p', &prune_length_argument);
 
   const bool parsed =
     ray::parseCommandLine(argc, argv, { &forest_file, &period, &years }, { &length_option, &shed_option, &prune_length_option, &updraft_option });
