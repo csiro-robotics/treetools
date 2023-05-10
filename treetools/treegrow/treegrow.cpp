@@ -103,78 +103,71 @@ int main(int argc, char *argv[])
   ray::ForestStructure grown_forest;
   const double len_rate = length_rate.value();
   const double length_growth = len_rate * period.value();
+  const double prune_length = prune_length_argument.value();
 
-  if (period.value() > 0.0)
+  for (auto &tree : forest.trees)
   {
-    // 1. store and retrieve prune_length from file
-    // 2. for each singular branch, look at the perfect procedural tree at +growth, also pruned to prune_length. This uses dimension and dominance to work out split ratio up length
-    // 3. split this branch at exact location based on linear interpolation of segments
-    // 4. after this, drop off all the excess branches
-    // 5. now grow the radius
-    // 6. finally, re-adjust the segment lengths to have the same rough ratio of radius to length. Don't move the branch points
-    const double prune_length = prune_length_argument.value();
-
-    for (auto &tree : forest.trees)
+    std::vector<std::vector<int> > children(tree.segments().size());
+    for (size_t j = 0; j<tree.segments().size(); j++)
     {
-      std::vector<std::vector<int> > children(tree.segments().size());
-      for (size_t j = 0; j<tree.segments().size(); j++)
+      int par = tree.segments()[j].parent_id;
+      if (par != -1)
       {
-        int par = tree.segments()[j].parent_id;
-        if (par != -1)
+        children[par].push_back((int)j);
+      }
+    }
+    /// Information we need, per-tree:
+    // 1. taper  (get length of tree, and radius at base)
+    // 2. branch angle
+    // 3. dominance
+    // 4. dimension
+    std::vector<double> angles, num_children, dominances, all_lengths;
+    // all_lengths are from segment start to end, including prune_length
+    tree::getBranchLengths(tree, children, all_lengths, prune_length); 
+    double total_dominance, total_angle, total_children, total_weight;
+    tree::getBifurcationProperties(tree, children, angles, dominances, num_children, 
+      total_dominance, total_angle, total_children, total_weight);
+    std::vector<double> branch_lengths; // just the branches, not the segments
+    std::vector<int> branch_ids;
+    for (size_t j = 0; j<children.size(); j++)
+    {
+      auto &segs = tree.segments();
+      if (segs[j].parent_id == -1 || children[segs[j].parent_id].size() > 1) 
+      {
+        bool secondary = true;
+        if (segs[j].parent_id > -1)
         {
-          children[par].push_back((int)j);
+          double max_rad = 0.0;
+          for (auto &child_id: children[segs[j].parent_id])
+          {
+            max_rad = std::max(max_rad, segs[child_id].radius);
+          }
+          secondary = segs[j].radius < max_rad; // only include non-dominant branches
+        }
+        if (secondary) // only include non-dominant branches
+        {
+          branch_ids.push_back((int)j);
+          branch_lengths.push_back(all_lengths[j]); 
         }
       }
-      /// Information we need, per-tree:
-      // 1. taper  (get length of tree, and radius at base)
-      // 2. branch angle
-      // 3. dominance
-      // 4. dimension
-      std::vector<double> angles, num_children, dominances, all_lengths;
-      // all_lengths are from segment start to end, including prune_length
-      tree::getBranchLengths(tree, children, all_lengths, prune_length); 
-      double total_dominance, total_angle, total_children, total_weight;
-      tree::getBifurcationProperties(tree, children, angles, dominances, num_children, 
-        total_dominance, total_angle, total_children, total_weight);
-      std::vector<double> branch_lengths; // just the branches, not the segments
-      std::vector<int> branch_ids;
-      for (size_t j = 0; j<children.size(); j++)
-      {
-        auto &segs = tree.segments();
-        if (segs[j].parent_id == -1 || children[segs[j].parent_id].size() > 1) 
-        {
-          bool secondary = true;
-          if (segs[j].parent_id > -1)
-          {
-            double max_rad = 0.0;
-            for (auto &child_id: children[segs[j].parent_id])
-            {
-              max_rad = std::max(max_rad, segs[child_id].radius);
-            }
-            secondary = segs[j].radius < max_rad; // only include non-dominant branches
-          }
-          if (secondary) // only include non-dominant branches
-          {
-            branch_ids.push_back((int)j);
-            branch_lengths.push_back(all_lengths[j]); 
-          }
-        }
-      }
-      double power_c, power_D, r2; // rank = c * length^-D
-      tree::calculatePowerLaw(branch_lengths, power_c, power_D, r2); 
-      // std::cout << branch_lengths.size() << " branches, with rank = " << power_c << " * L^" << power_D << " with confidence: " << r2 << std::endl;
+    }
+    double power_c, power_D, r2; // rank = c * length^-D
+    tree::calculatePowerLaw(branch_lengths, power_c, power_D, r2); 
+    // std::cout << branch_lengths.size() << " branches, with rank = " << power_c << " * L^" << power_D << " with confidence: " << r2 << std::endl;
 
-      // The key analytics here:
-      const double dimension = std::max(0.5, std::min(-power_D, 3.0));
-      double dominance = total_dominance / total_weight;
-      dominance *= 0.5; // because it looks bad it we don't reduce it!
-      const double branch_angle = (total_angle / total_weight) * ray::kPi/180.0;
-      const double trunk_radius = tree.segments()[0].radius;
-      const double tree_length = all_lengths[0];
-      // std::cout << "dimension: " << dimension << ", dominance: " << dominance << ", branch angle rads: " << branch_angle << ", trunk radius: " << trunk_radius << ", tree length: " << tree_length << std::endl;
+    // The key analytics here:
+    const double dimension = std::max(0.5, std::min(-power_D, 3.0));
+    double dominance = total_dominance / total_weight;
+    dominance *= 0.5; // because it looks bad it we don't reduce it!
+    const double branch_angle = (total_angle / total_weight) * ray::kPi/180.0;
+    const double trunk_radius = tree.segments()[0].radius;
+    const double tree_length = all_lengths[0];
+    // std::cout << "dimension: " << dimension << ", dominance: " << dominance << ", branch angle rads: " << branch_angle << ", trunk radius: " << trunk_radius << ", tree length: " << tree_length << std::endl;
 
-      const double radius_growth = length_growth * trunk_radius / tree_length;
+    const double radius_growth = length_growth * trunk_radius / tree_length;
 
+    if (period.value() > 0.0)
+    {
       // convet dimension to the average downscale at each branch point
       const double k = std::pow(2.0, -1.0/dimension);
       // use dominance to work out the large and small downscale...
@@ -327,19 +320,18 @@ int main(int argc, char *argv[])
             }
           }
         }
-
         // 4. go through nodes from longest to shortest, pruning out segments that don't fit the required power law 
         tree.reindex();
       }
-      for (auto &segment : tree.segments())
-      {
-        segment.radius = segment.radius + radius_growth*radius_growth_scale.value();
-      }
       // Lastly, we need to iterate through the segments and return them to roughly the original cylinder width to length ratio. Otherwise we'll get lots of short fat cylinders
     }
-    grown_forest = forest;
+    for (auto &segment : tree.segments())
+    {
+      segment.radius = segment.radius + radius_growth*radius_growth_scale.value();
+    }
   }
-  else
+  grown_forest = forest;
+  if (period.value() <= 0.0)
   {
     ray::ForestStructure pruned_forest;
     tree::pruneLength(forest, -length_growth, pruned_forest);
@@ -348,9 +340,13 @@ int main(int argc, char *argv[])
       std::cout << "Warning: no trees left after shrinking. No file saved." << std::endl;
       return 1;
     }
-
     const double minimum_branch_diameter = 0.001;
     tree::pruneDiameter(pruned_forest, minimum_branch_diameter, grown_forest);
+    if (pruned_forest.trees.empty())
+    {
+      std::cout << "Warning: no trees left after shrinking. No file saved." << std::endl;
+      return 1;
+    }
   }
 
   grown_forest.save(forest_file.nameStub() + "_grown.txt");
