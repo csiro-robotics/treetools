@@ -45,6 +45,50 @@ void usage(int exit_code = 1)
   exit(exit_code);
 }
 
+/// @brief used for storing and printing the total results of different info metrics
+struct Metrics
+{
+  struct Stats
+  {
+    Stats() : total(0.0), min(std::numeric_limits<double>::max()), max(std::numeric_limits<double>::lowest()) {}
+    void update(double value)
+    {
+      total += value;
+      min = std::min(min, value);
+      max = std::max(max, value);      
+    }
+    double total;
+    double min;
+    double max;
+  };
+  Stats volume, diameter, height, strength, dominance, angle, bend, children, dimension, crown_radius, branch_radius;
+
+  void print(size_t numtrees, int num_branched_trees, int num_stat_trees, int num_total)
+  {
+    const double num_trees = static_cast<double>(numtrees);
+    // clang-format off
+    std::cout << "Total:" << std::endl;
+    std::cout << "              volume of wood: " << volume.total << " m^3.\tMean,min,max: " << volume.total / num_trees << ", " << volume.min << ", " << volume.max << " m^3" << std::endl;
+    std::cout << " mass of wood (at 0.5 T/m^3): " << 0.5 * volume.total << " Tonnes.\tMean,min,max: " << 500.0 * volume.total / num_trees << ", " << 500.0 * volume.min << ", " << 500.0 * volume.max << " kg" << std::endl;
+    std::cout << std::endl;
+    std::cout << "Per-tree mean, min, max:" << std::endl;
+    std::cout << "                trunk diameter (m): " << diameter.total / num_trees << ",\t" << diameter.min << ",\t" << diameter.max << std::endl;
+    std::cout << "                   tree height (m): " << height.total / num_trees << ",\t" << height.min << ",\t" << height.max << std::endl;
+    std::cout << "                  crown radius (m): " << crown_radius.total / num_trees << ",\t" << crown_radius.min << ",\t" << crown_radius.max << std::endl;
+    std::cout << " trunk strength (diam^0.75/length): " << strength.total / num_trees << ",\t" << strength.min << ",\t" << strength.max << std::endl;
+    std::cout << "         branch dominance (0 to 1): " << dominance.total / static_cast<double>(num_branched_trees) << ",\t" << dominance.min << ",\t" << dominance.max << std::endl;
+    std::cout << "            branch angle (degrees): " << angle.total / static_cast<double>(num_branched_trees) << ",\t" << angle.min << ",\t" << angle.max << std::endl;
+    std::cout << "              trunk bend (degrees): " << bend.total / num_trees << ",\t" << bend.min << ",\t" << bend.max << std::endl;
+    std::cout << "               children per branch: " << children.total / static_cast<double>(num_branched_trees) << ",\t" << children.min << ",\t" << children.max << std::endl;
+    std::cout << "          dimension (w.r.t length): " << dimension.total / static_cast<double>(num_stat_trees) << ",\t" << dimension.min << ",\t" << dimension.max << std::endl;
+    std::cout << std::endl;
+    std::cout << "Per-branch mean, min, max:" << std::endl;
+    std::cout << "                     diameter (cm): " << 200.0 * branch_radius.total / static_cast<double>(num_total) << ",\t" << 200.0 * branch_radius.min << ",\t" << 200.0 * branch_radius.max << std::endl;
+    std::cout << std::endl;
+    // clang-format on
+  }
+};
+
 void printAttributes(const ray::ForestStructure &forest, std::vector<std::string> &tree_att, int num_tree_attributes, 
                      std::vector<std::string> &att, int num_attributes)
 {
@@ -181,9 +225,7 @@ int main(int argc, char *argv[])
   printAttributes(forest, tree_att, num_tree_attributes, att, num_attributes);
 
   // Fill in blank attributes across the whole structure
-  double min_branch_radius = std::numeric_limits<double>::max();
-  double max_branch_radius = std::numeric_limits<double>::lowest();
-  double total_branch_radius = 0.0;
+  Metrics metrics;
   int num_total = 0;
   for (auto &tree : forest.trees)
   {
@@ -198,9 +240,7 @@ int main(int argc, char *argv[])
     }
     for (auto &segment : tree.segments())
     {
-      min_branch_radius = std::min(min_branch_radius, segment.radius);
-      max_branch_radius = std::max(max_branch_radius, segment.radius);
-      total_branch_radius += segment.radius;
+      metrics.branch_radius.update(segment.radius);
       num_total++;
       for (size_t i = 0; i < new_attributes.size(); i++)
       {
@@ -210,28 +250,7 @@ int main(int argc, char *argv[])
   }
   const double prune_length = 1.0;  // TODO: read this from file
 
-  double total_volume = 0.0;
-  double min_volume = std::numeric_limits<double>::max(), max_volume = std::numeric_limits<double>::lowest();
-  double total_diameter = 0.0;
-  double min_diameter = std::numeric_limits<double>::max(), max_diameter = std::numeric_limits<double>::lowest();
-  double total_height = 0.0;
-  double min_height = std::numeric_limits<double>::max(), max_height = std::numeric_limits<double>::lowest();
-  double total_strength = 0.0;
-  double min_strength = std::numeric_limits<double>::max(), max_strength = std::numeric_limits<double>::lowest();
-  double total_dominance = 0.0;
-  double min_dominance = std::numeric_limits<double>::max(), max_dominance = std::numeric_limits<double>::lowest();
-  double total_angle = 0.0;
-  double min_angle = std::numeric_limits<double>::max(), max_angle = std::numeric_limits<double>::lowest();
-  double total_bend = 0.0;
-  double min_bend = std::numeric_limits<double>::max(), max_bend = std::numeric_limits<double>::lowest();
-  double total_children = 0.0;
-  double min_children = std::numeric_limits<double>::max(), max_children = std::numeric_limits<double>::lowest();
-  double total_dimension = 0.0;
-  double min_dimension = std::numeric_limits<double>::max(), max_dimension = std::numeric_limits<double>::lowest();
-  double total_crown_radius = 0.0;
-  double min_crown_radius = std::numeric_limits<double>::max(), max_crown_radius = std::numeric_limits<double>::lowest();
   int num_stat_trees = 0;  // used for dimension values
-
   int num_branched_trees = 0;
   int num_branches = 0;
   std::vector<double> tree_lengths;
@@ -294,9 +313,7 @@ int main(int argc, char *argv[])
       tree::calculatePowerLaw(lengths, c, d, r2);
       const double tree_dimension = std::min(-d, 3.0);
       tree.treeAttributes()[dimension_id] = tree_dimension;
-      total_dimension += tree_dimension;
-      max_dimension = std::max(max_dimension, tree_dimension);
-      min_dimension = std::min(min_dimension, tree_dimension);
+      metrics.dimension.update(tree_dimension);
       num_stat_trees++;
     }
 
@@ -306,16 +323,10 @@ int main(int argc, char *argv[])
       tree_dominance /= total_weight;
       tree_angle /= total_weight;
       num_branched_trees++;
-      total_dominance += tree_dominance;
-      min_dominance = std::min(min_dominance, tree_dominance);
-      max_dominance = std::max(max_dominance, tree_dominance);
-      total_angle += tree_angle;
-      min_angle = std::min(min_angle, tree_angle);
-      max_angle = std::max(max_angle, tree_angle);
+      metrics.dominance.update(tree_dominance);
+      metrics.angle.update(tree_angle);
       tree_children /= total_weight;
-      total_children += tree_children;
-      min_children = std::min(min_children, tree_children);
-      max_children = std::max(max_children, tree_children);
+      metrics.children.update(tree_children);
     }
     tree.segments()[0].attributes[dominance_id] = tree_dominance;
     tree.segments()[0].attributes[angle_id] = tree_angle;
@@ -338,35 +349,21 @@ int main(int argc, char *argv[])
     }
     // update whole-tree and tree root attributes
     tree.segments()[0].attributes[volume_id] = tree_volume;
-    total_volume += tree_volume;
-    min_volume = std::min(min_volume, tree_volume);
-    max_volume = std::max(max_volume, tree_volume);
+    metrics.volume.update(tree_volume);
     tree.segments()[0].attributes[diameter_id] = tree_diameter;
-    total_diameter += tree_diameter;
-    min_diameter = std::min(min_diameter, tree_diameter);
-    max_diameter = std::max(max_diameter, tree_diameter);
+    metrics.diameter.update(tree_diameter);
     double tree_height = max_bound[2] - tree.segments()[0].tip[2];
     tree.treeAttributes()[height_id] = tree_height;
     double crown_radius =
       ((max_bound[0] - min_bound[0]) + (max_bound[1] - min_bound[1])) / 2.0;  // mean of the bounding box extents
-    total_crown_radius += crown_radius;
-    min_crown_radius = std::min(min_crown_radius, crown_radius);
-    max_crown_radius = std::max(max_crown_radius, crown_radius);
+    metrics.crown_radius.update(crown_radius);
     tree.treeAttributes()[crown_radius_id] = crown_radius;
-    total_height += tree_height;
-    min_height = std::min(min_height, tree_height);
-    max_height = std::max(max_height, tree_height);
+    metrics.height.update(tree_height);
     tree_lengths.push_back(tree.segments()[0].attributes[length_id]);
     tree.segments()[0].attributes[strength_id] = std::pow(tree_diameter, 3.0 / 4.0) 
       / std::max(std::numeric_limits<double>::min(), tree.segments()[0].attributes[length_id]);
-    const double tree_strength = tree.segments()[0].attributes[strength_id];
-    total_strength += tree_strength;
-    min_strength = std::min(min_strength, tree_strength);
-    max_strength = std::max(max_strength, tree_strength);
-    const double tree_bend = tree.segments()[0].attributes[bend_id];
-    total_bend += tree_bend;
-    min_bend = std::min(min_bend, tree_bend);
-    max_bend = std::max(max_bend, tree_bend);
+    metrics.strength.update(tree.segments()[0].attributes[strength_id]);
+    metrics.bend.update(tree.segments()[0].attributes[bend_id]);
 
     // alright, now we get the minimum strength from root to tip
     for (auto &segment : tree.segments())
@@ -402,7 +399,6 @@ int main(int argc, char *argv[])
   std::cout << "    trunks wider than x: " << c << "x^" << d << "\t\twith correlation (r2) " << r2 << std::endl;
   tree::calculatePowerLaw(tree_lengths, c, d, r2, "treelength");
   std::cout << "    trees longer than l: " << c << "l^" << d << "\twith correlation (r2) " << r2 << std::endl;
-
   // Branch power laws:
   std::vector<double> lengths;
   for (auto &tree : forest.trees)
@@ -417,41 +413,7 @@ int main(int argc, char *argv[])
   std::cout << " branches longer than l: " << c << "l^" << d << "\twith correlation (r2) " << r2 << std::endl;
   std::cout << std::endl;
 
-  const double num_trees = static_cast<double>(forest.trees.size());
-  std::cout << "Total:" << std::endl;
-  std::cout << "              volume of wood: " << total_volume << " m^3.\tMean,min,max: " << total_volume / num_trees
-            << ", " << min_volume << ", " << max_volume << " m^3" << std::endl;
-  std::cout << " mass of wood (at 0.5 T/m^3): " << 0.5 * total_volume
-            << " Tonnes.\tMean,min,max: " << 500.0 * total_volume / num_trees << ", " << 500.0 * min_volume << ", "
-            << 500.0 * max_volume << " kg" << std::endl;
-  std::cout << std::endl;
-
-  std::cout << "Per-tree mean, min, max:" << std::endl;
-  std::cout << "                trunk diameter (m): " << total_diameter / num_trees << ",\t" << min_diameter << ",\t"
-            << max_diameter << std::endl;
-  std::cout << "                   tree height (m): " << total_height / num_trees << ",\t" << min_height << ",\t"
-            << max_height << std::endl;
-  std::cout << "                  crown radius (m): " << total_crown_radius / num_trees << ",\t" << min_crown_radius
-            << ",\t" << max_crown_radius << std::endl;
-  std::cout << " trunk strength (diam^0.75/length): " << total_strength / num_trees << ",\t" << min_strength << ",\t"
-            << max_strength << std::endl;
-  std::cout << "         branch dominance (0 to 1): " << total_dominance / static_cast<double>(num_branched_trees)
-            << ",\t" << min_dominance << ",\t" << max_dominance << std::endl;
-  std::cout << "            branch angle (degrees): " << total_angle / static_cast<double>(num_branched_trees) << ",\t"
-            << min_angle << ",\t" << max_angle << std::endl;
-  std::cout << "              trunk bend (degrees): " << total_bend / num_trees << ",\t" << min_bend << ",\t"
-            << max_bend << std::endl;
-  std::cout << "               children per branch: " << total_children / static_cast<double>(num_branched_trees)
-            << ",\t" << min_children << ",\t" << max_children << std::endl;
-  std::cout << "          dimension (w.r.t length): " << total_dimension / static_cast<double>(num_stat_trees) << ",\t"
-            << min_dimension << ",\t" << max_dimension << std::endl;
-  std::cout << std::endl;
-
-  std::cout << "Per-branch mean, min, max:" << std::endl;
-  std::cout << "                     diameter (cm): " << 200.0 * total_branch_radius / static_cast<double>(num_total)
-            << ",\t" << 200.0 * min_branch_radius << ",\t" << 200.0 * max_branch_radius << std::endl;
-  std::cout << std::endl;
-
+  metrics.print(forest.trees.size(), num_branched_trees, num_stat_trees, num_total);
   std::cout << "saving per-tree and per-segment data to file" << std::endl;
   forest.save(forest_file.nameStub() + "_info.txt");
   return 0;

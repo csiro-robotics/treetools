@@ -159,7 +159,7 @@ int main(int argc, char *argv[])
   // otherwise use a smooth mesh generation function
   else
   {
-    generateSmoothMesh(mesh, forest, red_id, red_scale, green_scale, blue_scale);
+    forest.generateSmoothMesh(mesh, red_id, red_scale, green_scale, blue_scale);
   }
   ray::writePlyMesh(forest_file.nameStub() + "_mesh.ply", mesh, true);
   // for convenience we can view the results immediately
