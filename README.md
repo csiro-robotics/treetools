@@ -92,7 +92,8 @@ Reduce the tree to only every 3 segments, maintaining the junction points. So ap
 <img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/treetools/master/pics/treedecimate1.png?token=GHSAT0AAAAAACCP26GLNK6PT4GQSINXYATYZC4LQOA"/>       
 <img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/treetools/master/pics/treedecimate2.png?token=GHSAT0AAAAAACCP26GKRFIHGJVIPBTLL64CZC4LQ5A"/>
 </p>
-Above: left- undecimated trees with edges rendered to show segment lengths. right - decimated fewer segments
+Above: left- undecimated trees with edges rendered to show segment lengths. right - decimated to fewer segments
+
 
 **treesplit cloud_trees.txt per-tree**
 Split trees into separate files based on a condition, such as its radius, height or a colour. In this case we split it into one file per tree. 
@@ -105,10 +106,11 @@ Split trees into separate files based on a condition, such as its radius, height
 Smooth the trees to have fewer sharp bends, preferentially smoothing the trunk more than the small branches. 
 
 <p align="center">
-<img img width="180" src="https://raw.githubusercontent.com/csiro-robotics/treetools/master/pics/treesmooth1.png?token=GHSAT0AAAAAACCP26GLG6SOUTUHIYO3357WZC4LSKQ"/>    
+<img img width="180" src="https://raw.githubusercontent.com/csiro-robotics/treetools/master/pics/treesmooth1.png?token=GHSAT0AAAAAACCP26GLG6SOUTUHIYO3357WZC4LSKQ"/>     
 <img img width="180" src="https://raw.githubusercontent.com/csiro-robotics/treetools/master/pics/treesmooth2.png?token=GHSAT0AAAAAACCP26GK2ZUCARAVR5OAPIB4ZC4LSUA"/>
 </p>
 Above: left- reconstructed trees with excess bends. right - the trees_smoothed.txt output
+
 
 **treerotate treefile.txt 0,0,30**
 rotate a tree file in-place, here by 30 degrees around the z (vertical) axis
