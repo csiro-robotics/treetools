@@ -57,7 +57,7 @@ To run the treeXXXX tools from anywhere, use sudo make install
 Generate a tree file of an artifical forest using random seed 1
 
 <p align="center">
-<img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/treetools/master/pics/treecreate.png?at=refs%2Fheads%2Fmaster"/>
+<img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/treetools/master/pics/treecreate.png?token=GHSAT0AAAAAACCP26GLLL3MFPLM73UMFFS6ZC4LPDA"/>
 </p>
 
 **treeinfo forest.txt**
@@ -67,45 +67,45 @@ Output statistical information on the trees, such as total volume and number of 
 Colour the branches according to a per-branch parameter 'diameter'. Rather than greyscale, we use --gradient_rgb to colour using a red->green_blue palette. 
 
 <p align="center">
-<img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/treetools/master/pics/treecolour.png?at=refs%2Fheads%2Fmaster"/>
+<img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/treetools/master/pics/treecolour.png?token=GHSAT0AAAAAACCP26GKRY66P2CPJZWXHSJSZC4LQBQ"/>
 </p>
 
 **treemesh tree.txt**
 Convert the tree file into a polygon mesh (.ply file), using the red,green,blue fields as mesh colour if available. The '-v' argument will auto-open it in meshlab if you have it installed. 
 
 <p align="center">
-<img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/treetools/master/pics/treemesh.png?at=refs%2Fheads%2Fmaster"/>
+<img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/treetools/master/pics/treemesh.png?token=GHSAT0AAAAAACCP26GLWNJMRFD3R73IWS2OZC4LRHA"/>
 </p>
 
 **treeprune forest.txt 1 m long**
 Cut the end 1 m from all branches. It is also possible to prune by branch diameter.
 
 <p align="center">
-<img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/treetools/master/pics/treecreate.png?at=refs%2Fheads%2Fmaster"/>
-<img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/treetools/master/pics/treeprune.png?at=refs%2Fheads%2Fmaster"/>
+<img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/treetools/master/pics/treecreate.png?token=GHSAT0AAAAAACCP26GLLL3MFPLM73UMFFS6ZC4LPDA"/>
+<img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/treetools/master/pics/treeprune.png?token=GHSAT0AAAAAACCP26GLH7IURIH2BFOF3ESCZC4LRZA"/>
 </p>
 
 **treedecimate cloud_trees.txt 2 segments**
 Reduce the tree to only every 2 segments, maintaining the junction points. So approximately half as detailed.
 
 <p align="center">
-<img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/treetools/master/pics/treedecimate1.png?at=refs%2Fheads%2Fmaster"/>
-<img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/treetools/master/pics/treedecimate2.png?at=refs%2Fheads%2Fmaster"/>
+<img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/treetools/master/pics/treedecimate1.png?token=GHSAT0AAAAAACCP26GLNK6PT4GQSINXYATYZC4LQOA"/>
+<img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/treetools/master/pics/treedecimate2.png?token=GHSAT0AAAAAACCP26GKRFIHGJVIPBTLL64CZC4LQ5A"/>
 </p>
 
 **treesplit cloud_trees.txt per-tree**
 Split trees into separate files based on a condition, such as its radius, height or a colour. In this case we split it into one file per tree. 
 
 <p align="center">
-<img img width="640" src="https://raw.githubusercontent.com/csiro-robotics/treetools/master/pics/treesplit.png?at=refs%2Fheads%2Fmaster"/>
+<img img width="640" src="https://raw.githubusercontent.com/csiro-robotics/treetools/master/pics/treesplit.png?token=GHSAT0AAAAAACCP26GK2YICPPMOAUYDQ2EUZC4LS5A"/>
 </p>
 
 **treesmooth cloud_trees.txt**
 Smooth the trees to have fewer sharp bends, preferentially smoothing the trunk more than the small branches. 
 
 <p align="center">
-<img img width="240" src="https://raw.githubusercontent.com/csiro-robotics/treetools/master/pics/treesmooth1.png?at=refs%2Fheads%2Fmaster"/>
-<img img width="240" src="https://raw.githubusercontent.com/csiro-robotics/treetools/master/pics/treesmooth2.png?at=refs%2Fheads%2Fmaster"/>
+<img img width="240" src="https://raw.githubusercontent.com/csiro-robotics/treetools/master/pics/treesmooth1.png?token=GHSAT0AAAAAACCP26GLG6SOUTUHIYO3357WZC4LSKQ"/>
+<img img width="240" src="https://raw.githubusercontent.com/csiro-robotics/treetools/master/pics/treesmooth2.png?token=GHSAT0AAAAAACCP26GK2ZUCARAVR5OAPIB4ZC4LSUA"/>
 </p>
 
 **treerotate treefile.txt 0,0,30**
