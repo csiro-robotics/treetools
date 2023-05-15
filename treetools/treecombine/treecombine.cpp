@@ -55,6 +55,7 @@ int main(int argc, char *argv[])
     {
       attributes = forest.trees[0].attributeNames();
       tree_attributes = forest.trees[0].treeAttributeNames();
+      combined_forest.comments = forest.comments; // just use the first file's comments, don't try to combine comments together
     }
     else if (num_combined == 1)
     {

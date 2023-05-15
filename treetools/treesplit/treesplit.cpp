@@ -63,6 +63,8 @@ int main(int argc, char *argv[])
   }
 
   ray::ForestStructure forest_in, forest_out;
+  forest_in.comments = forest.comments;
+  forest_out.comments = forest.comments;
   // if splitting around an attribute in the tree file
   if (attribute_tree_format || attribute_trunk_format)
   {
