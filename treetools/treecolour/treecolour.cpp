@@ -181,13 +181,17 @@ int main(int argc, char *argv[])
       Eigen::Vector3d col;
       for (int i = 0; i < 3; i++)
       {
-        col[i] = attribute_ids[i] == -1 ? colour[i] : tree.segments()[0].attributes[attribute_ids[i]];
+        col[i] = attribute_ids[i] == -1 ? colour[i] : tree.segments()[0].attributes[attribute_ids[i]] * scalevec[i];
+        if (num_attributes == 1 && gradient_rgb.isSet())  // then apply the gradient
+        {
+          col[i] = ray::redGreenBlueGradient(col[i])[i];
+        }
       }
       for (auto &segment : tree.segments())
       {
-        segment.attributes[red_id + 0] = col[0] * scalevec[0];
-        segment.attributes[red_id + 1] = col[1] * scalevec[1];
-        segment.attributes[red_id + 2] = col[2] * scalevec[2];
+        segment.attributes[red_id + 0] = col[0];
+        segment.attributes[red_id + 1] = col[1];
+        segment.attributes[red_id + 2] = col[2];
       }
     }
   }
@@ -198,13 +202,17 @@ int main(int argc, char *argv[])
       Eigen::Vector3d col;
       for (int i = 0; i < 3; i++)
       {
-        col[i] = attribute_ids[i] == -1 ? colour[i] : tree.treeAttributes()[attribute_ids[i]];
+        col[i] = attribute_ids[i] == -1 ? colour[i] : tree.treeAttributes()[attribute_ids[i]] * scalevec[i];
+        if (num_attributes == 1 && gradient_rgb.isSet())  // then apply the gradient
+        {
+          col[i] = ray::redGreenBlueGradient(col[i])[i];
+        }
       }
       for (auto &segment : tree.segments())
       {
-        segment.attributes[red_id + 0] = col[0] * scalevec[0];
-        segment.attributes[red_id + 1] = col[1] * scalevec[1];
-        segment.attributes[red_id + 2] = col[2] * scalevec[2];
+        segment.attributes[red_id + 0] = col[0];
+        segment.attributes[red_id + 1] = col[1];
+        segment.attributes[red_id + 2] = col[2];
       }
     }
   }
