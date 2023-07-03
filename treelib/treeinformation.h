@@ -25,6 +25,9 @@ void TREELIB_EXPORT setTrunkBend(ray::TreeStructure &tree, const std::vector<std
 void TREELIB_EXPORT setMonocotal(ray::TreeStructure &tree, const std::vector<std::vector<int>> &children,
                                  int monocotal_id);
 
+/// Estimate the Diameter at Breast Height 
+void setDBH(ray::TreeStructure &tree, const std::vector<std::vector<int>> &children, int DBH_id);
+
 /// Estimate the branching properties: the angle, the dominance and the number of child branches
 /// fill in these values into the attributes array per-segment in the tree structure, assuming these array ids are within the attribute lengths 
 void TREELIB_EXPORT getBifurcationProperties(ray::TreeStructure &tree, const std::vector<std::vector<int>> &children, std::vector<double> &angles, std::vector<double> &dominances, std::vector<double> &num_children, 

@@ -220,6 +220,77 @@ void setTrunkBend(ray::TreeStructure &tree, const std::vector<std::vector<int>> 
   }
 }
 
+/// @brief set the diameter at breast height
+/// @param tree the tree to analyse
+/// @param children precalculated list of children per segment
+/// @param DBH_id the id of the parameter to fill in
+void setDBH(ray::TreeStructure &tree, const std::vector<std::vector<int>> &children, int DBH_id)
+{
+  // what do we do if the tree has multiple stems?
+  // I'm just going to use the average DBH
+  const double breast_height = 1.3; 
+  double total_DBH = 0.0;
+  double num_valid_stems = 0.0;
+  bool branched = false;
+  double base_height = tree.segments()[0].tip[2];
+  for (auto &root : children[0])
+  {
+    // 1. find first branch id:
+    int segment = root;
+    while (tree.segments()[segment].tip[2] < base_height + breast_height)
+    {
+      size_t num_kids = children[segment].size();
+      if (num_kids == 0)
+      {
+        break;
+      }
+      else if (num_kids == 1)
+      {
+        segment = children[segment][0];
+        branched = false;
+      }
+      else // pick largest child
+      {
+        double max_child_rad = 0.0;
+        int max_child_id = 0;
+        for (auto &child_id: children[segment])
+        {
+          double rad = tree.segments()[child_id].radius;
+          if (rad >= max_child_rad)
+          {
+            max_child_rad = rad;
+            max_child_id = child_id;
+          }
+        }
+        segment = max_child_id;
+        branched = true;
+      }
+    }
+    if (tree.segments()[segment].tip[2] >= base_height + breast_height)
+    {
+      double top = tree.segments()[segment].tip[2];
+      double rad = tree.segments()[segment].radius;
+      int par = tree.segments()[segment].parent_id;
+      if (par < 0)
+      {
+        std::cerr << " bad parent in setDBH" << std::endl;
+        return;
+      }
+      double base = tree.segments()[par].tip[2];
+      double rad_base = tree.segments()[par].radius;
+
+      if (!branched) // if hasn't just branched then use linear interpolation between segments 
+      {
+        rad += (rad_base - rad) * (top - breast_height)/(top - base);
+      }     
+      total_DBH += 2.0 * rad;
+      num_valid_stems++;
+    }
+  }
+  tree.treeAttributes()[DBH_id] = total_DBH / num_valid_stems;
+}
+
+
 /// How much the tree is similar to a palm tree
 
 /// @brief analyse the tree and set the degree to which it is monocotal (palm-like in structure)

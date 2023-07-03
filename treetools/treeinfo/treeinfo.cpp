@@ -61,7 +61,7 @@ struct Metrics
     double min;
     double max;
   };
-  Stats volume, diameter, height, strength, dominance, angle, bend, children, dimension, crown_radius, branch_radius;
+  Stats volume, DBH, height, strength, dominance, angle, bend, children, dimension, crown_radius, branch_radius;
 
   void print(size_t numtrees, int num_branched_trees, int num_stat_trees, int num_total)
   {
@@ -72,7 +72,7 @@ struct Metrics
     std::cout << " mass of wood (at 0.5 T/m^3): " << 0.5 * volume.total << " Tonnes.\tMean,min,max: " << 500.0 * volume.total / num_trees << ", " << 500.0 * volume.min << ", " << 500.0 * volume.max << " kg" << std::endl;
     std::cout << std::endl;
     std::cout << "Per-tree mean, min, max:" << std::endl;
-    std::cout << "                trunk diameter (m): " << diameter.total / num_trees << ",\t" << diameter.min << ",\t" << diameter.max << std::endl;
+    std::cout << "          trunk diameter (DBH) (m): " << DBH.total / num_trees << ",\t" << DBH.min << ",\t" << DBH.max << std::endl;
     std::cout << "                   tree height (m): " << height.total / num_trees << ",\t" << height.min << ",\t" << height.max << std::endl;
     std::cout << "                  crown radius (m): " << crown_radius.total / num_trees << ",\t" << crown_radius.min << ",\t" << crown_radius.max << std::endl;
     std::cout << " trunk strength (diam^0.75/length): " << strength.total / num_trees << ",\t" << strength.min << ",\t" << strength.max << std::endl;
@@ -184,11 +184,12 @@ int main(int argc, char *argv[])
 
 
   const int num_tree_attributes = static_cast<int>(forest.trees[0].treeAttributeNames().size());
-  const std::vector<std::string> new_tree_attributes = { "height", "crown_radius", "dimension", "monocotal" };
+  const std::vector<std::string> new_tree_attributes = { "height", "crown_radius", "dimension", "monocotal", "DBH" };
   const int height_id = num_tree_attributes + 0;
   const int crown_radius_id = num_tree_attributes + 1;
   const int dimension_id = num_tree_attributes + 2;
   const int monocotal_id = num_tree_attributes + 3;
+  const int DBH_id = num_tree_attributes + 4;
   auto &tree_att = forest.trees[0].treeAttributeNames();
   for (auto &new_at : new_tree_attributes)
   {
@@ -294,6 +295,8 @@ int main(int argc, char *argv[])
     }
     tree::setTrunkBend(tree, children, bend_id, length_id);
     tree::setMonocotal(tree, children, monocotal_id);
+    tree::setDBH(tree, children, DBH_id);
+    metrics.DBH.update(tree.treeAttributes()[DBH_id]);
 
     std::vector<double> lengths;
     for (size_t j = 0; j<children.size(); j++)
@@ -351,7 +354,6 @@ int main(int argc, char *argv[])
     tree.segments()[0].attributes[volume_id] = tree_volume;
     metrics.volume.update(tree_volume);
     tree.segments()[0].attributes[diameter_id] = tree_diameter;
-    metrics.diameter.update(tree_diameter);
     double tree_height = max_bound[2] - tree.segments()[0].tip[2];
     tree.treeAttributes()[height_id] = tree_height;
     double crown_radius =
