@@ -119,7 +119,7 @@ void calculatePowerLaw(std::vector<double> &xs, double &c, double &d, double &r2
 /// always be tree rather than it being zero or undefined, or total radius or something
 /// @param tree the tree to analyse trunk bend on
 /// @param children the precalculated list of children for each segment
-/// @param bend_id the id of the parameter representing the trunk bend (to fill in)
+/// @param bend_id the id of the per-tree parameter representing the trunk bend (to fill in)
 /// @param length_id the id of the parameter representing length (to fill in)
 void setTrunkBend(ray::TreeStructure &tree, const std::vector<std::vector<int>> &children, int bend_id, int length_id)
 {
@@ -214,10 +214,7 @@ void setTrunkBend(ray::TreeStructure &tree, const std::vector<std::vector<int>> 
   const double sigma = std::sqrt(variance);
   const double bend = sigma / length;
 
-  for (auto &id : ids)
-  {
-    tree.segments()[id].attributes[bend_id] = bend;
-  }
+  tree.treeAttributes()[bend_id] = bend;
 }
 
 /// @brief set the diameter at breast height
