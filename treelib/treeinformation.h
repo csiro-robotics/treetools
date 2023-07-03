@@ -18,7 +18,7 @@ void TREELIB_EXPORT calculatePowerLaw(std::vector<double> &xs, double &c, double
 
 /// Fill the attributes at bend_id to reflect the amount of bend in each segment of the tree trunk
 void TREELIB_EXPORT setTrunkBend(ray::TreeStructure &tree, const std::vector<std::vector<int>> &children, int bend_id,
-                                 int length_id);
+                                 int length_id, int branch_slope_id);
 
 /// Estimate how closely the specified @c tree resembles a monocot (palm) tree. Filling in the attribute at @c
 /// monocotal_id

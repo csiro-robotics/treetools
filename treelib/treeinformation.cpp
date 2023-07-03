@@ -121,15 +121,18 @@ void calculatePowerLaw(std::vector<double> &xs, double &c, double &d, double &r2
 /// @param children the precalculated list of children for each segment
 /// @param bend_id the id of the per-tree parameter representing the trunk bend (to fill in)
 /// @param length_id the id of the parameter representing length (to fill in)
-void setTrunkBend(ray::TreeStructure &tree, const std::vector<std::vector<int>> &children, int bend_id, int length_id)
+void setTrunkBend(ray::TreeStructure &tree, const std::vector<std::vector<int>> &children, int bend_id, int length_id, int branch_gradient_id)
 {
   // get the trunk
   std::vector<int> ids = { 0 };
+  double mean_slope = 0.0;
+  double weight = 1e-10;
   for (size_t i = 0; i < ids.size(); i++)
   {
     double max_score = -1;
     int largest_child = -1;
-    for (const auto &child : children[ids[i]])
+    int id = ids[i];
+    for (const auto &child : children[id])
     {
       // we pick the route which has the longer and wider branch
       double score = tree.segments()[child].radius * tree.segments()[child].attributes[length_id];
@@ -142,8 +145,27 @@ void setTrunkBend(ray::TreeStructure &tree, const std::vector<std::vector<int>> 
     if (largest_child != -1)
     {
       ids.push_back(largest_child);
+
+      // here we estimate the secondary branch gradient
+      for (const auto &child : children[id])
+      {
+        if (child == largest_child)
+        {
+          continue;
+        }
+        for (const auto &grandchild : children[child])
+        {
+          Eigen::Vector3d dif = tree.segments()[grandchild].tip - tree.segments()[child].tip;
+          double w = tree.segments()[grandchild].radius;
+          double h = dif[2];
+          dif[2] = 0.0;
+          mean_slope += w * atan2(h, dif.norm());
+          weight += w;
+        }
+      }
     }
   }
+  tree.treeAttributes()[branch_gradient_id] = mean_slope / weight;
   if (ids.size() <= 2)  // zero bend in these edge cases
   {
     return;

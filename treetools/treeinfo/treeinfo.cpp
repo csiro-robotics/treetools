@@ -184,13 +184,14 @@ int main(int argc, char *argv[])
 
 
   const int num_tree_attributes = static_cast<int>(forest.trees[0].treeAttributeNames().size());
-  const std::vector<std::string> new_tree_attributes = { "height", "crown_radius", "dimension", "monocotal", "DBH", "bend" };
+  const std::vector<std::string> new_tree_attributes = { "height", "crown_radius", "dimension", "monocotal", "DBH", "bend", "branch_slope" };
   const int height_id = num_tree_attributes + 0;
   const int crown_radius_id = num_tree_attributes + 1;
   const int dimension_id = num_tree_attributes + 2;
   const int monocotal_id = num_tree_attributes + 3;
   const int DBH_id = num_tree_attributes + 4;
   const int bend_id = num_tree_attributes + 5;
+  const int branch_slope_id = num_tree_attributes + 6;
   auto &tree_att = forest.trees[0].treeAttributeNames();
   for (auto &new_at : new_tree_attributes)
   {
@@ -293,7 +294,7 @@ int main(int argc, char *argv[])
     {
       tree.segments()[0].attributes[children_id] = static_cast<double>(children[0].size());
     }
-    tree::setTrunkBend(tree, children, bend_id, length_id);
+    tree::setTrunkBend(tree, children, bend_id, length_id, branch_slope_id);
     metrics.bend.update(tree.treeAttributes()[bend_id]);
     tree::setMonocotal(tree, children, monocotal_id);
     tree::setDBH(tree, children, DBH_id);
