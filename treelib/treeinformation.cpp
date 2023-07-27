@@ -300,13 +300,13 @@ void setDBH(ray::TreeStructure &tree, const std::vector<std::vector<int>> &child
 
       if (!branched) // if hasn't just branched then use linear interpolation between segments 
       {
-        rad += (rad_base - rad) * (top - breast_height)/(top - base);
+        rad += (rad_base - rad) * (top - (base_height + breast_height))/(top - base);
       }     
       total_DBH += 2.0 * rad;
       num_valid_stems++;
     }
   }
-  tree.treeAttributes()[DBH_id] = total_DBH / num_valid_stems;
+  tree.treeAttributes()[DBH_id] = num_valid_stems > 0.0 ? total_DBH / num_valid_stems : 0.0;
 }
 
 
