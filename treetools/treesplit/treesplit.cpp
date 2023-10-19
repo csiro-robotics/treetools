@@ -23,6 +23,7 @@ void usage(int exit_code = 1)
   std::cout << "                     plane 0,0,1       - split around horizontal plane at height 1" << std::endl;
   std::cout << "                     colour 0,0,1      - split around colour green value 1" << std::endl;
   std::cout << "                     box rx,ry,rz      - split around a centred box of the given radii" << std::endl;
+  std::cout << "                     clusters 10       - approximate cluster size" << std::endl;
   std::cout << "                     per-tree          - one file per tree" << std::endl;
   // clang-format on
   exit(exit_code);
@@ -37,8 +38,9 @@ int main(int argc, char *argv[])
   ray::Vector3dArgument coord;
 
   ray::DoubleArgument value(0.0, 10000.0), radius(0.0, 10000.0);
+  ray::IntArgument cluster_size(0,1000);
   ray::Vector3dArgument plane, colour, box;
-  ray::KeyValueChoice choice({ "plane", "colour", "radius", "box" }, { &plane, &colour, &radius, &box });
+  ray::KeyValueChoice choice({ "plane", "colour", "radius", "box", "clusters"}, { &plane, &colour, &radius, &box, &cluster_size });
 
   const bool parsed = ray::parseCommandLine(argc, argv, { &forest_file, &choice });
   const bool split_per_tree = ray::parseCommandLine(argc, argv, { &forest_file, &per_tree_text });
@@ -69,7 +71,6 @@ int main(int argc, char *argv[])
   if (attribute_tree_format || attribute_trunk_format)
   {
     auto &att = attribute_tree_format ? forest.trees[0].treeAttributeNames() : forest.trees[0].attributeNames();
-    ;
     int attribute_id = -1;
     const auto &it = std::find(att.begin(), att.end(), attribute.name());
     if (it != att.end())
@@ -180,6 +181,82 @@ int main(int argc, char *argv[])
         forest_out.trees.push_back(tree);
       }
     }
+  }
+  // split into clusters of an approximate size
+  else if (choice.selectedKey() == "clusters")
+  {
+    // one strategy: K means clustering.... 
+    int K = (int)forest.trees.size() / cluster_size.value();
+    // initialise some centres:
+    std::vector<int> tree_ids(forest.trees.size());
+    for (int i = 0; i<(int)tree_ids.size(); i++)
+    {
+      tree_ids[i] = i;
+    }
+    std::vector<Eigen::Vector2d> centres(K);
+    std::cout << "first centres: ";
+    for (int i = 0; i<K; i++)
+    {
+      int id = std::rand()%(int)tree_ids.size();
+      tree_ids[id] = tree_ids.back();
+      tree_ids.pop_back();
+      auto &tree = forest.trees[tree_ids[id]];
+      centres[i] = Eigen::Vector2d(tree.segments()[0].tip[0], tree.segments()[0].tip[1]);
+      std::cout << centres[i].transpose() << ", ";
+    }
+    std::cout << std::endl;
+
+    ray::ForestStructure cluster_template = forest;
+    cluster_template.trees.clear();
+    std::vector<ray::ForestStructure> tree_clusters(K, cluster_template);
+    const int max_iterations = 10;
+    for (int it = 0; it<max_iterations; it++)
+    {
+      std::vector<Eigen::Vector3d> new_centres(K, Eigen::Vector3d(0,0,0)); // horiz + weight
+      // set new centres:
+      for (auto &tree: forest.trees)
+      {
+        Eigen::Vector2d tree_pos = Eigen::Vector2d(tree.segments()[0].tip[0], tree.segments()[0].tip[1]);
+        double min_dist = 1e20;
+        Eigen::Vector2d min_pos(0,0);
+        int min_k = 0;
+        for (int i = 0; i<K; i++)
+        {
+          double dist = (tree_pos - centres[i]).squaredNorm();
+          if (dist < min_dist)
+          {
+            min_dist = dist;
+            min_pos = tree_pos;
+            min_k = i;
+          }
+        }
+        double w = tree.segments()[0].radius*tree.segments()[0].radius;
+        new_centres[min_k] += w * Eigen::Vector3d(tree_pos[0], tree_pos[1], 1.0); // weight by cross-sectional area
+        if (it == max_iterations-1)
+        {
+          tree_clusters[min_k].trees.push_back(tree);
+        }
+      }
+      std::cout << "new centres: ";
+      for (int i = 0; i<K; i++)
+      {
+        if (new_centres[i][2] > 0.0)
+        {
+          centres[i][0] = new_centres[i][0] / new_centres[i][2];
+          centres[i][1] = new_centres[i][1] / new_centres[i][2];
+          std::cout << centres[i].transpose() << ",  ";
+        }
+      }
+      std::cout << std::endl;
+    }
+    int i = 0;
+    for (auto &cluster: tree_clusters)
+    {
+      cluster.save(forest_file.nameStub() + "_cluster_" + std::to_string(i++) + ".txt");
+    }
+    // OK so after all iterations, we have lots of centres, 
+    // I guess we then find the 
+    return 0;
   }
 
   forest_in.save(forest_file.nameStub() + "_inside.txt");
