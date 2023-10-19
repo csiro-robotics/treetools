@@ -21,6 +21,7 @@ void usage(int exit_code = 1)
   std::cout << "                    --max_colour 1,0.1,1 - per-channel maximums (0 auto-scales to fit)" << std::endl;
   std::cout << "                    --rescale_colours - rescale each colour channel independently to fit in range" << std::endl;
   std::cout << "                    --view   - views the output immediately assuming meshlab is installed" << std::endl;
+  std::cout << "                    --uvs - generate uvs and points to a wood_texture.png which needs to be created. Works in CloudCompare, not Meshlab." << std::endl;
   std::cout << "                    --capsules - generate branch segments as the individual capsules" << std::endl;
   // clang-format on
   exit(exit_code);
@@ -41,15 +42,15 @@ int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file;
   ray::DoubleArgument max_brightness;
-  ray::OptionalFlagArgument view("view", 'v'), capsules_option("capsules", 'c');
+  ray::OptionalFlagArgument view("view", 'v'), capsules_option("capsules", 'c'), uvs_option("uvs", 'u');
   ray::Vector3dArgument max_colour;
   ray::OptionalKeyValueArgument max_brightness_option("max_colour", 'm', &max_brightness);
   ray::OptionalKeyValueArgument max_colour_option("max_colour", 'm', &max_colour);
 
   const bool max_brightness_format =
-    ray::parseCommandLine(argc, argv, { &forest_file }, { &max_brightness_option, &view, &capsules_option });
+    ray::parseCommandLine(argc, argv, { &forest_file }, { &max_brightness_option, &view, &capsules_option, &uvs_option });
   const bool max_colour_format =
-    ray::parseCommandLine(argc, argv, { &forest_file }, { &max_colour_option, &view, &capsules_option });
+    ray::parseCommandLine(argc, argv, { &forest_file }, { &max_colour_option, &view, &capsules_option, &uvs_option });
   if (!max_brightness_format && !max_colour_format)
   {
     usage();
@@ -159,7 +160,7 @@ int main(int argc, char *argv[])
   // otherwise use a smooth mesh generation function
   else
   {
-    forest.generateSmoothMesh(mesh, red_id, red_scale, green_scale, blue_scale);
+    forest.generateSmoothMesh(mesh, red_id, red_scale, green_scale, blue_scale, uvs_option.isSet());
   }
   ray::writePlyMesh(forest_file.nameStub() + "_mesh.ply", mesh, true);
   // for convenience we can view the results immediately
