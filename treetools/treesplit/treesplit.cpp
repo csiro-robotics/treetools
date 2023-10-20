@@ -11,7 +11,9 @@
 #include <cstdlib>
 #include <iostream>
 #include "raylib/raytreegen.h"
+#include "raylib/extraction/rayclusters.h"
 #include "treelib/treeutils.h"
+
 
 void usage(int exit_code = 1)
 {
@@ -185,6 +187,7 @@ int main(int argc, char *argv[])
   // split into clusters of an approximate size
   else if (choice.selectedKey() == "clusters")
   {
+    #if defined K_MEANS
     // one strategy: K means clustering.... 
     int K = (int)forest.trees.size() / cluster_size.value();
     // initialise some centres:
@@ -254,8 +257,31 @@ int main(int argc, char *argv[])
     {
       cluster.save(forest_file.nameStub() + "_cluster_" + std::to_string(i++) + ".txt");
     }
-    // OK so after all iterations, we have lots of centres, 
-    // I guess we then find the 
+    #else
+    std::vector<Eigen::Vector3d> centres;
+    for (auto &tree: forest.trees)
+    {
+      centres.push_back(tree.segments()[0].tip);
+    }
+    ray::ForestStructure cluster_template = forest;
+    cluster_template.trees.clear();
+
+    std::vector<std::vector<int> > point_clusters;
+    double min_diameter = (double)cluster_size.value(); // adjacent max distance
+    double max_diameter = 10.0; // maximum width of cluster
+    ray::generateClusters(point_clusters, centres, min_diameter, max_diameter);
+    std::cout << "found " << point_clusters.size() << " clusters with max gap " << min_diameter << " and max cluster width " << max_diameter << std::endl;
+    std::vector<ray::ForestStructure> tree_clusters(point_clusters.size(), cluster_template);
+    int i = 0;
+    for (auto &cluster: point_clusters)
+    {
+      for (auto &id: cluster)
+      {
+        tree_clusters[i].trees.push_back(forest.trees[id]);
+      }
+      tree_clusters[i].save(forest_file.nameStub() + "_cluster_" + std::to_string(i++) + ".txt");
+    }
+    #endif
     return 0;
   }
 
