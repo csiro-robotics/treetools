@@ -22,7 +22,8 @@ void usage(int exit_code = 1)
   // clang-format off
   std::cout << "Bulk information for the trees, plus per-branch and per-tree information saved out." << std::endl;
   std::cout << "usage:" << std::endl;
-  std::cout << "treeinfo forest.txt - report tree information and save out to _info.txt file." << std::endl;
+  std::cout << "treeinfo forest.txt        - report tree information and save out to _info.txt file." << std::endl;
+  std::cout << "          --layer_height 5 - additional volume reporting per vertical layer" << std::endl;
   std::cout << std::endl;
   std::cout << "Output file fields per tree:" << std::endl;
   std::cout << "  height: height of tree" << std::endl;
@@ -160,7 +161,9 @@ int main(int argc, char *argv[])
   std::cout.setf(std::ios::fixed, std::ios::floatfield);
   std::cout.precision(3);
   ray::FileArgument forest_file;
-  const bool parsed = ray::parseCommandLine(argc, argv, { &forest_file });
+  ray::DoubleArgument layer_height(0, 100.0, 5.0);
+  ray::OptionalKeyValueArgument layer_option("layer_height", 'l', &layer_height);
+  const bool parsed = ray::parseCommandLine(argc, argv, { &forest_file }, { &layer_option });
   if (!parsed)
   {
     usage();
@@ -181,6 +184,55 @@ int main(int argc, char *argv[])
   // 8. fractal distribution of branch diameters?
   std::cout << "Information" << std::endl;
   std::cout << std::endl;
+
+  if (layer_option.isSet() && layer_height.value() > 0.0)
+  {
+    double max_height = 0.0;
+    for (auto &tree : forest.trees)
+    {
+      for (auto &segment: tree.segments())
+      {
+        max_height = std::max(max_height, segment.tip[2] - tree.segments()[0].tip[2]);
+      }
+    }
+    int num_layers = (int)std::ceil(max_height / layer_height.value());
+    std::cout << "Wood volume by " << layer_height.value() << " m layer from ground:" << std::endl;
+    for (int i = 0; i<num_layers; i++)
+    {
+      double min_z = (double)i * layer_height.value();
+      double max_z = (double)(i+1) * layer_height.value();
+      double layer_volume = 0.0;
+      for (auto &tree : forest.trees)
+      {
+        for (auto &segment: tree.segments())
+        {     
+          double minz = min_z + tree.segments()[0].tip[2];
+          double maxz = max_z + tree.segments()[0].tip[2];
+          // now crop the cylinder to this range.... 
+          double cylinder_volume = ray::kPi * segment.radius * segment.radius * (segment.tip - tree.segments()[segment.parent_id].tip).norm();
+          double top = segment.tip[2];
+          double bottom = tree.segments()[segment.parent_id].tip[2];
+          if (top < bottom)
+          {
+            std::swap(top, bottom);
+          }
+          if (top == bottom)
+          {
+            if (top < minz || top > maxz)
+              cylinder_volume = 0.0;
+          }
+          else 
+          {
+            cylinder_volume *= std::max(0.0, std::min(top, maxz) - std::max(bottom, minz)) / (top - bottom);
+          }
+          layer_volume += cylinder_volume;
+        }
+      } 
+      std::cout << "Layer " << i << ": " << layer_volume << " m^3" << std::endl;
+    }
+    std::cout << std::endl;
+  }
+
 
 
   const int num_tree_attributes = static_cast<int>(forest.trees[0].treeAttributeNames().size());
