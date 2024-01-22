@@ -416,6 +416,7 @@ void getBifurcationProperties(ray::TreeStructure &tree, const std::vector<std::v
   total_weight = 1e-10;
   for (size_t i = 1; i < tree.segments().size(); i++)
   {
+    num_children[i] = static_cast<double>(children[i].size());
     // if its a branch point then record how dominant the branching is
     if (children[i].size() > 1)
     {
@@ -457,7 +458,6 @@ void getBifurcationProperties(ray::TreeStructure &tree, const std::vector<std::v
       const double branch_angle = (180.0 / ray::kPi) * std::atan2(dir1.cross(dir2).norm(), dir1.dot(dir2));
       angles[i] = branch_angle;
       tree_angle += weight * branch_angle;
-      num_children[i] = static_cast<double>(children[i].size());
       tree_children += weight * static_cast<double>(children[i].size());
     }
   }    

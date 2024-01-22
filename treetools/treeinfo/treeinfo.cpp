@@ -23,6 +23,7 @@ void usage(int exit_code = 1)
   std::cout << "Bulk information for the trees, plus per-branch and per-tree information saved out." << std::endl;
   std::cout << "usage:" << std::endl;
   std::cout << "treeinfo forest.txt        - report tree information and save out to _info.txt file." << std::endl;
+  std::cout << "          --branch_data    - creates a branch number, branch order number, extension and position in branch integers per-segment" << std::endl;
   std::cout << "          --layer_height 5 - additional volume reporting per vertical layer" << std::endl;
   std::cout << std::endl;
   std::cout << "Output file fields per tree:" << std::endl;
@@ -162,8 +163,9 @@ int main(int argc, char *argv[])
   std::cout.precision(3);
   ray::FileArgument forest_file;
   ray::DoubleArgument layer_height(0, 100.0, 5.0);
+  ray::OptionalFlagArgument branch_data("branch_data", 'b');
   ray::OptionalKeyValueArgument layer_option("layer_height", 'l', &layer_height);
-  const bool parsed = ray::parseCommandLine(argc, argv, { &forest_file }, { &layer_option });
+  const bool parsed = ray::parseCommandLine(argc, argv, { &forest_file }, { &layer_option, &branch_data });
   if (!parsed)
   {
     usage();
@@ -179,6 +181,7 @@ int main(int argc, char *argv[])
     std::cout << "info only works on tree structures, not trunks-only files" << std::endl;
     usage();
   }
+
   // attributes to estimate
   // 5. fractal distribution of trunk diameters?
   // 8. fractal distribution of branch diameters?
@@ -244,6 +247,7 @@ int main(int argc, char *argv[])
   const int DBH_id = num_tree_attributes + 4;
   const int bend_id = num_tree_attributes + 5;
   const int branch_slope_id = num_tree_attributes + 6;
+
   auto &tree_att = forest.trees[0].treeAttributeNames();
   for (auto &new_at : new_tree_attributes)
   {
@@ -255,8 +259,15 @@ int main(int argc, char *argv[])
   }
 
   const int num_attributes = static_cast<int>(forest.trees[0].attributeNames().size());
-  const std::vector<std::string> new_attributes = { "volume",    "diameter", "length", "strength", "min_strength",
+  std::vector<std::string> new_attributes = { "volume",    "diameter", "length", "strength", "min_strength",
                                                     "dominance", "angle",    "children" };
+  if (branch_data.isSet())
+  {
+    new_attributes.push_back("branch");
+    new_attributes.push_back("branch_order");
+    new_attributes.push_back("extension");
+    new_attributes.push_back("pos_in_branch");
+  }
   const int volume_id = num_attributes + 0;
   const int diameter_id = num_attributes + 1;
   const int length_id = num_attributes + 2;
@@ -265,6 +276,11 @@ int main(int argc, char *argv[])
   const int dominance_id = num_attributes + 5;
   const int angle_id = num_attributes + 6;
   const int children_id = num_attributes + 7;
+  // optional with branch_data
+  const int branch_id = num_tree_attributes + 8;
+  const int branch_order_id = num_tree_attributes + 9;
+  const int extension_id = num_tree_attributes + 10;
+  const int pos_in_branch_id = num_tree_attributes + 11;
 
   auto &att = forest.trees[0].attributeNames();
   for (auto &new_at : new_attributes)
@@ -315,6 +331,46 @@ int main(int argc, char *argv[])
     for (size_t i = 1; i < tree.segments().size(); i++)
     {
       children[tree.segments()[i].parent_id].push_back(static_cast<int>(i));
+    }
+    if (branch_data.isSet())
+    {
+      // 1. get branch IDs:
+      std::vector<Eigen::Vector4i> ids = {Eigen::Vector4i(0,0,0,0)}; // seg id, branch order, branch, pos on branch
+      int branch_number = 1;
+      for (size_t i = 0; i < ids.size(); i++)
+      {
+        double max_score = -1;
+        int largest_child = -1;
+        Eigen::Vector4i id = ids[i];
+        for (const auto &child : children[id[0]])
+        {
+          // we pick the route which has the longer and wider branch
+          double score = tree.segments()[child].radius;
+          if (score > max_score)
+          {
+            max_score = score;
+            largest_child = child;
+          }
+        }
+        for (const auto &child : children[id[0]])
+        {
+          Eigen::Vector4i data(child, id[1], id[2], id[3]+1); // seg id, branch order, branch, pos on branch
+          if (child == largest_child)
+          {
+            tree.segments()[id[0]].attributes[extension_id] = data[0];
+          }
+          else
+          {
+            data[1]++;
+            data[2] = branch_number++;
+            data[3] = 0;
+          }
+          tree.segments()[child].attributes[branch_order_id] = data[1];
+          tree.segments()[child].attributes[branch_id] = data[2];
+          tree.segments()[child].attributes[pos_in_branch_id] = data[3];
+          ids.push_back(data);            
+        }
+      }
     }
 
     Eigen::Vector3d min_bound = tree.segments()[0].tip;
