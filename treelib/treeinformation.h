@@ -31,7 +31,7 @@ void setDBH(ray::TreeStructure &tree, const std::vector<std::vector<int>> &child
 /// Estimate the branching properties: the angle, the dominance and the number of child branches
 /// fill in these values into the attributes array per-segment in the tree structure, assuming these array ids are within the attribute lengths 
 void TREELIB_EXPORT getBifurcationProperties(ray::TreeStructure &tree, const std::vector<std::vector<int>> &children, std::vector<double> &angles, std::vector<double> &dominances, std::vector<double> &num_children, 
-  double &tree_dominance, double &tree_angle, double &tree_children, double &total_weight);
+  double &tree_dominance, double &tree_angle, double &total_weight);
 
 /// set branch lengths at the branch points
 void TREELIB_EXPORT getBranchLengths(ray::TreeStructure &tree, const std::vector<std::vector<int>> &children, std::vector<double> &lengths, double prune_length);

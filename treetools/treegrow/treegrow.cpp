@@ -123,9 +123,9 @@ int main(int argc, char *argv[])
     std::vector<double> angles, num_children, dominances, all_lengths;
     // all_lengths are from segment start to end, including prune_length
     tree::getBranchLengths(tree, children, all_lengths, prune_length); 
-    double total_dominance, total_angle, total_children, total_weight;
+    double total_dominance, total_angle, total_weight;
     tree::getBifurcationProperties(tree, children, angles, dominances, num_children, 
-      total_dominance, total_angle, total_children, total_weight);
+      total_dominance, total_angle, total_weight);
     std::vector<double> branch_lengths; // just the branches, not the segments
     std::vector<int> branch_ids;
     for (size_t j = 0; j<children.size(); j++)

@@ -63,7 +63,7 @@ struct Metrics
     double min;
     double max;
   };
-  Stats volume, DBH, height, strength, dominance, angle, bend, children, dimension, crown_radius, branch_radius;
+  Stats volume, DBH, height, strength, dominance, angle, bend, dimension, crown_radius, branch_radius;
 
   void print(size_t numtrees, int num_branched_trees, int num_stat_trees, int num_total)
   {
@@ -81,7 +81,6 @@ struct Metrics
     std::cout << "         branch dominance (0 to 1): " << dominance.total / static_cast<double>(num_branched_trees) << ",\t" << dominance.min << ",\t" << dominance.max << std::endl;
     std::cout << "            branch angle (degrees): " << angle.total / static_cast<double>(num_branched_trees) << ",\t" << angle.min << ",\t" << angle.max << std::endl;
     std::cout << "                trunk bend (ratio): " << bend.total / num_trees << ",\t" << bend.min << ",\t" << bend.max << std::endl;
-    std::cout << "               children per branch: " << children.total / static_cast<double>(num_branched_trees) << ",\t" << children.min << ",\t" << children.max << std::endl;
     std::cout << "          dimension (w.r.t length): " << dimension.total / static_cast<double>(num_stat_trees) << ",\t" << dimension.min << ",\t" << dimension.max << std::endl;
     std::cout << std::endl;
     std::cout << "Per-branch mean, min, max:" << std::endl;
@@ -335,14 +334,14 @@ int main(int argc, char *argv[])
     if (branch_data.isSet())
     {
       // 1. get branch IDs:
-      std::vector<Eigen::Vector4i> ids = {Eigen::Vector4i(0,0,0,0)}; // seg id, branch order, branch, pos on branch
+      std::vector<Eigen::Vector4i> ids(tree.segments().size(), Eigen::Vector4i(0,0,0,0)); // seg id, branch order, branch, pos on branch
       int branch_number = 1;
-      for (size_t i = 0; i < ids.size(); i++)
+      for (size_t i = 0; i < tree.segments().size(); i++)
       {
         double max_score = -1;
         int largest_child = -1;
         Eigen::Vector4i id = ids[i];
-        for (const auto &child : children[id[0]])
+        for (const auto &child : children[i])
         {
           // we pick the route which has the longer and wider branch
           double score = tree.segments()[child].radius;
@@ -352,12 +351,12 @@ int main(int argc, char *argv[])
             largest_child = child;
           }
         }
-        for (const auto &child : children[id[0]])
+        for (const auto &child : children[i])
         {
           Eigen::Vector4i data(child, id[1], id[2], id[3]+1); // seg id, branch order, branch, pos on branch
           if (child == largest_child)
           {
-            tree.segments()[id[0]].attributes[extension_id] = data[0];
+            tree.segments()[i].attributes[extension_id] = data[0];
           }
           else
           {
@@ -368,7 +367,7 @@ int main(int argc, char *argv[])
           tree.segments()[child].attributes[branch_order_id] = data[1];
           tree.segments()[child].attributes[branch_id] = data[2];
           tree.segments()[child].attributes[pos_in_branch_id] = data[3];
-          ids.push_back(data);            
+          ids[child] = data;            
         }
       }
     }
@@ -389,9 +388,8 @@ int main(int argc, char *argv[])
     double tree_dominance = 0.0;
     double tree_angle = 0.0;
     double total_weight = 0.0;
-    double tree_children = 0.0;
     std::vector<double> branch_angles, branch_dominances, branch_children;
-    tree::getBifurcationProperties(tree, children, branch_angles, branch_dominances, branch_children, tree_dominance, tree_angle, tree_children, total_weight);    
+    tree::getBifurcationProperties(tree, children, branch_angles, branch_dominances, branch_children, tree_dominance, tree_angle, total_weight);    
     for (size_t j = 0; j<branch_lengths.size(); j++)
     {
       tree.segments()[j].attributes[angle_id] = branch_angles[j];
@@ -438,12 +436,9 @@ int main(int argc, char *argv[])
       num_branched_trees++;
       metrics.dominance.update(tree_dominance);
       metrics.angle.update(tree_angle);
-      tree_children /= total_weight;
-      metrics.children.update(tree_children);
     }
     tree.segments()[0].attributes[dominance_id] = tree_dominance;
     tree.segments()[0].attributes[angle_id] = tree_angle;
-    tree.segments()[0].attributes[children_id] = tree_children;
 
     double tree_volume = 0.0;
     double tree_diameter = 0.0;
