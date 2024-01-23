@@ -25,6 +25,7 @@ void usage(int exit_code = 1)
   std::cout << "treeinfo forest.txt        - report tree information and save out to _info.txt file." << std::endl;
   std::cout << "          --branch_data    - creates a branch number, branch order number, extension and position in branch integers per-segment" << std::endl;
   std::cout << "          --layer_height 5 - additional volume reporting per vertical layer" << std::endl;
+  std::cout << "          --crop_length 1  - should reflect the value used in rayextract trees if you want full values for branch lengths" << std::endl;
   std::cout << std::endl;
   std::cout << "Output file fields per tree:" << std::endl;
   std::cout << "  height: height of tree" << std::endl;
@@ -161,10 +162,11 @@ int main(int argc, char *argv[])
   std::cout.setf(std::ios::fixed, std::ios::floatfield);
   std::cout.precision(3);
   ray::FileArgument forest_file;
-  ray::DoubleArgument layer_height(0, 100.0, 5.0);
+  ray::DoubleArgument layer_height(0, 100.0, 5.0), crop_length(0.0, 100.0, 1.0);
   ray::OptionalFlagArgument branch_data("branch_data", 'b');
   ray::OptionalKeyValueArgument layer_option("layer_height", 'l', &layer_height);
-  const bool parsed = ray::parseCommandLine(argc, argv, { &forest_file }, { &layer_option, &branch_data });
+  ray::OptionalKeyValueArgument crop_length_option("crop_length", 'c', &crop_length);
+  const bool parsed = ray::parseCommandLine(argc, argv, { &forest_file }, { &layer_option, &branch_data, &crop_length_option });
   if (!parsed)
   {
     usage();
@@ -317,7 +319,7 @@ int main(int argc, char *argv[])
       }
     }
   }
-  const double prune_length = 1.0;  // TODO: read this from file
+  const double prune_length = crop_length.value();
 
   int num_stat_trees = 0;  // used for dimension values
   int num_branched_trees = 0;
