@@ -23,7 +23,7 @@ void usage(int exit_code = 1)
   std::cout << "Bulk information for the trees, plus per-branch and per-tree information saved out." << std::endl;
   std::cout << "usage:" << std::endl;
   std::cout << "treeinfo forest.txt        - report tree information and save out to _info.txt file." << std::endl;
-  std::cout << "          --branch_data    - creates a branch number, branch order number, extension and position in branch integers per-segment" << std::endl;
+  std::cout << "          --branch_data    - creates a branch number, segment_length, branch order number, extension and position in branch integers per-segment" << std::endl;
   std::cout << "          --layer_height 5 - additional volume reporting per vertical layer" << std::endl;
   std::cout << "          --crop_length 1  - should reflect the value used in rayextract trees if you want full values for branch lengths" << std::endl;
   std::cout << std::endl;
@@ -268,6 +268,7 @@ int main(int argc, char *argv[])
     new_attributes.push_back("branch_order");
     new_attributes.push_back("extension");
     new_attributes.push_back("pos_in_branch");
+    new_attributes.push_back("segment_length");
   }
   const int volume_id = num_attributes + 0;
   const int diameter_id = num_attributes + 1;
@@ -282,6 +283,7 @@ int main(int argc, char *argv[])
   const int branch_order_id = num_tree_attributes + 9;
   const int extension_id = num_tree_attributes + 10;
   const int pos_in_branch_id = num_tree_attributes + 11;
+  const int segment_length_id = num_tree_attributes + 12;
 
   auto &att = forest.trees[0].attributeNames();
   for (auto &new_at : new_attributes)
@@ -370,6 +372,11 @@ int main(int argc, char *argv[])
           tree.segments()[child].attributes[branch_id] = data[2];
           tree.segments()[child].attributes[pos_in_branch_id] = data[3];
           ids[child] = data;            
+        }
+        auto &segment = tree.segments()[i];
+        if (segment.parent_id != -1)
+        {
+          segment.attributes[segment_length_id] = (segment.tip - tree.segments()[segment.parent_id].tip).norm();
         }
       }
     }
