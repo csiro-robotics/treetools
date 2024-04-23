@@ -468,9 +468,9 @@ int main(int argc, char *argv[])
     tree.segments()[0].attributes[volume_id] = tree_volume;
     metrics.volume.update(tree_volume);
     tree.segments()[0].attributes[diameter_id] = tree_diameter;
-    double tree_height = max_bound[2] - tree.segments()[0].tip[2];
+    double tree_height = prune_length + max_bound[2] - tree.segments()[0].tip[2];
     tree.treeAttributes()[height_id] = tree_height;
-    double crown_radius =
+    double crown_radius = prune_length + 
       ((max_bound[0] - min_bound[0]) + (max_bound[1] - min_bound[1])) / 2.0;  // mean of the bounding box extents
     metrics.crown_radius.update(crown_radius);
     tree.treeAttributes()[crown_radius_id] = crown_radius;
