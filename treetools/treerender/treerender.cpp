@@ -24,10 +24,10 @@ void usage(int exit_code = 1)
   std::cout << "usage:" << std::endl;
   std::cout << "treerender trees.txt                 - render by segment colour" << std::endl;
   std::cout << "                  --max_colour 1     - colour using this as the maximum component value" << std::endl;
-  std::cout << "treerender trees.txt height          - render by height (black to white over height range)" << std::endl;
-  std::cout << "                     volume          - render by volume" << std::endl;
+  std::cout << "treerender trees.txt height          - render by height (greyscale over range)" << std::endl;
+  std::cout << "                     volume          - render by volume (greyscale over range)" << std::endl;
 //  std::cout << "                     surface_area    - render by surface area" << std::endl;
-//  std::cout << "                  --rgb              - render as a red->green->blue colour gradient around its range" << std::endl;
+  std::cout << "                     --rgb           - render greyscale as a red->green->blue colour gradient around its range" << std::endl;
   std::cout << "                  --resolution 512   - default resolution of longest axis" << std::endl;
   std::cout << "                  --pixel_width 0.1  - pixel width in metres as alternative to resolution setting" << std::endl;
   std::cout << "                  --grid_width 100   - fit to a square grid of this width, with one grid cell centre at 0,0" << std::endl;
@@ -35,6 +35,14 @@ void usage(int exit_code = 1)
   std::cout << "                  --num_subvoxels 16 - used for volume estimation" << std::endl;
   // clang-format on
   exit(exit_code);
+}
+
+Eigen::Vector3d gradient(double shade)
+{
+  Eigen::Vector3d col = ray::redGreenBlueGradient(shade);
+  if (shade < 0.05) // fade to black
+    return 20.0*shade * col;
+  return col;
 }
 
 struct Capsule
@@ -258,11 +266,26 @@ int main(int argc, char *argv[])
                 if (variant_format)
                 {
                   double shade = std::max(0.0, std::min(1.0 - depth / (max_bound[2] - min_bound[2]), 1.0));
-                  uint8_t shade255 = (uint8_t)(shade * 255.0);
-                  if (is_hdr)
-                    float_pixel_colours[3*ind + 0] = float_pixel_colours[3*ind + 1] = float_pixel_colours[3*ind + 2] = (float)shade;
+                  if (rgb_flag.isSet())
+                  {
+                    Eigen::Vector3d col = gradient(shade);
+                    if (is_hdr)
+                    {
+                      float_pixel_colours[3*ind + 0] = (float)col[0];
+                      float_pixel_colours[3*ind + 1] = (float)col[1];
+                      float_pixel_colours[3*ind + 2] = (float)col[2];
+                    }
+                    else
+                      pixel_colours[ind] = ray::RGBA((uint8_t)(col[0] * 255.0),(uint8_t)(col[1] * 255.0),(uint8_t)(col[2] * 255.0),255); 
+                  }
                   else
-                    pixel_colours[ind] = ray::RGBA(shade255,shade255,shade255,255); 
+                  {
+                    uint8_t shade255 = (uint8_t)(shade * 255.0);
+                    if (is_hdr)
+                      float_pixel_colours[3*ind + 0] = float_pixel_colours[3*ind + 1] = float_pixel_colours[3*ind + 2] = (float)shade;
+                    else
+                      pixel_colours[ind] = ray::RGBA(shade255,shade255,shade255,255); 
+                  }
                 }
                 else // segment colour
                 {
@@ -375,13 +398,26 @@ int main(int argc, char *argv[])
         double volume = subpixel_volume * (double)counts[ind];
         double max_volume = subpixel_volume * (double)max_count;
         double shade = std::max(0.0, std::min(volume/max_volume, 1.0));
-        if (volume == 0.0)
-          shade = 0.0;
-        uint8_t shade255 = (uint8_t)(shade * 255.0);
-        if (is_hdr)
-          float_pixel_colours[3*ind + 0] = float_pixel_colours[3*ind + 1] = float_pixel_colours[3*ind + 2] = (float)volume;
+        if (rgb_flag.isSet())
+        {
+          Eigen::Vector3d col = gradient(shade);
+          if (is_hdr)
+          {
+            float_pixel_colours[3*ind + 0] = (float)col[0];
+            float_pixel_colours[3*ind + 1] = (float)col[1];
+            float_pixel_colours[3*ind + 2] = (float)col[2];
+          }
+          else
+            pixel_colours[ind] = ray::RGBA((uint8_t)(col[0] * 255.0),(uint8_t)(col[1] * 255.0),(uint8_t)(col[2] * 255.0),255); 
+        }
         else
-          pixel_colours[ind] = ray::RGBA(shade255,shade255,shade255,255);         
+        {
+          uint8_t shade255 = (uint8_t)(shade * 255.0);
+          if (is_hdr)
+            float_pixel_colours[3*ind + 0] = float_pixel_colours[3*ind + 1] = float_pixel_colours[3*ind + 2] = (float)volume;
+          else
+            pixel_colours[ind] = ray::RGBA(shade255,shade255,shade255,255);         
+        }
       }
     }
   }
