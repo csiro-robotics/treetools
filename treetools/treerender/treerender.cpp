@@ -26,7 +26,8 @@ void usage(int exit_code = 1)
   std::cout << "                     volume          - render by volume" << std::endl;
 //  std::cout << "                     surface_area    - render by surface area" << std::endl;
 //  std::cout << "                  --rgb              - render as a red->green->blue colour gradient around its range" << std::endl;
-  std::cout << "                  --pixel_width 0.1  - pixel width in metres" << std::endl;
+  std::cout << "                  --resolution 512   - default resolution of longest axis" << std::endl;
+  std::cout << "                  --pixel_width 0.1  - pixel width in metres as alternative to resolution setting" << std::endl;
   std::cout << "                  --grid_width 100   - fit to a square grid of this width, with one grid cell centre at 0,0" << std::endl;
   std::cout << "                  --output image.hdr - set output file (supported image types: .jpg, .png, .bmp, .tga, .hdr)" << std::endl;
   std::cout << "                  --num_subvoxels 16 - used for volume estimation" << std::endl;
