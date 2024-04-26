@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
     width = height = (int)std::round(grid_width.value()/pixel_width);
   }
 
-  std::string image_file = output_image_option.isSet() ? output_file.name() : tree_file.nameStub() + "_image.png";
+  std::string image_file = output_image_option.isSet() ? output_file.name() : tree_file.nameStub() + ".png";
   const std::string image_ext = ray::getFileNameExtension(image_file);
   const bool is_hdr = image_ext == "hdr" || image_ext == "tif";
 
