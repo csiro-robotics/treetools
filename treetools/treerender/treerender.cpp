@@ -12,6 +12,8 @@
 #include <cstdlib>
 #include <iostream>
 #include "raylib/raytreegen.h"
+#include "raylib/rayprogress.h"
+#include "raylib/rayprogressthread.h"
 //#define STB_IMAGE_IMPLEMENTATION
 #include "treelib/imagewrite.h"
 
@@ -319,6 +321,9 @@ int main(int argc, char *argv[])
     int num_vertical = (int)std::ceil((max_bound[2] - min_bound[2])/subpixel_width); // this will be large!!
     std::vector<int> counts(width*height, 0);
     int max_count = 0;
+    ray::Progress progress;
+    ray::ProgressThread progress_thread(progress);    
+    progress.begin("calculate volumes", width/10);
     for (int x = 0; x<width; x++)
     {
       for (int y = 0; y<height; y++)
@@ -356,7 +361,12 @@ int main(int argc, char *argv[])
         counts[ind] = count;
         max_count = std::max(max_count, count);
       }
+      if (!(x%10))
+        progress.increment();
     }
+    progress.end();
+    progress_thread.requestQuit();
+    progress_thread.join();
     for (int x = 0; x<width; x++)
     {
       for (int y = 0; y<height; y++)
