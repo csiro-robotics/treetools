@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
   ray::IntArgument num_subvoxels(1,1000, 8), resolution(1, 20000, 512);
   ray::OptionalKeyValueArgument output_image_option("output_image", 'o', &output_file);
   ray::OptionalKeyValueArgument pixel_width_option("pixel_width", 'p', &pixel_width_arg);
-  ray::OptionalKeyValueArgument resolution_option("resultion", 'r', &resolution);
+  ray::OptionalKeyValueArgument resolution_option("resolution", 'r', &resolution);
   ray::OptionalKeyValueArgument grid_width_option("grid_width", 'g', &grid_width);
   ray::OptionalKeyValueArgument max_brightness_option("max_colour", 'm', &max_brightness);
   ray::OptionalKeyValueArgument num_subvoxels_option("num_subvoxels", 'n', &num_subvoxels);
@@ -154,9 +154,8 @@ int main(int argc, char *argv[])
   double pixel_width = pixel_width_arg.value();
   if (!pixel_width_option.isSet())
   {
-    double length = std::max(std::abs(extent[0]), std::abs(extent[1]));
-    const double default_res = resolution.value();
-    pixel_width = length / default_res; 
+    double length = std::max(extent[0], extent[1]);
+    pixel_width = length / resolution.value();
   }
   int width = (int)std::round(extent[0] / pixel_width);
   int height = (int)std::round(extent[1] / pixel_width);
@@ -169,7 +168,6 @@ int main(int argc, char *argv[])
       pixel_width = grid_width.value() / (double)resolution.value();
     width = height = (int)std::round(grid_width.value()/pixel_width);
   }
-
 
   std::string image_file = output_image_option.isSet() ? output_file.name() : tree_file.nameStub() + "_image.png";
   const std::string image_ext = ray::getFileNameExtension(image_file);
