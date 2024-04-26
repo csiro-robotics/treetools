@@ -25,7 +25,6 @@ void usage(int exit_code = 1)
   std::cout << "treerender trees.txt height          - render by height (black to white over height range)" << std::endl;
   std::cout << "                     volume          - render by volume" << std::endl;
 //  std::cout << "                     surface_area    - render by surface area" << std::endl;
-//  std::cout << "                     plant_density cloud.ply - render by one-sided leaf area density" << std::endl;
 //  std::cout << "                  --rgb              - render as a red->green->blue colour gradient around its range" << std::endl;
   std::cout << "                  --pixel_width 0.1  - pixel width in metres" << std::endl;
   std::cout << "                  --grid_width 100   - fit to a square grid of this width, with one grid cell centre at 0,0" << std::endl;
@@ -44,7 +43,7 @@ struct Capsule
   {
     Eigen::Vector3d vec = v2 - v1;
     Eigen::Vector3d closest = v1 + vec*(pos - v1).dot(vec)/vec.squaredNorm();
-    return closest.squaredNorm() <= radius*radius;
+    return (closest - pos).squaredNorm() <= radius*radius;
   }
   double rayIntersectionDepth(const Eigen::Vector3d &start, const Eigen::Vector3d &end)
   {
@@ -112,15 +111,16 @@ int main(int argc, char *argv[])
   ray::KeyChoice style({ "height", "volume", "surface_area", "plant_density" }); 
   ray::OptionalFlagArgument rgb_flag("rgb", 'r');
   ray::DoubleArgument pixel_width_arg(0.001, 100000.0), grid_width(0.001, 100000.0), max_brightness(0.000001, 100000000.0);
-  ray::IntArgument num_subvoxels(1,1000, 16);
+  ray::IntArgument num_subvoxels(1,1000, 8), resolution(1, 20000, 512);
   ray::OptionalKeyValueArgument output_image_option("output_image", 'o', &output_file);
   ray::OptionalKeyValueArgument pixel_width_option("pixel_width", 'p', &pixel_width_arg);
+  ray::OptionalKeyValueArgument resolution_option("resultion", 'r', &resolution);
   ray::OptionalKeyValueArgument grid_width_option("grid_width", 'g', &grid_width);
   ray::OptionalKeyValueArgument max_brightness_option("max_colour", 'm', &max_brightness);
   ray::OptionalKeyValueArgument num_subvoxels_option("num_subvoxels", 'n', &num_subvoxels);
 
-  const bool standard_format = ray::parseCommandLine(argc, argv, { &tree_file }, {&output_image_option, &pixel_width_option, &grid_width_option, &max_brightness_option});
-  const bool variant_format = ray::parseCommandLine(argc, argv, { &tree_file, &style }, {&output_image_option, &pixel_width_option, &grid_width_option, &num_subvoxels_option, &rgb_flag});
+  const bool standard_format = ray::parseCommandLine(argc, argv, { &tree_file }, {&output_image_option, &resolution_option, &pixel_width_option, &grid_width_option, &max_brightness_option});
+  const bool variant_format = ray::parseCommandLine(argc, argv, { &tree_file, &style }, {&output_image_option, &resolution_option, &pixel_width_option, &grid_width_option, &num_subvoxels_option, &rgb_flag});
   if (!standard_format && !variant_format)
   {
     usage();
@@ -149,22 +149,23 @@ int main(int argc, char *argv[])
       max_bound = ray::maxVector(max_bound, segment.tip);
     }
   }
+  Eigen::Vector3d extent = max_bound - min_bound;
   double pixel_width = pixel_width_arg.value();
-  int width, height;
   if (!pixel_width_option.isSet())
   {
-    Eigen::Vector3d extent = max_bound - min_bound;
     double length = std::max(std::abs(extent[0]), std::abs(extent[1]));
-    const double default_res = 512;
+    const double default_res = resolution.value();
     pixel_width = length / default_res; 
-    width = (int)std::round(extent[0] / pixel_width);
-    height = (int)std::round(extent[1] / pixel_width);
   }
+  int width = (int)std::round(extent[0] / pixel_width);
+  int height = (int)std::round(extent[1] / pixel_width);
   if (grid_width_option.isSet()) // adjust min_bound to be well-aligned
   {
     Eigen::Vector3d mid = (min_bound + max_bound)/2.0;
     min_bound[0] = grid_width.value() * std::round(mid[0] / grid_width.value()) - 0.5*grid_width.value();
     min_bound[1] = grid_width.value() * std::round(mid[1] / grid_width.value()) - 0.5*grid_width.value();
+    if (!pixel_width_option.isSet())
+      pixel_width = grid_width.value() / (double)resolution.value();
     width = height = (int)std::round(grid_width.value()/pixel_width);
   }
 
@@ -317,43 +318,56 @@ int main(int argc, char *argv[])
     double subpixel_width = pixel_width / (double)n;
     double subpixel_volume = subpixel_width*subpixel_width*subpixel_width;
     int num_vertical = (int)std::ceil((max_bound[2] - min_bound[2])/subpixel_width); // this will be large!!
-    std::vector<bool> subpixels(n*n*num_vertical, false);
+    std::vector<int> counts(width*height, 0);
+    int max_count = 0;
     for (int x = 0; x<width; x++)
     {
       for (int y = 0; y<height; y++)
       {
         Eigen::Vector3d pixel_min_bound = min_bound + pixel_width*Eigen::Vector3d(x,y,0);
+        std::vector<bool> subpixels(n*n*num_vertical, false);
         int count = 0;
-        for (auto &capsule: capsule_grid[x + width*y])
+        int ind = x + width*y;
+        for (auto &capsule: capsule_grid[ind])
         {
-          Eigen::Vector3d min_caps = ray::minVector(capsule.v1, capsule.v2) - Eigen::Vector3d(capsule.radius, capsule.radius, 0);
-          Eigen::Vector3d max_caps = ray::maxVector(capsule.v1, capsule.v2) + Eigen::Vector3d(capsule.radius, capsule.radius, 0);
+          Eigen::Vector3d min_caps = ray::minVector(capsule.v1, capsule.v2) - Eigen::Vector3d(capsule.radius, capsule.radius, capsule.radius);
+          Eigen::Vector3d max_caps = ray::maxVector(capsule.v1, capsule.v2) + Eigen::Vector3d(capsule.radius, capsule.radius, capsule.radius);
           Eigen::Vector3i mins = ((min_caps - pixel_min_bound) / subpixel_width).cast<int>();
           Eigen::Vector3i maxs = ((max_caps - pixel_min_bound) / subpixel_width).cast<int>() + Eigen::Vector3i(1,1,1);
           mins = ray::maxVector(Eigen::Vector3i(0,0,0), mins);
           maxs = ray::minVector(maxs, Eigen::Vector3i(n, n, num_vertical));
-          for (int x = mins[0]; x < maxs[0]; x++)
+          for (int xx = mins[0]; xx < maxs[0]; xx++)
           {
-            for (int y = mins[1]; y < maxs[1]; y++)
+            for (int yy = mins[1]; yy < maxs[1]; yy++)
             {
-              for (int z = mins[2]; z < maxs[2]; z++)
+              for (int zz = mins[2]; zz < maxs[2]; zz++)
               {
-                if (subpixels[x + n*y + n*n*z]) // already set
+                if (subpixels[xx + n*yy + n*n*zz]) // already set
                   continue;
-                Eigen::Vector3d pos = Eigen::Vector3d((double)x+0.5,(double)y+0.5,(double)z+0.5)*subpixel_width + pixel_min_bound;
+                Eigen::Vector3d pos = Eigen::Vector3d((double)xx+0.5,(double)yy+0.5,(double)zz+0.5)*subpixel_width + pixel_min_bound;
                 if (capsule.overlaps(pos))
                 {
-                  subpixels[x + n*y + n*n*z] = true;       
+                  subpixels[xx + n*yy + n*n*zz] = true;       
                   count++;
                 }           
               }
             }
           }
         }
-        double volume = subpixel_volume * (double)count;
-        double max_volume = 1.0;
-        double shade = std::max(0.0, std::min(volume/max_volume, 1.0));
+        counts[ind] = count;
+        max_count = std::max(max_count, count);
+      }
+    }
+    for (int x = 0; x<width; x++)
+    {
+      for (int y = 0; y<height; y++)
+      {
         int ind = x + width*y;
+        double volume = subpixel_volume * (double)counts[ind];
+        double max_volume = subpixel_volume * (double)max_count;
+        double shade = std::max(0.0, std::min(volume/max_volume, 1.0));
+        if (volume == 0.0)
+          shade = 0.0;
         uint8_t shade255 = (uint8_t)(shade * 255.0);
         if (is_hdr)
           float_pixel_colours[3*ind + 0] = float_pixel_colours[3*ind + 1] = float_pixel_colours[3*ind + 2] = (float)volume;
