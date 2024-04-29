@@ -338,8 +338,8 @@ int main(int argc, char *argv[])
     if (branch_data.isSet())
     {
       // 1. get branch IDs:
-      std::vector<Eigen::Vector4i> ids(tree.segments().size(), Eigen::Vector4i(0,0,0,0)); // seg id, branch order, branch, pos on branch
       int branch_number = 1;
+      std::vector<Eigen::Vector4i> ids(tree.segments().size(), Eigen::Vector4i(0,0,branch_number,0)); // seg id, branch order, branch, pos on branch
       for (size_t i = 0; i < tree.segments().size(); i++)
       {
         double max_score = -1;
@@ -468,9 +468,9 @@ int main(int argc, char *argv[])
     tree.segments()[0].attributes[volume_id] = tree_volume;
     metrics.volume.update(tree_volume);
     tree.segments()[0].attributes[diameter_id] = tree_diameter;
-    double tree_height = max_bound[2] - tree.segments()[0].tip[2];
+    double tree_height = prune_length + max_bound[2] - tree.segments()[0].tip[2];
     tree.treeAttributes()[height_id] = tree_height;
-    double crown_radius =
+    double crown_radius = prune_length + 
       ((max_bound[0] - min_bound[0]) + (max_bound[1] - min_bound[1])) / 2.0;  // mean of the bounding box extents
     metrics.crown_radius.update(crown_radius);
     tree.treeAttributes()[crown_radius_id] = crown_radius;
