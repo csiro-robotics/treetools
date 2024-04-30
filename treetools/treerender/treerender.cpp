@@ -32,7 +32,7 @@ void usage(int exit_code = 1)
   std::cout << "                  --pixel_width 0.1  - pixel width in metres as alternative to resolution setting" << std::endl;
   std::cout << "                  --grid_width 100   - fit to a square grid of this width, with one grid cell centre at 0,0" << std::endl;
   std::cout << "                  --output image.hdr - set output file (supported image types: .jpg, .png, .bmp, .tga, .hdr)" << std::endl;
-  std::cout << "                  --num_subvoxels 16 - used for volume estimation" << std::endl;
+  std::cout << "                  --num_subvoxels 8 - used for volume estimation" << std::endl;
   // clang-format on
   exit(exit_code);
 }
@@ -342,61 +342,73 @@ int main(int argc, char *argv[])
     double subpixel_width = pixel_width / (double)n;
     double subpixel_volume = subpixel_width*subpixel_width*subpixel_width;
     int num_vertical = (int)std::ceil((max_bound[2] - min_bound[2])/subpixel_width); // this will be large!!
-    std::vector<int> counts(width*height, 0);
-    int max_count = 0;
-    ray::Progress progress;
-    ray::ProgressThread progress_thread(progress);    
-    progress.begin("calculate volumes", width/10);
-    for (int x = 0; x<width; x++)
+    std::vector<int> counts[2];
+    int max_count[2] = {0,0};
+    
+    double ds[2] = {0.25, 0.75};
+    for (int phase = 0; phase<2; phase++)
     {
-      for (int y = 0; y<height; y++)
+      double delta = ds[phase];
+      counts[phase].resize(width*height, 0);
+      ray::Progress progress;
+      ray::ProgressThread progress_thread(progress);    
+      progress.begin("calculate volumes " + std::to_string(phase+1) + "/2: ", width/10);
+      for (int x = 0; x<width; x++)
       {
-        Eigen::Vector3d pixel_min_bound = min_bound + pixel_width*Eigen::Vector3d(x,y,0);
-        std::vector<bool> subpixels(n*n*num_vertical, false);
-        int count = 0;
-        int ind = x + width*y;
-        for (auto &capsule: capsule_grid[ind])
+        for (int y = 0; y<height; y++)
         {
-          Eigen::Vector3d min_caps = ray::minVector(capsule.v1, capsule.v2) - Eigen::Vector3d(capsule.radius, capsule.radius, capsule.radius);
-          Eigen::Vector3d max_caps = ray::maxVector(capsule.v1, capsule.v2) + Eigen::Vector3d(capsule.radius, capsule.radius, capsule.radius);
-          Eigen::Vector3i mins = ((min_caps - pixel_min_bound) / subpixel_width).cast<int>();
-          Eigen::Vector3i maxs = ((max_caps - pixel_min_bound) / subpixel_width).cast<int>() + Eigen::Vector3i(1,1,1);
-          mins = ray::maxVector(Eigen::Vector3i(0,0,0), mins);
-          maxs = ray::minVector(maxs, Eigen::Vector3i(n, n, num_vertical));
-          for (int xx = mins[0]; xx < maxs[0]; xx++)
+          Eigen::Vector3d pixel_min_bound = min_bound + pixel_width*Eigen::Vector3d(x,y,0);
+          std::vector<bool> subpixels(n*n*num_vertical, false);
+          int count = 0;
+          int ind = x + width*y;
+          for (auto &capsule: capsule_grid[ind])
           {
-            for (int yy = mins[1]; yy < maxs[1]; yy++)
+            Eigen::Vector3d min_caps = ray::minVector(capsule.v1, capsule.v2) - Eigen::Vector3d(capsule.radius, capsule.radius, capsule.radius);
+            Eigen::Vector3d max_caps = ray::maxVector(capsule.v1, capsule.v2) + Eigen::Vector3d(capsule.radius, capsule.radius, capsule.radius);
+            Eigen::Vector3i mins = ((min_caps - pixel_min_bound) / subpixel_width).cast<int>();
+            Eigen::Vector3i maxs = ((max_caps - pixel_min_bound) / subpixel_width).cast<int>() + Eigen::Vector3i(1,1,1);
+            mins = ray::maxVector(Eigen::Vector3i(0,0,0), mins);
+            maxs = ray::minVector(maxs, Eigen::Vector3i(n, n, num_vertical));
+            for (int xx = mins[0]; xx < maxs[0]; xx++)
             {
-              for (int zz = mins[2]; zz < maxs[2]; zz++)
+              for (int yy = mins[1]; yy < maxs[1]; yy++)
               {
-                if (subpixels[xx + n*yy + n*n*zz]) // already set
-                  continue;
-                Eigen::Vector3d pos = Eigen::Vector3d((double)xx+0.5,(double)yy+0.5,(double)zz+0.5)*subpixel_width + pixel_min_bound;
-                if (capsule.overlaps(pos))
+                for (int zz = mins[2]; zz < maxs[2]; zz++)
                 {
-                  subpixels[xx + n*yy + n*n*zz] = true;       
-                  count++;
-                }           
+                  if (subpixels[xx + n*yy + n*n*zz]) // already set
+                    continue;
+                  Eigen::Vector3d pos = Eigen::Vector3d((double)xx+delta,(double)yy+delta,(double)zz+delta)*subpixel_width + pixel_min_bound;
+                  if (capsule.overlaps(pos))
+                  {
+                    subpixels[xx + n*yy + n*n*zz] = true;       
+                    count++;
+                  }           
+                }
               }
             }
           }
+          counts[phase][ind] = count;
+          max_count[phase] = std::max(max_count[phase], count);
         }
-        counts[ind] = count;
-        max_count = std::max(max_count, count);
+        if (!(x%10))
+          progress.increment();
       }
-      if (!(x%10))
-        progress.increment();
+      progress.end();
+      progress_thread.requestQuit();
+      progress_thread.join();
     }
-    progress.end();
-    progress_thread.requestQuit();
-    progress_thread.join();
+    double total_error = 0.0;
+    double total_volume = 0.0;
     for (int x = 0; x<width; x++)
     {
       for (int y = 0; y<height; y++)
       {
         int ind = x + width*y;
-        double volume = subpixel_volume * (double)counts[ind];
-        double max_volume = subpixel_volume * (double)max_count;
+        double error = subpixel_volume * (double)(counts[0][ind] - counts[1][ind])/2.0;
+        total_error += std::abs(error);
+        double volume = subpixel_volume * (double)(counts[0][ind] + counts[1][ind])/2.0;
+        total_volume += volume;
+        double max_volume = subpixel_volume * (double)(max_count[0] + max_count[1]);
         double shade = std::max(0.0, std::min(volume/max_volume, 1.0));
         if (rgb_flag.isSet())
         {
@@ -420,6 +432,7 @@ int main(int argc, char *argv[])
         }
       }
     }
+    std::cout << "subpixel width: " << subpixel_width << " m, total volume: " << total_volume << " m^3, pixel volume % error: " << 100.0*total_error/total_volume << "%" << std::endl;
   }
   else
   {
