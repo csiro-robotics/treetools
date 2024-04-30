@@ -48,6 +48,7 @@ Eigen::Vector3d gradient(double shade)
 struct Capsule
 {
   Eigen::Vector3d v1, v2;
+  double min_height {-1e10};
   double radius;
 
   bool overlaps(const Eigen::Vector3d &pos)
@@ -240,7 +241,10 @@ int main(int argc, char *argv[])
         capsule.v2 = segment.tip;
         capsule.v1 = tree.segments()[segment.parent_id].tip;
         capsule.radius = segment.radius + pixel_width/2.0;
-      //  capsule.colour = ;
+        if (segment.parent_id == 0) // need to clip capsule's lower cap at ground level
+        {
+          capsule.min_height = capsule.v1[2];
+        }
         Eigen::Vector3d min_caps = ray::minVector(capsule.v1, capsule.v2) - Eigen::Vector3d(capsule.radius, capsule.radius, 0);
         Eigen::Vector3d max_caps = ray::maxVector(capsule.v1, capsule.v2) + Eigen::Vector3d(capsule.radius, capsule.radius, 0);
         Eigen::Vector3i mins = ((min_caps - min_bound) / pixel_width).cast<int>();
@@ -378,6 +382,8 @@ int main(int argc, char *argv[])
                   if (subpixels[xx + n*yy + n*n*zz]) // already set
                     continue;
                   Eigen::Vector3d pos = Eigen::Vector3d((double)xx+delta,(double)yy+delta,(double)zz+delta)*subpixel_width + pixel_min_bound;
+                  if (pos[2] < capsule.min_height) // below ground
+                    continue;
                   if (capsule.overlaps(pos))
                   {
                     subpixels[xx + n*yy + n*n*zz] = true;       
