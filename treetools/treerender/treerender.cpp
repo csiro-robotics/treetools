@@ -16,6 +16,7 @@
 #include "raylib/rayprogressthread.h"
 //#define STB_IMAGE_IMPLEMENTATION
 #include "treelib/imagewrite.h"
+#include "raylib/raylibconfig.h"
 
 void usage(int exit_code = 1)
 {
@@ -32,7 +33,8 @@ void usage(int exit_code = 1)
   std::cout << "                  --pixel_width 0.1  - pixel width in metres as alternative to resolution setting" << std::endl;
   std::cout << "                  --grid_width 100   - fit to a square grid of this width, with one grid cell centre at 0,0" << std::endl;
   std::cout << "                  --output image.hdr - set output file (supported image types: .jpg, .png, .bmp, .tga, .hdr)" << std::endl;
-  std::cout << "                  --num_subvoxels 8 - used for volume estimation" << std::endl;
+  std::cout << "                  --num_subvoxels 8  - used for volume estimation" << std::endl;
+  std::cout << "                  --georeference name.proj- projection file name, to output (geo)tif file. " << std::endl;
   // clang-format on
   exit(exit_code);
 }
@@ -119,7 +121,7 @@ struct Capsule
 /// 2. the files have the same mandatory data - so concatenate the attributes
 int main(int argc, char *argv[])
 {
-  ray::FileArgument tree_file, output_file;
+  ray::FileArgument tree_file, output_file, projection_file;
   ray::KeyChoice style({ "height", "volume", "surface_area", "plant_density" }); 
   ray::OptionalFlagArgument rgb_flag("rgb", 'r');
   ray::DoubleArgument pixel_width_arg(0.001, 100000.0), grid_width(0.001, 100000.0), max_brightness(0.000001, 100000000.0);
@@ -130,9 +132,10 @@ int main(int argc, char *argv[])
   ray::OptionalKeyValueArgument grid_width_option("grid_width", 'g', &grid_width);
   ray::OptionalKeyValueArgument max_brightness_option("max_colour", 'm', &max_brightness);
   ray::OptionalKeyValueArgument num_subvoxels_option("num_subvoxels", 'n', &num_subvoxels);
+  ray::OptionalKeyValueArgument projection_file_option("georeference", 'g', &projection_file);
 
-  const bool standard_format = ray::parseCommandLine(argc, argv, { &tree_file }, {&output_image_option, &resolution_option, &pixel_width_option, &grid_width_option, &max_brightness_option});
-  const bool variant_format = ray::parseCommandLine(argc, argv, { &tree_file, &style }, {&output_image_option, &resolution_option, &pixel_width_option, &grid_width_option, &num_subvoxels_option, &rgb_flag});
+  const bool standard_format = ray::parseCommandLine(argc, argv, { &tree_file }, {&output_image_option, &resolution_option, &pixel_width_option, &grid_width_option, &max_brightness_option, &projection_file_option});
+  const bool variant_format = ray::parseCommandLine(argc, argv, { &tree_file, &style }, {&output_image_option, &resolution_option, &pixel_width_option, &grid_width_option, &num_subvoxels_option, &rgb_flag, &projection_file_option});
   if (!standard_format && !variant_format)
   {
     usage();
@@ -461,6 +464,17 @@ int main(int argc, char *argv[])
     stbi_write_jpg(image_name, width, height, 4, (void *)&pixel_colours[0], 100);  // 100 is maximal quality
   else if (image_ext == "hdr")
     stbi_write_hdr(image_name, width, height, 3, &float_pixel_colours[0]);
+#if RAYLIB_WITH_TIFF 
+  else if (image_ext == "tif")
+  {
+    // obtain the origin offsets
+    const Eigen::Vector3d origin(0, 0, 0);
+    const Eigen::Vector3d pos = -(origin - min_bound);
+    const double x = pos[0], y = pos[1] + static_cast<double>(height) * pixel_width;
+    // generate the geotiff file
+    ray::writeGeoTiffFloat(image_file, width, height, &float_pixel_colours[0], pixel_width, false, projection_file.name(), x, y);
+  }
+#endif
   else 
   {
     std::cerr << "Error: output file extension " << image_ext << " not supported" << std::endl;

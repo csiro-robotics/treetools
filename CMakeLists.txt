@@ -26,6 +26,8 @@ ras_project(
 option(TREE_BUILD_DOXYGEN "Build doxgen documentation?" OFF)
 # Setup unit tests
 option(TREE_BUILD_TESTS "Build unit tests?" OFF)
+#option(WITH_TIFF "With libgeotiff support?" OFF)
+#ras_bool_to_int(WITH_TIFF)
 
 # Required packages.
 find_package(raycloudtools REQUIRED)
