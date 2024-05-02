@@ -338,8 +338,8 @@ int main(int argc, char *argv[])
     if (branch_data.isSet())
     {
       // 1. get branch IDs:
-      std::vector<Eigen::Vector4i> ids(tree.segments().size(), Eigen::Vector4i(0,0,0,0)); // seg id, branch order, branch, pos on branch
       int branch_number = 1;
+      std::vector<Eigen::Vector4i> ids(tree.segments().size(), Eigen::Vector4i(0,0,branch_number,0)); // seg id, branch order, branch, pos on branch
       for (size_t i = 0; i < tree.segments().size(); i++)
       {
         double max_score = -1;
