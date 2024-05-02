@@ -20,13 +20,13 @@ void usage(int exit_code = 1)
   // clang-format off
   std::cout << "Split a tree file around a criterion" << std::endl;
   std::cout << "usage:" << std::endl;
-  std::cout << "treesplit forest.txt radius 0.1        - split around trunk radius, or any other trunk user-attribute" << std::endl;
-  std::cout << "                     tree height 0.1   - split around tree height (or any other whole-tree attribute)" << std::endl;
-  std::cout << "                     plane 0,0,1       - split around horizontal plane at height 1" << std::endl;
-  std::cout << "                     colour 0,0,1      - split around colour green value 1" << std::endl;
-  std::cout << "                     box rx,ry,rz      - split around a centred box of the given radii" << std::endl;
-  std::cout << "                     cluster_width 10  - split into clusters of this max diameter" << std::endl;
-  std::cout << "                     per-tree          - one file per tree" << std::endl;
+  std::cout << "treesplit forest.txt radius 0.1         - split around trunk radius, or any other trunk user-attribute" << std::endl;
+  std::cout << "                     tree height 0.1    - split around tree height (or any other whole-tree attribute)" << std::endl;
+  std::cout << "                     plane 0,0,1        - split around horizontal plane at height 1" << std::endl;
+  std::cout << "                     colour 0,0,1       - split around colour green value 1" << std::endl;
+  std::cout << "                     box x,y rx,ry - split around an x,y,z centred box of the given radii" << std::endl;
+  std::cout << "                     cluster_width 10   - split into clusters of this max diameter" << std::endl;
+  std::cout << "                     per-tree           - one file per tree" << std::endl;
   // clang-format on
   exit(exit_code);
 }
@@ -41,14 +41,16 @@ int main(int argc, char *argv[])
 
   ray::DoubleArgument value(0.0, 10000.0), radius(0.0, 10000.0);
   ray::DoubleArgument cluster_size(0.0,1000.0);
-  ray::Vector3dArgument plane, colour, box;
-  ray::KeyValueChoice choice({ "plane", "colour", "radius", "box", "cluster_width"}, { &plane, &colour, &radius, &box, &cluster_size });
-
+  ray::Vector3dArgument plane, colour;
+  ray::Vector2dArgument box_centre, box_radius;
+  ray::TextArgument box_text("box");
+  ray::KeyValueChoice choice({ "plane", "colour", "radius", "cluster_width"}, { &plane, &colour, &radius, &cluster_size });
   const bool parsed = ray::parseCommandLine(argc, argv, { &forest_file, &choice });
+  const bool box_format = ray::parseCommandLine(argc, argv, { &forest_file, &box_text, &box_centre, &box_radius });
   const bool split_per_tree = ray::parseCommandLine(argc, argv, { &forest_file, &per_tree_text });
   bool attribute_trunk_format = false;
   bool attribute_tree_format = false;
-  if (!parsed && !split_per_tree)
+  if (!parsed && !split_per_tree && !box_format)
   {
     // split around an attribute defined on the trunk (the base segment)
     attribute_trunk_format = ray::parseCommandLine(argc, argv, { &forest_file, &attribute, &value });
@@ -169,12 +171,14 @@ int main(int argc, char *argv[])
     }
   }
   // split inside/outside a box
-  else if (choice.selectedKey() == "box")
+  else if (box_format)
   {
     for (auto &tree : forest.trees)
     {
+      Eigen::Vector2d b_centre = box_centre.value();
+      Eigen::Vector2d b_radius = box_radius.value();
       auto &pos = tree.segments()[0].tip;
-      if (std::abs(pos[0]) < box.value()[0] && std::abs(pos[1]) < box.value()[1] && std::abs(pos[2]) < box.value()[2])
+      if (std::abs(pos[0] - b_centre[0]) < b_radius[0] && std::abs(pos[1] - b_centre[1]) < b_radius[1])
       {
         forest_in.trees.push_back(tree);
       }
