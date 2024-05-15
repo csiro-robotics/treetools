@@ -32,6 +32,7 @@ void usage(int exit_code = 1)
   std::cout << "                  --resolution 512   - default resolution of longest axis" << std::endl;
   std::cout << "                  --pixel_width 0.1  - pixel width in metres as alternative to resolution setting" << std::endl;
   std::cout << "                  --grid_width 100   - fit to a square grid of this width, with one grid cell centre at 0,0" << std::endl;
+  std::cout << "                  --crop x,y,rx,ry   - crop to window centred at x,y with radius (half-width) rx,ry" << std::endl;
   std::cout << "                  --output image.hdr - set output file (supported image types: .jpg, .png, .bmp, .tga, .hdr)" << std::endl;
   std::cout << "                  --num_subvoxels 8  - used for volume estimation" << std::endl;
   std::cout << "                  --georeference name.proj- projection file name, to output (geo)tif file. " << std::endl;
@@ -126,16 +127,18 @@ int main(int argc, char *argv[])
   ray::OptionalFlagArgument rgb_flag("rgb", 'r');
   ray::DoubleArgument pixel_width_arg(0.001, 100000.0), grid_width(0.001, 100000.0), max_brightness(0.000001, 100000000.0);
   ray::IntArgument num_subvoxels(1,1000, 8), resolution(1, 20000, 512);
+  ray::Vector4dArgument crop_posrad;
   ray::OptionalKeyValueArgument output_image_option("output_image", 'o', &output_file);
   ray::OptionalKeyValueArgument pixel_width_option("pixel_width", 'p', &pixel_width_arg);
   ray::OptionalKeyValueArgument resolution_option("resolution", 'r', &resolution);
   ray::OptionalKeyValueArgument grid_width_option("grid_width", 'g', &grid_width);
+  ray::OptionalKeyValueArgument crop_option("crop", 'c', &crop_posrad);
   ray::OptionalKeyValueArgument max_brightness_option("max_colour", 'm', &max_brightness);
   ray::OptionalKeyValueArgument num_subvoxels_option("num_subvoxels", 'n', &num_subvoxels);
   ray::OptionalKeyValueArgument projection_file_option("georeference", 'g', &projection_file);
 
-  const bool standard_format = ray::parseCommandLine(argc, argv, { &tree_file }, {&output_image_option, &resolution_option, &pixel_width_option, &grid_width_option, &max_brightness_option, &projection_file_option});
-  const bool variant_format = ray::parseCommandLine(argc, argv, { &tree_file, &style }, {&output_image_option, &resolution_option, &pixel_width_option, &grid_width_option, &num_subvoxels_option, &rgb_flag, &projection_file_option});
+  const bool standard_format = ray::parseCommandLine(argc, argv, { &tree_file }, {&output_image_option, &grid_width_option, &resolution_option, &pixel_width_option, &crop_option, &max_brightness_option, &projection_file_option});
+  const bool variant_format = ray::parseCommandLine(argc, argv, { &tree_file, &style }, {&output_image_option, &grid_width_option, &resolution_option, &pixel_width_option, &crop_option, &num_subvoxels_option, &rgb_flag, &projection_file_option});
   if (!standard_format && !variant_format)
   {
     usage();
@@ -173,7 +176,17 @@ int main(int argc, char *argv[])
   }
   int width = (int)std::round(extent[0] / pixel_width);
   int height = (int)std::round(extent[1] / pixel_width);
-  if (grid_width_option.isSet()) // adjust min_bound to be well-aligned
+  if (crop_option.isSet()) // adjust min_bound to be well-aligned
+  {
+    Eigen::Vector4d pr = crop_posrad.value();
+    min_bound = Eigen::Vector3d(pr[0]-pr[2], pr[1]-pr[3], min_bound[2]);
+    max_bound = Eigen::Vector3d(pr[0]+pr[2], pr[1]+pr[3], max_bound[2]);
+    if (!pixel_width_option.isSet())
+      pixel_width = 2.0 * std::max(pr[2], pr[3]) / (double)resolution.value();
+    width = (int)std::round(2.0*pr[2]/pixel_width);
+    height = (int)std::round(2.0*pr[3]/pixel_width);
+  }
+  else if (grid_width_option.isSet()) // adjust min_bound to be well-aligned
   {
     Eigen::Vector3d mid = (min_bound + max_bound)/2.0;
     min_bound[0] = grid_width.value() * std::round(mid[0] / grid_width.value()) - 0.5*grid_width.value();
