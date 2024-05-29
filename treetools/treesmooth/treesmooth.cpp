@@ -16,7 +16,7 @@
 void usage(int exit_code = 1)
 {
   // clang-format off
-  std::cout << "Smooth the segments in the tree file, fully at the trunk and proportionally less with radius."
+  std::cout << "Smooth the segments in the tree file."
             << std::endl;
   std::cout << "To smooth further, run multiple times." << std::endl;
   std::cout << "usage:" << std::endl;
@@ -34,6 +34,8 @@ int main(int argc, char *argv[])
   {
     usage();
   }
+
+  double power = 0.0; // 1 will weight in proportion to radius, 2 in proportion to square radius.
 
   ray::ForestStructure forest;
   if (!forest.load(forest_file.name()))
@@ -56,10 +58,10 @@ int main(int argc, char *argv[])
     {
       children[tree.segments()[i].parent_id].push_back(static_cast<int>(i));
     }
-    const double full_rad_sqr = tree.segments()[0].radius * tree.segments()[0].radius;
+    const double full_w = std::pow(tree.segments()[0].radius, power);
 
     // smooth multiple times, in order to pass the information up/down the trees
-    const int num_iterations = 4;
+    const int num_iterations = 3;
     for (int iteration = 0; iteration < num_iterations; iteration++)
     {
       // store old tips so smooth is not segment order dependent
@@ -92,8 +94,7 @@ int main(int argc, char *argv[])
           double weight = 0.0;
           for (auto &child : children[i])
           {
-            const double rad = tree.segments()[child].radius;
-            const double rad_sqr = rad * rad;
+            const double rad_sqr = tree.segments()[child].radius * tree.segments()[child].radius;
             child_tip += old_tips[child] * rad_sqr;
             weight += rad_sqr;
           }
@@ -105,14 +106,14 @@ int main(int argc, char *argv[])
         // now average the child tip
         const Eigen::Vector3d dir = (child_tip - parent_tip).normalized();
         const Eigen::Vector3d straight_tip = parent_tip + dir * (segment_tip - parent_tip).dot(dir);
-        const double rad_sqr = segment.radius * segment.radius;
-        const double blend = 0.5 * rad_sqr / full_rad_sqr;
+        const double w = std::pow(segment.radius, power);
+        const double blend = 0.5 * w / full_w;
         const Eigen::Vector3d new_tip = segment_tip * (1.0 - blend) + straight_tip * blend;
         if (segment.parent_id == -1)
         {
           // 50% otherwise it is disproportionately pliant
-          root_shift += (segment.tip - new_tip) * 0.5 * rad_sqr;
-          root_weight += rad_sqr;
+          root_shift += (segment.tip - new_tip) * 0.5 * w;
+          root_weight += w;
         }
         segment.tip = new_tip;
       }

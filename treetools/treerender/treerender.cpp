@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
   ray::DoubleArgument pixel_width_arg(0.001, 100000.0), grid_width(0.001, 100000.0), max_brightness(0.000001, 100000000.0);
   ray::IntArgument num_subvoxels(1,1000, 8), resolution(1, 20000, 512);
   ray::Vector4dArgument crop_posrad;
-  ray::OptionalKeyValueArgument output_image_option("output_image", 'o', &output_file);
+  ray::OptionalKeyValueArgument output_image_option("output", 'o', &output_file);
   ray::OptionalKeyValueArgument pixel_width_option("pixel_width", 'p', &pixel_width_arg);
   ray::OptionalKeyValueArgument resolution_option("resolution", 'r', &resolution);
   ray::OptionalKeyValueArgument grid_width_option("grid_width", 'g', &grid_width);
