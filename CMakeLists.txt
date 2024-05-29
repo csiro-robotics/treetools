@@ -29,16 +29,21 @@ option(TREE_BUILD_TESTS "Build unit tests?" OFF)
 #option(WITH_TIFF "With libgeotiff support?" OFF)
 #ras_bool_to_int(WITH_TIFF)
 
+if(WITH_TIFF)
+  find_package(PROJ REQUIRED COMPONENTS proj)
+endif(WITH_TIFF)
+
 # Required packages.
 find_package(raycloudtools REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(libnabo REQUIRED)
 find_package(OpenMP REQUIRED)
 find_package(Threads)
-find_package(PROJ REQUIRED COMPONENTS proj)
 
 set(TREETOOLS_INCLUDE ${EIGEN3_INCLUDE_DIRS} ${libnabo_INCLUDE_DIRS} ${raycloudtools_INCLUDE_DIRS})
 set(TREETOOLS_LINK ${libnabo_LIBRARIES} raycloud::raylib Threads::Threads)
+
+
 
 message(STATUS "TREETOOLS_INCLUDE: ${TREETOOLS_INCLUDE}")
 message(STATUS "TREETOOLS_LINK: ${TREETOOLS_LINK}")
