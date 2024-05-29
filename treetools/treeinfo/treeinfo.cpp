@@ -64,7 +64,7 @@ struct Metrics
     double min;
     double max;
   };
-  Stats volume, DBH, height, strength, dominance, angle, bend, dimension, crown_radius, branch_radius;
+  Stats volume, DBH, height, strength, dominance, angle, bend, dimension, crown_radius, branch_radius, posx, posy;
 
   void print(size_t numtrees, int num_branched_trees, int num_stat_trees, int num_total)
   {
@@ -73,6 +73,7 @@ struct Metrics
     std::cout << "Total:" << std::endl;
     std::cout << "              volume of wood: " << volume.total << " m^3.\tMean,min,max: " << volume.total / num_trees << ", " << volume.min << ", " << volume.max << " m^3" << std::endl;
     std::cout << " mass of wood (at 0.5 T/m^3): " << 0.5 * volume.total << " Tonnes.\tMean,min,max: " << 500.0 * volume.total / num_trees << ", " << 500.0 * volume.min << ", " << 500.0 * volume.max << " kg" << std::endl;
+    std::cout << "                    location: " << posx.total/num_trees << ", " << posy.total/num_trees << ", min: " << posx.min << ", " << posy.min << ", max: " << posx.max << ", " << posy.max << std::endl; 
     std::cout << std::endl;
     std::cout << "Per-tree mean, min, max:" << std::endl;
     std::cout << "          trunk diameter (DBH) (m): " << DBH.total / num_trees << ",\t" << DBH.min << ",\t" << DBH.max << std::endl;
@@ -311,6 +312,8 @@ int main(int argc, char *argv[])
     {
       tree.attributeNames().push_back(new_at);
     }
+    metrics.posx.update(tree.segments()[0].tip[0]);
+    metrics.posy.update(tree.segments()[0].tip[1]);
     for (auto &segment : tree.segments())
     {
       metrics.branch_radius.update(segment.radius);

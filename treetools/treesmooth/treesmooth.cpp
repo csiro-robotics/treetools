@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
     const double full_w = std::pow(tree.segments()[0].radius, power);
 
     // smooth multiple times, in order to pass the information up/down the trees
-    const int num_iterations = 3;
+    const int num_iterations = 2;
     for (int iteration = 0; iteration < num_iterations; iteration++)
     {
       // store old tips so smooth is not segment order dependent
