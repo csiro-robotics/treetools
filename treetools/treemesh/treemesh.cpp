@@ -22,14 +22,15 @@ void usage(int exit_code = 1)
   std::cout << "                    --rescale_colours - rescale each colour channel independently to fit in range" << std::endl;
   std::cout << "                    --view   - views the output immediately assuming meshlab is installed" << std::endl;
   std::cout << "                    --uvs - generate uvs and points to a wood_texture.png which needs to be created. Works in CloudCompare, not Meshlab." << std::endl;
-  std::cout << "                    --capsules - generate branch segments as the individual capsules" << std::endl;
+  std::cout << "                    --capsules  - generate branch segments as the individual capsules" << std::endl;
+  std::cout << "                    --cylinders - generate branch segments as the individual cylinders" << std::endl;
   // clang-format on
   exit(exit_code);
 }
 
 // forward declarations
 void addCapsule(ray::Mesh &mesh, const Eigen::Vector3d &pos1, const Eigen::Vector3d &pos2, double radius,
-                ray::RGBA rgba);
+                ray::RGBA rgba, double cap_scale);
 void addCapsulePiece(ray::Mesh &mesh, int wind, const Eigen::Vector3d &pos, const Eigen::Vector3d &side1,
                      const Eigen::Vector3d &side2, double radius, const ray::RGBA &rgba, bool cap_start, bool cap_end);
 void generateSmoothMesh(ray::Mesh &mesh, const ray::ForestStructure &forest, int red_id, double red_scale,
@@ -42,15 +43,15 @@ int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file;
   ray::DoubleArgument max_brightness;
-  ray::OptionalFlagArgument view("view", 'v'), capsules_option("capsules", 'c'), uvs_option("uvs", 'u');
+  ray::OptionalFlagArgument view("view", 'v'), capsules_option("capsules", 'c'), cylinders_option("cylinders", 'y'), uvs_option("uvs", 'u');
   ray::Vector3dArgument max_colour;
   ray::OptionalKeyValueArgument max_brightness_option("max_colour", 'm', &max_brightness);
   ray::OptionalKeyValueArgument max_colour_option("max_colour", 'm', &max_colour);
 
   const bool max_brightness_format =
-    ray::parseCommandLine(argc, argv, { &forest_file }, { &max_brightness_option, &view, &capsules_option, &uvs_option });
+    ray::parseCommandLine(argc, argv, { &forest_file }, { &max_brightness_option, &view, &capsules_option, &cylinders_option, &uvs_option });
   const bool max_colour_format =
-    ray::parseCommandLine(argc, argv, { &forest_file }, { &max_colour_option, &view, &capsules_option, &uvs_option });
+    ray::parseCommandLine(argc, argv, { &forest_file }, { &max_colour_option, &view, &capsules_option, &cylinders_option, &uvs_option });
   if (!max_brightness_format && !max_colour_format)
   {
     usage();
@@ -133,8 +134,9 @@ int main(int argc, char *argv[])
   }
   ray::Mesh mesh;
   // if rendering as individual capsules
-  if (capsules_option.isSet())
+  if (capsules_option.isSet() || cylinders_option.isSet())
   {
+    double cap_scale = capsules_option.isSet() ? 1.0 : 0.0;
     for (auto &tree : forest.trees)
     {
       // for each segment
@@ -153,7 +155,7 @@ int main(int argc, char *argv[])
           rgba.green = uint8_t(std::min(green_scale * segment.attributes[red_id + 1], 255.0));
           rgba.blue = uint8_t(std::min(blue_scale * segment.attributes[red_id + 2], 255.0));
         }
-        addCapsule(mesh, segment.tip, tree.segments()[segment.parent_id].tip, segment.radius, rgba);
+        addCapsule(mesh, segment.tip, tree.segments()[segment.parent_id].tip, segment.radius, rgba, cap_scale);
       }
     }
   }
@@ -178,7 +180,7 @@ int main(int argc, char *argv[])
 /// @param radius radius of capsule
 /// @param rgba colour of capsule
 void addCapsule(ray::Mesh &mesh, const Eigen::Vector3d &pos1, const Eigen::Vector3d &pos2, double radius,
-                ray::RGBA rgba)
+                ray::RGBA rgba, double cap_scale)
 {
   const int n = static_cast<int>(mesh.vertices().size());
   const Eigen::Vector3i N(n, n, n);
@@ -190,8 +192,8 @@ void addCapsule(ray::Mesh &mesh, const Eigen::Vector3d &pos1, const Eigen::Vecto
   const Eigen::Vector3d side1 = dir.cross(diag).normalized();
   const Eigen::Vector3d side2 = side1.cross(dir);
 
-  vertices[12] = pos1 - radius * dir;
-  vertices[13] = pos2 + radius * dir;
+  vertices[12] = pos1 - radius * dir * cap_scale;
+  vertices[13] = pos2 + radius * dir * cap_scale;
   for (int i = 0; i < 6; i++)
   {
     const double pi = 3.14156;
