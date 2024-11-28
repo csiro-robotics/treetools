@@ -280,11 +280,11 @@ int main(int argc, char *argv[])
   const int angle_id = num_attributes + 6;
   const int children_id = num_attributes + 7;
   // optional with branch_data
-  const int branch_id = num_tree_attributes + 8;
-  const int branch_order_id = num_tree_attributes + 9;
-  const int extension_id = num_tree_attributes + 10;
-  const int pos_in_branch_id = num_tree_attributes + 11;
-  const int segment_length_id = num_tree_attributes + 12;
+  const int branch_id = num_attributes + 8;
+  const int branch_order_id = num_attributes + 9;
+  const int extension_id = num_attributes + 10;
+  const int pos_in_branch_id = num_attributes + 11;
+  const int segment_length_id = num_attributes + 12;
 
   auto &att = forest.trees[0].attributeNames();
   for (auto &new_at : new_attributes)
