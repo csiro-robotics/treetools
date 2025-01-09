@@ -125,7 +125,8 @@ int main(int argc, char *argv[])
   double mean_growth = 0;
   double max_growth = 0.0;
   double min_growth = std::numeric_limits<double>::max();
-  double mean_overlap_percent = 0;
+  double total_overlap = 0;
+  double total_overlap_weight = 0;
   double total_volume = 0;
   double mean_added_volume = 0;
   double mean_removed_volume = 0;
@@ -151,6 +152,7 @@ int main(int argc, char *argv[])
     double scale_mid = 1.0;
     double max_overlap = 0.0;
     double max_overlap_percent = 0.0;
+    double max_overlap_weight = 0.0;
     if (include_growth.isSet())
     {
       double scale_range = 0.5;  // actually the half-range
@@ -158,17 +160,20 @@ int main(int argc, char *argv[])
       while (scale_range > 0.02)
       {
         max_overlap_percent = 0.0;
+        max_overlap_weight = 0.0;
         double max_overlap_scale = 0;
         for (double rad_scale = scale_mid - scale_range; rad_scale <= scale_mid + scale_range;
              rad_scale += scale_range / divisions)
         {
           const double overlap = treeOverlapVolume(tree1, tree2, rad_scale);
-          const double overlap_percent = overlap / (rad_scale * rad_scale * tree1_volume + tree2_volume - overlap);
+          const double overlap_weight = (rad_scale * rad_scale * tree1_volume + tree2_volume - overlap);
+          const double overlap_percent = overlap / overlap_weight;
           if (overlap_percent > max_overlap_percent)
           {
             max_overlap = overlap;
             max_overlap_percent = overlap_percent;
             max_overlap_scale = rad_scale;
+            max_overlap_weight = overlap_weight;
           }
         }
         if (max_overlap_scale == 0.0)
@@ -185,10 +190,12 @@ int main(int argc, char *argv[])
     else
     {
       max_overlap = treeOverlapVolume(tree1, tree2, scale_mid);
-      max_overlap_percent = max_overlap / (tree1_volume + tree2_volume - max_overlap);
+      max_overlap_weight = (tree1_volume + tree2_volume - max_overlap);
+      max_overlap_percent = max_overlap / max_overlap_weight;
     }
 
-    mean_overlap_percent += max_overlap_percent;
+    total_overlap += max_overlap;
+    total_overlap_weight += max_overlap_weight;
 
     // now we have a scale match, we need to look for change in volume:
     double removed_volume = std::max(0.0, scale_mid * scale_mid * tree1_volume - max_overlap);
@@ -212,8 +219,7 @@ int main(int argc, char *argv[])
   total_volume /= static_cast<double>(num_matches);
   mean_added_volume /= static_cast<double>(num_matches);
   mean_removed_volume /= static_cast<double>(num_matches);
-  mean_overlap_percent /= static_cast<double>(num_matches);
-  std::cout << " mean tree volume overlap: " << 100.0 * mean_overlap_percent << "%" << std::endl;
+  std::cout << " tree overlap: " << 100.0 * (total_overlap / total_overlap_weight) << "%" << std::endl;
   if (include_growth.isSet())
   {
     std::cout << " mean radius growth: " << 100.0 * (mean_growth - 1.0)
