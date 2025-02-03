@@ -18,8 +18,8 @@ void usage(int exit_code = 1)
   std::cout << "usage:" << std::endl;
   std::cout << "treediff forest1.txt forest2.txt - difference information from forest1 to forest2" << std::endl;
   std::cout << "                            --include_growth - estimates radius growth of tree (slower)" << std::endl;
-  std::cout << "                         --surface_area_only - estimates error between surfaces- Root Mean Square per surface patch" << std::endl;
-  // clang-format on
+  std::cout << "                              --surface_area - estimates error between surfaces- Root Mean Square per surface patch" << std::endl;
+  // clang-format on   
   exit(exit_code);
 }
 
@@ -64,14 +64,98 @@ double getMinDistanceSqr(const Eigen::Vector3d &start1, const Eigen::Vector3d &e
 
 double sqr(double x) { return x*x; }
 
+void printSurfaceRMSE(const std::vector<ray::TreeStructure> &trees1, const std::vector<ray::TreeStructure> &trees2, const std::vector<int> &trunk_matches)
+{
+  std::vector<Eigen::Vector3d> points1, points2;
+  std::vector<double> radii1, radii2;
+  std::vector<Eigen::Vector3d> parents1, parents2;
+  const double rad_scale = 4.0; // how much to match the radius when finding nearest neighbours
+  for (auto &tree: trees1)
+  {
+    for (int i = 1; i<(int)tree.segments().size(); i++)
+    {
+      auto &seg = tree.segments()[i];
+      points1.push_back(seg.tip); 
+      radii1.push_back(seg.radius);
+      parents1.push_back(tree.segments()[seg.parent_id].tip);
+    }
+  }
+  for (int t = 0; t<(int)trees1.size(); t++)
+  {
+    auto &tree = trees2[trunk_matches[t]];
+    for (int i = 1; i<(int)tree.segments().size(); i++)
+    {
+      auto &seg = tree.segments()[i];
+      points2.push_back(seg.tip); 
+      radii2.push_back(seg.radius);
+      parents2.push_back(tree.segments()[seg.parent_id].tip);
+    }
+  }
+  int search_size = 3;
+  size_t q_size = points1.size();
+  size_t p_size = points2.size();
+  Nabo::NNSearchD *nns;
+  Eigen::MatrixXd points_q(4, q_size);
+  for (size_t i = 0; i < q_size; i++)
+  {
+    points_q.col(i) << points1[i], radii1[i]*rad_scale;
+  }
+  Eigen::MatrixXd points_p(4, p_size);
+  for (size_t i = 0; i < p_size; i++)
+  {
+    points_p.col(i) << points2[i], radii2[i]*rad_scale;
+  }
+  nns = Nabo::NNSearchD::createKDTreeLinearHeap(points_p, 4);
+
+  // Run the search
+  Eigen::MatrixXi indices;
+  Eigen::MatrixXd dists2;
+  indices.resize(search_size, q_size);
+  dists2.resize(search_size, q_size);
+  nns->knn(points_q, indices, dists2, search_size, ray::kNearestNeighbourEpsilon, 0, 1.0);
+  delete nns;
+
+  double total_squared_error = 0.0;
+  double total_weight = 0.0;
+  for (int i = 0; i < (int)q_size; i++)
+  {
+    double min_scaled_dist_sqr = 1e10; // we use a scaled radius for finding the best match
+    double min_dist_sqr = 0.0;        // but a normal radius for finding the actual square distance
+    double min_weight = 0.0;
+    for (int k = 0; k < search_size && indices(k, i) != Nabo::NNSearchD::InvalidIndex; k++)
+    {
+      int j = indices(k, i);
+      double distance_sqr = getMinDistanceSqr(points1[i], parents1[i], points2[j], parents2[j]);
+      double rad_sqr = sqr(radii1[i] - radii2[j]);
+      double scaled_rad_sqr = rad_sqr * rad_scale*rad_scale;
+      const double pi = 3.1415926;
+      double surface_area1 = pi*sqr(radii1[i])*(points1[i]-parents1[i]).norm();
+      double surface_area2 = pi*sqr(radii2[j])*(points2[j]-parents2[j]).norm();
+      double weight = surface_area1 + surface_area2;
+      double dist_sqr = distance_sqr + rad_sqr;
+      double scaled_dist_sqr = distance_sqr + scaled_rad_sqr;
+      if (scaled_dist_sqr < min_scaled_dist_sqr)
+      {
+        min_scaled_dist_sqr = scaled_dist_sqr;
+        min_dist_sqr = dist_sqr;
+        min_weight = weight;
+      }
+    }
+    total_weight += min_weight;
+    total_squared_error += min_dist_sqr*min_weight;
+  }
+  double root_mean_sqr = std::sqrt(total_squared_error / total_weight);
+  std::cout << " for overlapping trunks: approximate surface RMSE: " << root_mean_sqr << " m" << std::endl;
+}
+
 /// This method outputs the difference between two tree files. In particular, what percentage of
 /// trees overlap each other, and statistics of the similarity of the set of overlapping trees.
 int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file1, forest_file2;
   ray::OptionalFlagArgument include_growth("include_growth", 'i');
-  ray::OptionalFlagArgument surface_area_only("surface_area_only", 's');
-  const bool parsed = ray::parseCommandLine(argc, argv, { &forest_file1, &forest_file2 }, { &include_growth, &surface_area_only });
+  ray::OptionalFlagArgument surface_area("surface_area", 's');
+  const bool parsed = ray::parseCommandLine(argc, argv, { &forest_file1, &forest_file2 }, { &include_growth, &surface_area });
   if (!parsed)
   {
     usage();
@@ -141,94 +225,9 @@ int main(int argc, char *argv[])
     return 0;
   }
 
-  if (surface_area_only.isSet())
+  if (surface_area.isSet())
   {
-    std::vector<Eigen::Vector3d> points1, points2;
-    std::vector<double> radii1, radii2;
-    std::vector<Eigen::Vector3d> parents1, parents2;
-    const double rad_scale = 4.0; // how much to match the radius when finding nearest neighbours
-    for (auto &tree: trees1)
-    {
-      for (int i = 1; i<(int)tree.segments().size(); i++)
-      {
-        auto &seg = tree.segments()[i];
-        points1.push_back(seg.tip); 
-        radii1.push_back(seg.radius);
-        parents1.push_back(tree.segments()[seg.parent_id].tip);
-      }
-    }
-    for (int t = 0; t<(int)trees1.size(); t++)
-    {
-      auto &tree = trees2[trunk_matches[t]];
-      for (int i = 1; i<(int)tree.segments().size(); i++)
-      {
-        auto &seg = tree.segments()[i];
-        points2.push_back(seg.tip); 
-        radii2.push_back(seg.radius);
-        parents2.push_back(tree.segments()[seg.parent_id].tip);
-      }
-    }
-    int search_size = 3;
-    size_t q_size = points1.size();
-    size_t p_size = points2.size();
-    Nabo::NNSearchD *nns;
-    Eigen::MatrixXd points_q(4, q_size);
-    for (size_t i = 0; i < q_size; i++)
-    {
-      points_q.col(i) << points1[i], radii1[i]*rad_scale;
-    }
-    Eigen::MatrixXd points_p(4, p_size);
-    for (size_t i = 0; i < p_size; i++)
-    {
-      points_p.col(i) << points2[i], radii2[i]*rad_scale;
-    }
-    nns = Nabo::NNSearchD::createKDTreeLinearHeap(points_p, 4);
-
-    // Run the search
-    Eigen::MatrixXi indices;
-    Eigen::MatrixXd dists2;
-    indices.resize(search_size, q_size);
-    dists2.resize(search_size, q_size);
-    nns->knn(points_q, indices, dists2, search_size, ray::kNearestNeighbourEpsilon, 0, 1.0);
-    delete nns;
-
-    double total_squared_error = 0.0;
-    double total_weight = 0.0;
-    for (int i = 0; i < (int)q_size; i++)
-    {
-      double min_scaled_dist_sqr = 1e10; // we use a scaled radius for finding the best match
-      double min_dist_sqr = 0.0;        // but a normal radius for finding the actual square distance
-      double min_weight = 0.0;
-      for (int k = 0; k < search_size && indices(k, i) != Nabo::NNSearchD::InvalidIndex; k++)
-      {
-        int j = indices(k, i);
-        double distance_sqr = getMinDistanceSqr(points1[i], parents1[i], points2[j], parents2[j]);
-        double rad_sqr = sqr(radii1[i] - radii2[j]);
-        double scaled_rad_sqr = rad_sqr * rad_scale*rad_scale;
-        const double pi = 3.1415926;
-        double surface_area1 = pi*sqr(radii1[i])*(points1[i]-parents1[i]).norm();
-        double surface_area2 = pi*sqr(radii2[j])*(points2[j]-parents2[j]).norm();
-        double weight = surface_area1 + surface_area2;
-        double dist_sqr = distance_sqr + rad_sqr;
-        double scaled_dist_sqr = distance_sqr + scaled_rad_sqr;
-        if (scaled_dist_sqr < min_scaled_dist_sqr)
-        {
-          min_scaled_dist_sqr = scaled_dist_sqr;
-          min_dist_sqr = dist_sqr;
-          min_weight = weight;
-        }
-      }
-      total_weight += min_weight;
-      total_squared_error += min_dist_sqr*min_weight;
-    }
-    double root_mean_sqr = std::sqrt(total_squared_error / total_weight);
-    std::cout << " For overlapping trunks: approximate surface RMSE: " << root_mean_sqr << " m" << std::endl;
-
-
-    // Problems:
-    // 1. it is not symmetric. p's closest neighbours are not the same as the set of q's closest neighbours
-    // A: users could run it twice, once in each direction
-    return 1;
+    printSurfaceRMSE(trees1, trees2, trunk_matches);
   }
 
 
@@ -329,7 +328,7 @@ int main(int argc, char *argv[])
   total_volume /= static_cast<double>(num_matches);
   mean_added_volume /= static_cast<double>(num_matches);
   mean_removed_volume /= static_cast<double>(num_matches);
-  std::cout << " tree overlap: " << 100.0 * (total_overlap / total_overlap_weight) << "%" << std::endl;
+  std::cout << " tree overlap (Intersection Over Union): " << 100.0 * (total_overlap / total_overlap_weight) << "%" << std::endl;
   if (include_growth.isSet())
   {
     std::cout << " mean radius growth: " << 100.0 * (mean_growth - 1.0)
