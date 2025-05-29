@@ -108,10 +108,10 @@ int main(int argc, char *argv[])
     int i = 0;
     for (auto &tree : forest.trees)
     {
-      i++;
       ray::ForestStructure new_tree;
       new_tree.trees.push_back(tree);
       new_tree.save(forest_file.nameStub() + "_" + std::to_string(i) + ".txt");
+      i++;
     }
     return 0;
   }
