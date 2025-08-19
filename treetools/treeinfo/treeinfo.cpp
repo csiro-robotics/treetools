@@ -32,6 +32,9 @@ void usage(int exit_code = 1)
   std::cout << "  crown_radius: approximate radius of crown" << std::endl;
   std::cout << "  dimension: dimension of branch lengths" << std::endl;
   std::cout << "  monocotal: how strongly the tree appears to be a palm" << std::endl;
+  std::cout << "  DBH: diameter at breast height" << std::endl;
+  std::cout << "  bend: how much the main stem bends (standard deviation from straight line / length)" << std::endl;
+  std::cout << "  branch_slope: how much the stem leans" << std::endl;
   std::cout << "Output file fields per segment (/ on root segment):" << std::endl;
   std::cout << "  volume: volume of segment  / total tree volume" << std::endl;
   std::cout << "  diameter: diameter of segment / max diameter on tree" << std::endl;
@@ -40,7 +43,6 @@ void usage(int exit_code = 1)
   std::cout << "  min_strength: minimum strength between this segment and root" << std::endl;
   std::cout << "  dominance: a1/(a1+a2) for first and second largest child branches / mean for tree" << std::endl;
   std::cout << "  angle: angle between branches at each branch point / mean branch angle" << std::endl;
-  std::cout << "  bend: bend of main trunk (standard deviation from straight line / length)" << std::endl;
   std::cout << "  children: number of children per branch / mean for tree" << std::endl;
   std::cout << "Use treecolour 'field' to colour per-segment or treecolour trunk 'field' to colour per tree from root segment." << std::endl;
   std::cout << "Then use treemesh to render based on this colour output." << std::endl;
