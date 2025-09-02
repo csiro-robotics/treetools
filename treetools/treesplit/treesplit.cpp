@@ -26,6 +26,7 @@ void usage(int exit_code = 1)
   std::cout << "                     colour 0,0,1       - split around colour green value 1" << std::endl;
   std::cout << "                     box x,y rx,ry - split around an x,y,z centred box of the given radii" << std::endl;
   std::cout << "                     cluster_width 10   - split into clusters of this max diameter" << std::endl;
+  std::cout << "                     posts 0.1          - splits out trees that are probably posts of the given diameter (lamp posts, power posts etc)" << std::endl;
   std::cout << "                     per-tree           - one file per tree" << std::endl;
   // clang-format on
   exit(exit_code);
@@ -40,11 +41,11 @@ int main(int argc, char *argv[])
   ray::Vector3dArgument coord;
 
   ray::DoubleArgument value(0.0, 10000.0), radius(0.0, 10000.0);
-  ray::DoubleArgument cluster_size(0.0,1000.0);
+  ray::DoubleArgument cluster_size(0.0,1000.0), post_diameter(0.01, 100.0, 0.1);
   ray::Vector3dArgument plane, colour;
   ray::Vector2dArgument box_centre, box_radius;
   ray::TextArgument box_text("box");
-  ray::KeyValueChoice choice({ "plane", "colour", "radius", "cluster_width"}, { &plane, &colour, &radius, &cluster_size });
+  ray::KeyValueChoice choice({ "plane", "colour", "radius", "cluster_width", "posts"}, { &plane, &colour, &radius, &cluster_size, &post_diameter });
   const bool parsed = ray::parseCommandLine(argc, argv, { &forest_file, &choice });
   const bool box_format = ray::parseCommandLine(argc, argv, { &forest_file, &box_text, &box_centre, &box_radius });
   const bool split_per_tree = ray::parseCommandLine(argc, argv, { &forest_file, &per_tree_text });
@@ -130,6 +131,90 @@ int main(int argc, char *argv[])
       }
     }
   }
+  else if (choice.selectedKey() == "posts")
+  {
+    double min_rad = post_diameter.value() * 0.5 * 0.5;
+    double max_rad = post_diameter.value() * 0.5 * 2.0;
+    std::vector<double> max_widths;
+    for (auto &tree : forest.trees)
+    {
+      double rad = tree.segments()[0].radius;
+      bool is_post = false;
+      double max_width = 0.0;
+      if (rad > min_rad && rad < max_rad) // first filter on radius
+      {
+        // now get height of first branch point....
+        std::vector<std::vector<int> > children(tree.segments().size());
+        double max_height = 0;
+        for (size_t i = 0; i<tree.segments().size(); i++)
+        {
+          Eigen::Vector3d offset = tree.segments()[i].tip - tree.segments()[0].tip;
+          double h = offset[2];
+          offset[2] = 0.0;
+          max_width = std::max(max_width, offset.norm());
+          if (offset.norm() < 5.0) // this condition prevents powerlines from being exluded if the lines go uphill
+            max_height = std::max(max_height, h);
+          if (tree.segments()[i].parent_id != -1)
+          {
+            children[tree.segments()[i].parent_id].push_back(static_cast<int>(i));
+          }
+        }    
+
+        int id = 0;
+        while (children[id].size() > 0 && children[id].size() < 2)
+        {
+          int id2 = children[id][0];
+          Eigen::Vector3d offset = tree.segments()[id2].tip - tree.segments()[0].tip;
+          offset[2] = 0.0;
+          if (offset.norm() > 0.4)
+            break;
+          id = id2;
+        }    
+        Eigen::Vector3d offset = tree.segments()[id].tip - tree.segments()[0].tip;
+        if (offset[2] > 1.8) // 2nd filter is on height before 'branching' or becoming non-vertical
+        {
+          // posts shouldn't have a large height difference between the first branch point and the top
+          double top_range = (max_height - tree.segments()[id].tip[2]) / offset[2];
+          if (top_range < 0.66)
+            is_post = true;
+        }
+      }
+
+      if (is_post)
+      {
+        forest_in.trees.push_back(tree);
+        max_widths.push_back(max_width);
+      }
+      else
+      {
+        forest_out.trees.push_back(tree);
+      }
+    }
+    // also output as an annotations file
+    std::ofstream ofs(forest_file.nameStub() + "_annotations.txt");
+    ofs << "{\n";
+    ofs << "  \"annotations\": [\n";
+    for (int i = 0; i<(int)forest_in.trees.size(); i++)
+    {
+      bool transmission = max_widths[i] > 5.0;
+      auto &tree = forest_in.trees[i];
+      ofs << "    {\n";
+      ofs << "      \"position\": {\n";
+      ofs << "        \"x\": " << tree.segments()[0].tip[0] << ",\n";
+      ofs << "        \"y\": " << tree.segments()[0].tip[1] << ",\n";
+      ofs << "        \"z\": " << tree.segments()[0].tip[2] << "\n";
+      ofs << "      },\n";
+      ofs << "      \"title\": \"" << (transmission ? "Transmission post\",\n" : "Post\",\n");
+      ofs << "      \"description\": \"" << (transmission ? "Transmission lines post\",\n" : "General post detected\",\n");
+      ofs << "      \"id\": " << i+1 << "\n";
+      if (i == (int)forest_in.trees.size()-1)
+        ofs << "    }\n";
+      else
+        ofs << "    },\n";
+    }
+    ofs << "  ]\n";
+    ofs << "}\n";
+  }  
   // split around a user-defined plane
   else if (choice.selectedKey() == "plane")
   {
