@@ -133,8 +133,8 @@ int main(int argc, char *argv[])
   }
   else if (choice.selectedKey() == "posts")
   {
-    double min_rad = post_diameter.value() * 0.5 * 0.5;
-    double max_rad = post_diameter.value() * 0.5 * 2.0;
+    double min_rad = post_diameter.value() * 0.5 * 0.25;
+    double max_rad = post_diameter.value() * 0.5 * 4.0;
     std::vector<double> max_widths;
     for (auto &tree : forest.trees)
     {
@@ -161,9 +161,19 @@ int main(int argc, char *argv[])
         }    
 
         int id = 0;
-        while (children[id].size() > 0 && children[id].size() < 2)
+        while (children[id].size() > 0)
         {
-          int id2 = children[id][0];
+          double largest_r = 0.0;
+          int largest_i = 0;
+          for (int i = 0; i<children[id].size(); i++)
+          {
+            if (tree.segments()[children[id][i]].radius >= largest_r)
+            {
+              largest_r = tree.segments()[children[id][i]].radius;
+              largest_i = i;
+            }
+          }
+          int id2 = children[id][largest_i];
           Eigen::Vector3d offset = tree.segments()[id2].tip - tree.segments()[0].tip;
           offset[2] = 0.0;
           if (offset.norm() > 0.4)
@@ -171,11 +181,15 @@ int main(int argc, char *argv[])
           id = id2;
         }    
         Eigen::Vector3d offset = tree.segments()[id].tip - tree.segments()[0].tip;
-        if (offset[2] > 1.8) // 2nd filter is on height before 'branching' or becoming non-vertical
+        if (offset[2] > 2.8) // 2nd filter is on height before 'branching' or becoming non-vertical
         {
-          // posts shouldn't have a large height difference between the first branch point and the top
-          double top_range = (max_height - tree.segments()[id].tip[2]) / offset[2];
-          if (top_range < 0.66)
+          // now do power poles.... based on percentag of splits???
+          int num_segments = tree.segments().size();
+          int num_1_child = 0;
+          for (auto &childs: children)
+            if (childs.size() == 1)
+              num_1_child++;
+          if ((double)num_1_child / (double)num_segments > 0.85)
             is_post = true;
         }
       }
@@ -190,6 +204,7 @@ int main(int argc, char *argv[])
         forest_out.trees.push_back(tree);
       }
     }
+    std::cout << forest_in.trees.size() << " posts identified" << std::endl;
     // also output as an annotations file
     std::ofstream ofs(forest_file.nameStub() + "_annotations.txt");
     ofs << "{\n";
@@ -214,6 +229,7 @@ int main(int argc, char *argv[])
     }
     ofs << "  ]\n";
     ofs << "}\n";
+    ofs.close();
   }  
   // split around a user-defined plane
   else if (choice.selectedKey() == "plane")

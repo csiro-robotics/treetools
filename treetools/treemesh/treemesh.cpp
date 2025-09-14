@@ -168,7 +168,8 @@ int main(int argc, char *argv[])
   // for convenience we can view the results immediately
   if (view.isSet())
   {
-    return system(("meshlab " + forest_file.nameStub() + "_mesh.ply").c_str());
+    std::string command = "QT_QPA_PLATFORM=xcb meshlab " + forest_file.nameStub() + "_mesh.ply";
+    return system(command.c_str());    
   }
   return 0;
 }
