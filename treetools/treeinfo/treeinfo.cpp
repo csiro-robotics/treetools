@@ -243,7 +243,7 @@ int main(int argc, char *argv[])
 
 
   const int num_tree_attributes = static_cast<int>(forest.trees[0].treeAttributeNames().size());
-  const std::vector<std::string> new_tree_attributes = { "height", "crown_radius", "dimension", "monocotal", "DBH", "bend", "branch_slope" };
+  std::vector<std::string> new_tree_attributes = { "height", "crown_radius", "dimension", "monocotal", "DBH", "bend", "branch_slope" };
   const int height_id = num_tree_attributes + 0;
   const int crown_radius_id = num_tree_attributes + 1;
   const int dimension_id = num_tree_attributes + 2;
@@ -253,12 +253,13 @@ int main(int argc, char *argv[])
   const int branch_slope_id = num_tree_attributes + 6;
 
   auto &tree_att = forest.trees[0].treeAttributeNames();
-  for (auto &new_at : new_tree_attributes)
+  for (int i = 0; i<(int)new_tree_attributes.size(); i++)
   {
+    auto &new_at = new_tree_attributes[i];
     if (std::find(tree_att.begin(), tree_att.end(), new_at) != tree_att.end())
     {
-      std::cerr << "Error: cannot add info that is already present in tree attributes: " << new_at << std::endl;
-      usage();
+      std::cout << "Warning: attribute: " << new_at << " already exists in input file, so adding suffix 2" << std::endl;
+      new_tree_attributes[i] += std::string("2");
     }
   }
 
