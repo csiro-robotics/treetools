@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
       {
         colour.red = colour.green = colour.blue = 0;
       }
-      else if (seg_id > segments.size())
+      else if (seg_id >= static_cast<int>(segments.size()))
       {
         std::cerr << "Error: colours found in cloud are not segment IDs, make sure to use the segmented cloud"
                   << std::endl;
