@@ -133,7 +133,8 @@ int main(int argc, char *argv[])
         int seg_id = segments[b];
         densities[i] += tree.segments()[seg_id].attributes.back();
         num++;
-        segments.insert(segments.end(), children[seg_id].begin(), children[seg_id].end());
+        segments.reserve(segments.size() + children[seg_id].size());
+        segments.insert(segments.end(), std::begin(children[seg_id]), std::end(children[seg_id]));
       }
       if (num > 0.0)
       {
