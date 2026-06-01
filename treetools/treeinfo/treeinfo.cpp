@@ -6,6 +6,7 @@
 #include <raylib/raycloud.h>
 #include <raylib/rayparse.h>
 #include <raylib/rayrenderer.h>
+#include <cmath>
 #include <cstdlib>
 #include <iostream>
 #include "raylib/raytreestructure.h"
@@ -23,7 +24,7 @@ void usage(int exit_code = 1)
   std::cout << "Bulk information for the trees, plus per-branch and per-tree information saved out." << std::endl;
   std::cout << "usage:" << std::endl;
   std::cout << "treeinfo forest.txt        - report tree information and save out to _info.txt file." << std::endl;
-  std::cout << "          --branch_data    - creates a branch number, segment_length, branch order number, extension and position in branch integers per-segment" << std::endl;
+  std::cout << "          --branch_data    - creates a branch number, segment_length, branch order number, extension, position in branch and branch_angle per-segment" << std::endl;
   std::cout << "          --layer_height 5 - additional volume reporting per vertical layer" << std::endl;
   std::cout << "          --crop_length 1  - should reflect the value used in rayextract trees if you want full values for branch lengths" << std::endl;
   std::cout << std::endl;
@@ -44,6 +45,7 @@ void usage(int exit_code = 1)
   std::cout << "  dominance: a1/(a1+a2) for first and second largest child branches / mean for tree" << std::endl;
   std::cout << "  angle: angle between branches at each branch point / mean branch angle" << std::endl;
   std::cout << "  children: number of children per branch / mean for tree" << std::endl;
+  std::cout << "  branch_angle: angle of each branch relative to the trunk it splits from, on the branch's first segment (with --branch_data)" << std::endl;
   std::cout << "Use treecolour 'field' to colour per-segment or treecolour trunk 'field' to colour per tree from root segment." << std::endl;
   std::cout << "Then use treemesh to render based on this colour output." << std::endl;
   // clang-format on
@@ -273,6 +275,7 @@ int main(int argc, char *argv[])
     new_attributes.push_back("extension");
     new_attributes.push_back("pos_in_branch");
     new_attributes.push_back("segment_length");
+    new_attributes.push_back("branch_angle");
   }
   const int volume_id = num_attributes + 0;
   const int diameter_id = num_attributes + 1;
@@ -288,6 +291,7 @@ int main(int argc, char *argv[])
   const int extension_id = num_attributes + 10;
   const int pos_in_branch_id = num_attributes + 11;
   const int segment_length_id = num_attributes + 12;
+  const int branch_angle_id = num_attributes + 13;
 
   auto &att = forest.trees[0].attributeNames();
   for (auto &new_at : new_attributes)
@@ -344,8 +348,10 @@ int main(int argc, char *argv[])
     if (branch_data.isSet())
     {
       // 1. get branch IDs:
-      int branch_number = 1;
-      std::vector<Eigen::Vector4i> ids(tree.segments().size(), Eigen::Vector4i(0,0,branch_number,0)); // seg id, branch order, branch, pos on branch
+      // The trunk is seeded with branch id 1 below, so new branches must start
+      // at 2; otherwise the first offshoot reuses id 1 and collides with the trunk.
+      int branch_number = 2;
+      std::vector<Eigen::Vector4i> ids(tree.segments().size(), Eigen::Vector4i(0,0,1,0)); // seg id, branch order, branch, pos on branch
       for (size_t i = 0; i < tree.segments().size(); i++)
       {
         double max_score = -1;
@@ -361,6 +367,18 @@ int main(int argc, char *argv[])
             largest_child = child;
           }
         }
+        // direction a child heads off in; step one segment up when the child is a
+        // straight continuation, so the direction has settled (as the bifurcation
+        // angle does). Used to measure each new branch against the trunk.
+        auto settled_dir = [&](int child) -> Eigen::Vector3d {
+          if (children[child].size() == 1)
+          {
+            return tree.segments()[children[child][0]].tip - tree.segments()[child].tip;
+          }
+          return tree.segments()[child].tip - tree.segments()[i].tip;
+        };
+        const bool is_branch_point = children[i].size() > 1;
+        const Eigen::Vector3d trunk_dir = is_branch_point ? settled_dir(largest_child) : Eigen::Vector3d(0, 0, 0);
         for (const auto &child : children[i])
         {
           Eigen::Vector4i data(child, id[1], id[2], id[3]+1); // seg id, branch order, branch, pos on branch
@@ -373,11 +391,16 @@ int main(int argc, char *argv[])
             data[1]++;
             data[2] = branch_number++;
             data[3] = 0;
+            // angle of this new branch relative to the trunk it splits from
+            const Eigen::Vector3d dir = settled_dir(child);
+            const double branch_angle =
+              (180.0 / ray::kPi) * std::atan2(trunk_dir.cross(dir).norm(), trunk_dir.dot(dir));
+            tree.segments()[child].attributes[branch_angle_id] = branch_angle;
           }
           tree.segments()[child].attributes[branch_order_id] = data[1];
           tree.segments()[child].attributes[branch_id] = data[2];
           tree.segments()[child].attributes[pos_in_branch_id] = data[3];
-          ids[child] = data;            
+          ids[child] = data;
         }
         auto &segment = tree.segments()[i];
         if (segment.parent_id != -1)
