@@ -29,5 +29,5 @@ target_link_libraries(treetest
     Eigen3::Eigen
 )
 gtest_discover_tests(treetest
-  EXTRA_ARGS ${CMAKE_BINARY_DIR}
+  EXTRA_ARGS ${CMAKE_BINARY_DIR} ${CMAKE_BINARY_DIR}/../raycloudtools
 )

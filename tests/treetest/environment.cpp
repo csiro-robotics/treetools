@@ -29,20 +29,14 @@ Environment::Environment(const int argc, const char *const *const argv)
   for (int index = 0; index < argc; ++index)
   {
     const std::filesystem::path build_root(argv[index]);
-    const std::vector executables_roots{
-      build_root / "raycloudtools",
-      build_root / "treetools",
-    };
-    for (const auto &executables_root : executables_roots)
+    const auto executables_root = build_root / build_root.filename();
+    if (std::filesystem::is_directory(executables_root))
     {
-      if (std::filesystem::is_directory(executables_root))
+      for (const auto &entry : std::filesystem::directory_iterator(executables_root))
       {
-        for (const auto &entry : std::filesystem::directory_iterator(executables_root))
+        if (entry.is_directory())
         {
-          if (entry.is_directory())
-          {
-            path_items.insert(entry.path());
-          }
+          path_items.insert(entry.path());
         }
       }
     }
