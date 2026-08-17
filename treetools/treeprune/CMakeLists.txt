@@ -2,8 +2,4 @@ set(SOURCES
   treeprune.cpp
 )
 
-ras_add_executable(treeprune
-  LIBS treelib
-  SOURCES ${SOURCES}
-  PROJECT_FOLDER "treetools"
-)
+add_treetools_executable(treeprune ${SOURCES})
