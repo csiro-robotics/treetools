@@ -128,12 +128,15 @@ TEST(Basic, TreeFoliage)
   EXPECT_EQ(command("rayextract terrain forest.ply"), 0);
   EXPECT_EQ(command("rayextract trees forest.ply forest_mesh.ply"), 0);
   EXPECT_EQ(command("treefoliage forest_trees.txt forest.ply 0.3"), 0);
-
   ray::ForestStructure forest;
   EXPECT_TRUE(forest.load("forest_trees_foliage.txt"));
-  EXPECT_EQ(
-    compareMoments(forest.getMoments(), { 20, 22.65207, 1037.4448, 1.51422, 0.128055, 2.41613, 86012, 0, 109.189364 }),
-    forest.getMoments().size());
+#if RAYLIB_DOUBLE_RAYS
+  EXPECT_EQ(compareMoments(forest.getMoments(), { 20, 22.6521, 1037.44, 1.44, 0.121317, 2.41613, 86012, 0, 109.189 }),
+            forest.getMoments().size());
+#else
+  EXPECT_EQ(compareMoments(forest.getMoments(), { 20, 22.6521, 1037.44, 1.4365, 0.120951, 2.41711, 86012, 0, 108.814 }),
+            forest.getMoments().size());
+#endif
   ray::Cloud cloud;
   EXPECT_TRUE(cloud.load("forest_densities.ply"));
   EXPECT_EQ(compareMoments(cloud.getMoments(),
@@ -260,4 +263,5 @@ TEST(Basic, TreeTranslate)
   EXPECT_EQ(compareMoments(forest.getMoments(), { 20, 773.323755, 21158.142314, 1.52222, 0.129316, 2.65571, 0, 0, 0 }),
             forest.getMoments().size());
 }
+
 }  // namespace treetest
