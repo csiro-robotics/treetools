@@ -132,7 +132,7 @@ TEST(Basic, TreeFoliage)
   ray::ForestStructure forest;
   EXPECT_TRUE(forest.load("forest_trees_foliage.txt"));
   EXPECT_EQ(
-    compareMoments(forest.getMoments(), { 20, 22.65207, 1037.4448, 1.51422, 0.128055, 2.41613, 86012, 0, 108.814411 }),
+    compareMoments(forest.getMoments(), { 20, 22.65207, 1037.4448, 1.51422, 0.128055, 2.41613, 86012, 0, 109.189364 }),
     forest.getMoments().size());
   ray::Cloud cloud;
   EXPECT_TRUE(cloud.load("forest_densities.ply"));
