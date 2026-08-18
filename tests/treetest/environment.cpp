@@ -22,7 +22,7 @@ Environment::Environment(const int argc, const char *const *const argv)
 
   // If any arguments are provided, assume they are paths to the root of the
   // build directory and use them to populate the PATH environment variable so
-  // that tests can execute raycloudtools executables.
+  // that tests can execute raycloudtools and treetools executables.
 
   // PATH
   std::set<std::filesystem::path> path_items;
