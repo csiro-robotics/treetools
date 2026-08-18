@@ -20,16 +20,21 @@ Environment::Environment(const int argc, const char *const *const argv)
 {
   std::lock_guard<std::mutex> lock(mutex_);
 
-  // If any arguments are provided, assume they are paths to the root of the
-  // build directory and use them to populate the PATH environment variable so
-  // that tests can execute raycloudtools and treetools executables.
+  // If any arguments are provided, assume they are paths to any of:
+  // - ${RAYCLOUDTOOLS_BUILD}/raycloudtools
+  // - ${TREETOOLS_BUILD}/treetools
+  // - ${TREETOOLS_BUILD}/tests/treetest/treetest
+  // Use them to populate the PATH environment variable so that tests can
+  // execute raycloudtools and treetools executables.
 
   // PATH
   std::set<std::filesystem::path> path_items;
   for (int index = 0; index < argc; ++index)
   {
-    const std::filesystem::path build_root(argv[index]);
-    const auto executables_root = build_root / build_root.filename();
+    std::filesystem::path executables_root(argv[index]);
+    if (executables_root.filename() == "treetest") {
+      executables_root = executables_root.parent_path().parent_path().parent_path() / "treetools";
+    }
     if (std::filesystem::is_directory(executables_root))
     {
       for (const auto &entry : std::filesystem::directory_iterator(executables_root))
