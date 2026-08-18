@@ -1,0 +1,4 @@
+build/
+gitignored/
+install/
+test_results/

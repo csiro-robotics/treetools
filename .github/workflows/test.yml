@@ -1,0 +1,83 @@
+name: Build and test
+
+on:
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-jammy:
+    runs-on: ubuntu-22.04
+    steps: &build_steps
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            ca-certificates \
+            cmake \
+            curl \
+            git \
+            libboost-all-dev \
+            libeigen3-dev \
+            libgeotiff-dev \
+            libgtest-dev \
+            liblaszip-dev \
+            libproj-dev \
+            libqhull-dev \
+            libtbb-dev \
+            libtiff-dev
+
+      - name: Build and install libnabo
+        run: |
+          git clone https://github.com/ethz-asl/libnabo.git
+          cd libnabo
+          git checkout tags/1.1.2
+          mkdir build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+
+      - name: Build and test
+        run: |
+          INSTALL_ROOT="$(pwd)/install"
+          mkdir --parents "${INSTALL_ROOT}"
+          # raycloudtools
+          git clone git@github.com:${{ github.repository_owner }}/raycloudtools.git
+          RAYCLOUDTOOLS_BUILD_ROOT="$(pwd)/build/raycloudtools"
+          mkdir --parents "${RAYCLOUDTOOLS_BUILD_ROOT}"
+          cmake \
+            -S raycloudtools \
+            -B "${RAYCLOUDTOOLS_BUILD_ROOT}" \
+            -DCMAKE_INSTALL_PREFIX:STRING="${INSTALL_ROOT}" \
+            -DRAYCLOUD_BUILD_TESTS:BOOL=ON
+          make \
+            -C "${RAYCLOUDTOOLS_BUILD_ROOT}" \
+            -j "$(nproc)" \
+            install
+          # treetools
+          TREETOOLS_BUILD_ROOT="$(pwd)/build/raycloudtools"
+          mkdir --parents "${TREETOOLS_BUILD_ROOT}"
+          cmake \
+            -S . \
+            -B "${TREETOOLS_BUILD_ROOT}" \
+            -DCMAKE_INSTALL_PREFIX:STRING="${INSTALL_ROOT}" \
+            -DTREE_BUILD_TESTS:BOOL=ON
+          make \
+            -C "${TREETOOLS_BUILD_ROOT}" \
+            -j "$(nproc)" \
+            install
+          export "LD_LIBRARY_PATH=${INSTALL_ROOT}/lib:${LD_LIBRARY_PATH}"
+          export "PATH=${INSTALL_ROOT}/bin:${PATH}"
+          cd "${INSTALL_ROOT}/bin"
+          "${BUILD_ROOT}/tests/raytest/raytest" --gtest_output=xml:report.xml
+
+  build-noble:
+    runs-on: ubuntu-24.04
+    steps: *build_steps
