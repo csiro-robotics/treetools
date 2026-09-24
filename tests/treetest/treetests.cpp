@@ -120,6 +120,7 @@ TEST(Basic, TreeDiff)
   /// TODO: comparison not implemented, so just tests that it doesn't return a bad value
 }
 
+#if RAYLIB_WITH_QHULL
 /// create a raycloud forest, extract the trees, then set the foliage density of the raycloud at each branch
 /// of the tree in forest_foliage.txt, and also save this as a shaded ray cloud in forest_densities.ply
 TEST(Basic, TreeFoliage)
@@ -145,6 +146,7 @@ TEST(Basic, TreeFoliage)
                              0.0947165, 1,        0.158243, 0.158243, 0.158243, 0 }),
             cloud.getMoments().size());
 }
+#endif  // RAYLIB_WITH_QHULL
 
 /// Create a forest, then grow it
 TEST(Basic, TreeGrow)
@@ -186,6 +188,7 @@ TEST(Basic, TreeMesh)
             mesh.getMoments().size());
 }
 
+#if RAYLIB_WITH_QHULL
 /// Create a raycloud forest, then extract the ground and the trees, then colour the extracted tree file and
 /// apply it back onto the segmented ray cloud
 TEST(Basic, TreePaint)
@@ -204,6 +207,7 @@ TEST(Basic, TreePaint)
                              0.324531,  1.00000,  0.359649, 0.359649, 0.359649, 0 }),
             cloud.getMoments().size());
 }
+#endif  // RAYLIB_WITH_QHULL
 
 /// Create a forest then prune it
 TEST(Basic, TreePrune)
