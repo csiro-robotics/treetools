@@ -32,7 +32,8 @@ Environment::Environment(const int argc, const char *const *const argv)
   for (int index = 0; index < argc; ++index)
   {
     std::filesystem::path executables_root(argv[index]);
-    if (executables_root.filename() == "treetest") {
+    if (executables_root.filename() == "treetest")
+    {
       executables_root = executables_root.parent_path().parent_path().parent_path() / "treetools";
     }
     if (std::filesystem::is_directory(executables_root))

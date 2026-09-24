@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
     usage();
   }
 
-  double power = 0.0; // 1 will weight in proportion to radius, 2 in proportion to square radius.
+  double power = 0.0;  // 1 will weight in proportion to radius, 2 in proportion to square radius.
 
   ray::ForestStructure forest;
   if (!forest.load(forest_file.name()))

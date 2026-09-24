@@ -146,8 +146,9 @@ void pruneLength(ray::ForestStructure &forest, double length_value, ray::ForestS
         int par = tree.segments()[i].parent_id;
         if (par != -1 && min_length_from_leaf[par] > length_value)
         {
-          double blend = (min_length_from_leaf[par] - length_value) /
-                         std::max(std::numeric_limits<double>::min(), min_length_from_leaf[par] - min_length_from_leaf[i]);
+          double blend =
+            (min_length_from_leaf[par] - length_value) /
+            std::max(std::numeric_limits<double>::min(), min_length_from_leaf[par] - min_length_from_leaf[i]);
           blend = std::max(std::numeric_limits<double>::min(), std::min(blend, 1.0));
           ray::TreeStructure::Segment seg = tree.segments()[i];
           seg.tip = tree.segments()[par].tip + (seg.tip - tree.segments()[par].tip) * blend;
