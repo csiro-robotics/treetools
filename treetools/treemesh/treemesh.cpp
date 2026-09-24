@@ -43,15 +43,16 @@ int main(int argc, char *argv[])
 {
   ray::FileArgument forest_file;
   ray::DoubleArgument max_brightness;
-  ray::OptionalFlagArgument view("view", 'v'), capsules_option("capsules", 'c'), cylinders_option("cylinders", 'y'), uvs_option("uvs", 'u');
+  ray::OptionalFlagArgument view("view", 'v'), capsules_option("capsules", 'c'), cylinders_option("cylinders", 'y'),
+    uvs_option("uvs", 'u');
   ray::Vector3dArgument max_colour;
   ray::OptionalKeyValueArgument max_brightness_option("max_colour", 'm', &max_brightness);
   ray::OptionalKeyValueArgument max_colour_option("max_colour", 'm', &max_colour);
 
-  const bool max_brightness_format =
-    ray::parseCommandLine(argc, argv, { &forest_file }, { &max_brightness_option, &view, &capsules_option, &cylinders_option, &uvs_option });
-  const bool max_colour_format =
-    ray::parseCommandLine(argc, argv, { &forest_file }, { &max_colour_option, &view, &capsules_option, &cylinders_option, &uvs_option });
+  const bool max_brightness_format = ray::parseCommandLine(
+    argc, argv, { &forest_file }, { &max_brightness_option, &view, &capsules_option, &cylinders_option, &uvs_option });
+  const bool max_colour_format = ray::parseCommandLine(
+    argc, argv, { &forest_file }, { &max_colour_option, &view, &capsules_option, &cylinders_option, &uvs_option });
   if (!max_brightness_format && !max_colour_format)
   {
     usage();

@@ -69,7 +69,7 @@ void calculatePowerLaw(std::vector<double> &xs, double &c, double &d, double &r2
   {
     loglog.push_back(Eigen::Vector2d(std::log(xs[i]), std::log(static_cast<double>(xs.size() - i))));
   }
-  
+
   std::vector<double> weights(loglog.size());
   double total_weight = std::numeric_limits<double>::min();
   for (int i = 0; i < static_cast<int>(loglog.size()); i++)
@@ -121,7 +121,8 @@ void calculatePowerLaw(std::vector<double> &xs, double &c, double &d, double &r2
 /// @param children the precalculated list of children for each segment
 /// @param bend_id the id of the per-tree parameter representing the trunk bend (to fill in)
 /// @param length_id the id of the parameter representing length (to fill in)
-void setTrunkBend(ray::TreeStructure &tree, const std::vector<std::vector<int>> &children, int bend_id, int length_id, int branch_gradient_id)
+void setTrunkBend(ray::TreeStructure &tree, const std::vector<std::vector<int>> &children, int bend_id, int length_id,
+                  int branch_gradient_id)
 {
   // get the trunk
   std::vector<int> ids = { 0 };
@@ -247,7 +248,7 @@ void setDBH(ray::TreeStructure &tree, const std::vector<std::vector<int>> &child
 {
   // what do we do if the tree has multiple stems?
   // I'm just going to use the average DBH
-  const double breast_height = 1.3; 
+  const double breast_height = 1.3;
   double total_DBH = 0.0;
   double num_valid_stems = 0.0;
   bool branched = false;
@@ -268,11 +269,11 @@ void setDBH(ray::TreeStructure &tree, const std::vector<std::vector<int>> &child
         segment = children[segment][0];
         branched = false;
       }
-      else // pick largest child
+      else  // pick largest child
       {
         double max_child_rad = 0.0;
         int max_child_id = 0;
-        for (auto &child_id: children[segment])
+        for (auto &child_id : children[segment])
         {
           double rad = tree.segments()[child_id].radius;
           if (rad >= max_child_rad)
@@ -298,10 +299,10 @@ void setDBH(ray::TreeStructure &tree, const std::vector<std::vector<int>> &child
       double base = tree.segments()[par].tip[2];
       double rad_base = tree.segments()[par].radius;
 
-      if (!branched) // if hasn't just branched then use linear interpolation between segments 
+      if (!branched)  // if hasn't just branched then use linear interpolation between segments
       {
-        rad += (rad_base - rad) * (top - (base_height + breast_height))/(top - base);
-      }     
+        rad += (rad_base - rad) * (top - (base_height + breast_height)) / (top - base);
+      }
       total_DBH += 2.0 * rad;
       num_valid_stems++;
     }
@@ -367,7 +368,8 @@ void setMonocotal(ray::TreeStructure &tree, const std::vector<std::vector<int>> 
   tree.treeAttributes()[monocotal_id] = max_monocotal;
 }
 
-void getBranchLengths(ray::TreeStructure &tree, const std::vector<std::vector<int>> &children, std::vector<double> &lengths, double prune_length)
+void getBranchLengths(ray::TreeStructure &tree, const std::vector<std::vector<int>> &children,
+                      std::vector<double> &lengths, double prune_length)
 {
   lengths.resize(tree.segments().size(), 0);
   for (size_t i = 1; i < tree.segments().size(); i++)
@@ -381,8 +383,7 @@ void getBranchLengths(ray::TreeStructure &tree, const std::vector<std::vector<in
       int child = I;
       while (j != -1)
       {
-        const double dist =
-          lengths[child] + (tree.segments()[I].tip - tree.segments()[j].tip).norm();
+        const double dist = lengths[child] + (tree.segments()[I].tip - tree.segments()[j].tip).norm();
         double &length = lengths[I];
         if (dist > length)
         {
@@ -401,11 +402,13 @@ void getBranchLengths(ray::TreeStructure &tree, const std::vector<std::vector<in
   for (auto &child : children[0])
   {
     lengths[0] = std::max(lengths[0], lengths[child]);
-  }  
+  }
 }
 
-void getBifurcationProperties(ray::TreeStructure &tree, const std::vector<std::vector<int>> &children, std::vector<double> &angles, std::vector<double> &dominances, std::vector<double> &num_children, 
-  double &tree_dominance, double &tree_angle, double &total_weight)
+void getBifurcationProperties(ray::TreeStructure &tree, const std::vector<std::vector<int>> &children,
+                              std::vector<double> &angles, std::vector<double> &dominances,
+                              std::vector<double> &num_children, double &tree_dominance, double &tree_angle,
+                              double &total_weight)
 {
   angles.resize(tree.segments().size(), 0);
   dominances.resize(tree.segments().size(), 0);
@@ -448,7 +451,7 @@ void getBifurcationProperties(ray::TreeStructure &tree, const std::vector<std::v
       }
       double weight = sqr(max_rad) + sqr(second_max);
       const double dominance = -1.0 + 2.0 * sqr(max_rad) / weight;
-      weight = std::sqrt(weight); // so we don't over bias towards values on the thick trunk
+      weight = std::sqrt(weight);  // so we don't over bias towards values on the thick trunk
       dominances[i] = dominance;
       // now where do we spread this to?
       // if we spread to leaves then base will be empty, if we spread to parent then leave will be empty...
@@ -459,6 +462,6 @@ void getBifurcationProperties(ray::TreeStructure &tree, const std::vector<std::v
       angles[i] = branch_angle;
       tree_angle += weight * branch_angle;
     }
-  }    
+  }
 }
 }  // namespace tree

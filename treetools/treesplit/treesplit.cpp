@@ -10,8 +10,8 @@
 #include <raylib/raytreegen.h>
 #include <cstdlib>
 #include <iostream>
-#include "raylib/raytreegen.h"
 #include "raylib/extraction/rayclusters.h"
+#include "raylib/raytreegen.h"
 #include "treelib/treeutils.h"
 
 
@@ -40,11 +40,12 @@ int main(int argc, char *argv[])
   ray::Vector3dArgument coord;
 
   ray::DoubleArgument value(0.0, 10000.0), radius(0.0, 10000.0);
-  ray::DoubleArgument cluster_size(0.0,1000.0);
+  ray::DoubleArgument cluster_size(0.0, 1000.0);
   ray::Vector3dArgument plane, colour;
   ray::Vector2dArgument box_centre, box_radius;
   ray::TextArgument box_text("box");
-  ray::KeyValueChoice choice({ "plane", "colour", "radius", "cluster_width"}, { &plane, &colour, &radius, &cluster_size });
+  ray::KeyValueChoice choice({ "plane", "colour", "radius", "cluster_width" },
+                             { &plane, &colour, &radius, &cluster_size });
   const bool parsed = ray::parseCommandLine(argc, argv, { &forest_file, &choice });
   const bool box_format = ray::parseCommandLine(argc, argv, { &forest_file, &box_text, &box_centre, &box_radius });
   const bool split_per_tree = ray::parseCommandLine(argc, argv, { &forest_file, &per_tree_text });
@@ -192,23 +193,23 @@ int main(int argc, char *argv[])
   else if (choice.selectedKey() == "cluster_width")
   {
     std::vector<Eigen::Vector3d> centres;
-    for (auto &tree: forest.trees)
+    for (auto &tree : forest.trees)
     {
       centres.push_back(tree.segments()[0].tip);
     }
     ray::ForestStructure cluster_template = forest;
     cluster_template.trees.clear();
 
-    std::vector<std::vector<int> > point_clusters;
-    double min_diameter = cluster_size.value(); // adjacent max distance
-    double max_diameter = cluster_size.value(); // maximum width of cluster
+    std::vector<std::vector<int>> point_clusters;
+    double min_diameter = cluster_size.value();  // adjacent max distance
+    double max_diameter = cluster_size.value();  // maximum width of cluster
     ray::generateClusters(point_clusters, centres, min_diameter, max_diameter);
     std::cout << "found " << point_clusters.size() << " clusters" << std::endl;
     std::vector<ray::ForestStructure> tree_clusters(point_clusters.size(), cluster_template);
     int i = 0;
-    for (auto &cluster: point_clusters)
+    for (auto &cluster : point_clusters)
     {
-      for (auto &id: cluster)
+      for (auto &id : cluster)
       {
         tree_clusters[i].trees.push_back(forest.trees[id]);
       }

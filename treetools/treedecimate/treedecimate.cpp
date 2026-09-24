@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
   ray::IntArgument decimation;
   ray::DoubleArgument ratio(0.0, 1000.0);
   const bool decimate_segments = ray::parseCommandLine(argc, argv, { &forest_file, &decimation, &segments_text });
-  const bool decimate_ratio    = ray::parseCommandLine(argc, argv, { &forest_file, &ratio_text, &ratio });
+  const bool decimate_ratio = ray::parseCommandLine(argc, argv, { &forest_file, &ratio_text, &ratio });
   if (!decimate_segments && !decimate_ratio)
   {
     usage();
@@ -86,18 +86,18 @@ int main(int argc, char *argv[])
         }
       }
     }
-    else // decimate ratio
+    else  // decimate ratio
     {
       for (size_t i = 1; i < new_tree.segments().size(); i++)
       {
         auto &segment = new_tree.segments()[i];
         double length = (segment.tip - new_tree.segments()[segment.parent_id].tip).norm();
         double width = 2.0 * segment.radius;
-        if (children[i].size() == 1 && length < ratio.value() * width) 
+        if (children[i].size() == 1 && length < ratio.value() * width)
         {
           // we have to remove this segment...
           new_tree.segments()[children[i][0]].parent_id = segment.parent_id;
-          segment.parent_id = -1; // mark as unused, for later reindexing
+          segment.parent_id = -1;  // mark as unused, for later reindexing
         }
       }
       new_tree.reindex();
